@@ -1,0 +1,197 @@
+:root {
+  /* DAK.GG-like Color System (Dark + Yellow) */
+  --bg-main: #0B0D12;
+  /* Deep Dark Background */
+  --bg-secondary: #111318;
+  /* Card/Section Background */
+  --bg-hover: #1f232d;
+  /* Interactive Item Hover */
+
+  --primary: #FACC15;
+  /* Soft Yellow Accent */
+  --primary-hover: #EAB308;
+  /* Darker Yellow for Hover */
+  --primary-text: #000000;
+  /* Black text on Yellow buttons */
+
+  --accent-highlight: #FBBF24;
+  /* Strong Highlight */
+
+  --text-main: #E5E7EB;
+  /* Primary Text (almost white) */
+  --text-secondary: #9CA3AF;
+  /* Muted Text (gray) */
+  --text-disabled: #4B5563;
+
+  --border: #1F2937;
+  /* Subtle Border */
+  --border-light: #374151;
+
+  --success: #10B981;
+  --danger: #EF4444;
+  --warning: #F59E0B;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background: var(--bg-main);
+  color: var(--text-main);
+  line-height: 1.5;
+}
+
+/* Layout Utilities */
+.container {
+  max-width: 1200px;
+  /* Wider for dashboard feel */
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.card {
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  /* Sharper corners for pro feel */
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.card:hover {
+  border-color: var(--border-light);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+}
+
+/* Button Styles */
+.btn {
+  background: var(--primary);
+  color: var(--primary-text);
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  /* Pro tool look */
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.9rem;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.btn:hover {
+  background: var(--primary-hover);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+  padding: 0.6rem 1.2rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* Form Elements */
+.input {
+  background: var(--bg-main);
+  color: var(--text-main);
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  border-color: var(--primary);
+}
+
+/* Navigation */
+.nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.nav a {
+  text-decoration: none;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: color 0.2s;
+}
+
+.nav a:hover,
+.nav a.active {
+  color: var(--primary);
+}
+
+/* Data Tables */
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  text-align: left;
+  padding: 1rem;
+  color: var(--text-secondary);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border-bottom: 2px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+td {
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-main);
+  font-size: 0.95rem;
+}
+
+tr:hover td {
+  background: var(--bg-hover);
+}
+
+/* Utility Badges */
+.badge {
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: inline-block;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+}

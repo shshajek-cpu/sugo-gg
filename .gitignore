@@ -1,0 +1,70 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+.pytest_cache/
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.next/
+out/
+build/
+dist/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+*.log
+
+# Database
+*.db
+*.sqlite
+db_data/
+
+# Cache
+.cache/
+*.cache
+
+# Artifacts (개발용)
+.gemini/
+
+# Temporary files
+*.tmp
+*.temp
+메뉴/
+
+# Backend specific
+backend/*.log
+backend/app/__pycache__/
+
+# Frontend specific
+frontend/.next/
+frontend/node_modules/
+frontend/out/
+frontend/build/
+
+# Test data
+load_rankings.py

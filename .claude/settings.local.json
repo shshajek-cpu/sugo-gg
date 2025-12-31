@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose logs:*)",
+      "Bash(curl:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(docker-compose restart:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose:*)",
+      "Bash(npm run test:e2e:*)",
+      "WebFetch(domain:aion.plaync.com)",
+      "WebFetch(domain:api-community.plaync.com)",
+      "Bash(timeout 5 docker-compose logs:*)",
+      "Bash(timeout 10 docker-compose logs:*)",
+      "Bash(timeout 15 docker-compose logs:*)",
+      "Bash(docker exec:*)",
+      "Bash(timeout 20 docker-compose logs:*)",
+      "Bash(timeout 25 docker-compose logs:*)",
+      "Bash(file:*)"
+    ]
+  }
+}

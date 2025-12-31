@@ -1,0 +1,23 @@
+메뉴 이미지 원본 링크
+======================
+
+1.jpg (랭킹)
+https://images.unsplash.com/photo-1542751371-adc38448a05e?w=800&h=800&fit=crop&q=80
+
+2.jpg (티어)
+https://images.unsplash.com/photo-1579546929662-711aa81148cf?w=800&h=800&fit=crop&q=80
+
+3.jpg (통계)
+https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&h=800&fit=crop&q=80
+
+4.jpg (서버)
+https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop&q=80
+
+5.jpg (비교)
+https://images.unsplash.com/photo-1614294148960-9aa740632a87?w=800&h=800&fit=crop&q=80
+
+
+참고사항:
+- 모든 이미지는 Unsplash의 무료 이미지입니다
+- 나중에 아이온2 관련 이미지로 교체하려면 같은 파일명(1.jpg ~ 5.jpg)으로 덮어쓰면 됩니다
+- 이미지 크기는 800x800px로 최적화되어 있습니다
