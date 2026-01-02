@@ -44,8 +44,17 @@ class Character(Base):
     # Expanded Data
     character_image_url = Column(String(256), nullable=True)
     equipment_data = Column(JSONType, nullable=True)  # 무기, 방어구 등 장비 정보
-
-    # Dummy data marker
+    
+    # AION2 Extended Data
+    race = Column(String(32), nullable=True)
+    legion = Column(String(64), nullable=True)
+    titles_data = Column(JSONType, nullable=True)      # 칭호 정보
+    ranking_data = Column(JSONType, nullable=True)     # 랭킹 정보
+    pet_wings_data = Column(JSONType, nullable=True)   # 펫/날개 정보
+    skills_data = Column(JSONType, nullable=True)      # 스킬 정보
+    stigma_data = Column(JSONType, nullable=True)      # 스티그마 정보
+    devanion_data = Column(JSONType, nullable=True)    # 데바니온 정보
+    arcana_data = Column(JSONType, nullable=True)      # 아르카나 정보
     is_dummy = Column(Boolean, nullable=True, default=False)  # 더미 데이터 여부
 
     # Timestamps

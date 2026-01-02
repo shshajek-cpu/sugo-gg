@@ -55,6 +55,68 @@ def startup_event():
 def health_check():
     return {"status": "ok"}
 
+
+@app.post("/api/admin/collect")
+def trigger_manual_collect(
+    server: str,
+    name: str,
+    db: Session = Depends(get_db)
+):
+    """
+    수동 수집: 특정 캐릭터 데이터를 외부에서 수집
+    """
+    try:
+        # Celery 태스크 비동기 호출
+        from .worker import manual_collect_character
+        task = manual_collect_character.delay(server, name)
+        
+        return {
+            "status": "queued",
+            "task_id": task.id,
+            "message": f"{server}:{name} 수집 요청이 접수되었습니다.",
+            "server": server,
+            "name": name
+        }
+    except Exception as e:
+        logger.error(f"Manual collect trigger failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/admin/collection-status")
+def get_collection_status(db: Session = Depends(get_db)):
+    """
+    자동 수집 상태 조회
+    """
+    from .models import Character
+    
+    # 최근 수집된 캐릭터 5개
+    recent = db.query(Character).filter(
+        Character.updated_at.isnot(None)
+    ).order_by(Character.updated_at.desc()).limit(5).all()
+    
+    # 오래된 캐릭터 (다음 수집 대상)
+    next_collection = db.query(Character).filter(
+        Character.updated_at.isnot(None)
+    ).order_by(Character.updated_at.asc()).limit(3).all()
+    
+    return {
+        "recent_collections": [
+            {
+                "name": c.name,
+                "server": c.server,
+                "updated_at": c.updated_at.isoformat() if c.updated_at else None
+            } for c in recent
+        ],
+        "next_collection_targets": [
+            {
+                "name": c.name,
+                "server": c.server,
+                "updated_at": c.updated_at.isoformat() if c.updated_at else None
+            } for c in next_collection
+        ],
+        "schedule": "2분마다 3개씩 자동 수집"
+    }
+
 @app.get("/api/servers")
 def get_available_servers():
     """
@@ -212,6 +274,34 @@ def search_character(
     char.power = data.power
     char.updated_at = data.updated_at
     char.last_seen_at = datetime.now()
+    
+    # Save additional data fields from adapter
+    if hasattr(data, 'character_image_url') and data.character_image_url:
+        char.character_image_url = data.character_image_url
+    if hasattr(data, 'equipment_data') and data.equipment_data:
+        char.equipment_data = data.equipment_data
+    if hasattr(data, 'stats_payload') and data.stats_payload:
+        char.stats_payload = data.stats_payload
+    
+    # AION2 Extended Data
+    if hasattr(data, 'race') and data.race:
+        char.race = data.race
+    if hasattr(data, 'legion') and data.legion:
+        char.legion = data.legion
+    if hasattr(data, 'titles_data') and data.titles_data:
+        char.titles_data = data.titles_data
+    if hasattr(data, 'ranking_data') and data.ranking_data:
+        char.ranking_data = data.ranking_data
+    if hasattr(data, 'pet_wings_data') and data.pet_wings_data:
+        char.pet_wings_data = data.pet_wings_data
+    if hasattr(data, 'skills_data') and data.skills_data:
+        char.skills_data = data.skills_data
+    if hasattr(data, 'stigma_data') and data.stigma_data:
+        char.stigma_data = data.stigma_data
+    if hasattr(data, 'devanion_data') and data.devanion_data:
+        char.devanion_data = data.devanion_data
+    if hasattr(data, 'arcana_data') and data.arcana_data:
+        char.arcana_data = data.arcana_data
 
     db.commit()
     db.refresh(char)
@@ -708,17 +798,17 @@ def get_tiers(
         char_data = {
             "rank": rank,
             "name": char.name,
-            "server": char.server,
             "class": char.class_name,
             "level": char.level,
-            "power": char.power
+            "power": char.power,
+            "server": char.server
         }
-
-        if rank <= idx_5:
+        
+        if rank <= idx_5 + 1:
             tiers["S"].append(char_data)
-        elif rank <= idx_15:
+        elif rank <= idx_15 + 1:
             tiers["A"].append(char_data)
-        elif rank <= idx_35:
+        elif rank <= idx_35 + 1:
             tiers["B"].append(char_data)
         else:
             tiers["C"].append(char_data)
@@ -731,455 +821,13 @@ def get_tiers(
             "B": threshold_b,
             "C": 0
         },
-        "tier_counts": {
-            "S": len(tiers["S"]),
-            "A": len(tiers["A"]),
-            "B": len(tiers["B"]),
-            "C": len(tiers["C"])
-        },
+        "tier_counts": {k: len(v) for k, v in tiers.items()},
         "sample_size": total,
         "total_characters": total,
         "server": server or "all",
         "class": class_name or "all",
         "generated_at": datetime.now()
     }
-
-    # Cache for 3 minutes
-    cache.setex(cache_key, 180, json.dumps(response, default=str))
-    return response
-
-@app.post("/api/admin/update-server-stats")
-def update_server_stats_endpoint(
-    server: Optional[str] = None,
-    db: Session = Depends(get_db)
-):
-    """
-    서버 평균 스탯을 업데이트합니다 (관리자용)
-
-    Args:
-        server: 특정 서버만 업데이트 (None이면 전체 서버)
-    """
-    from .server_stats import update_all_server_stats, update_server_average_stats
-
-    try:
-        if server:
-            update_server_average_stats(db, server)
-            return {"status": "success", "message": f"Updated stats for {server}"}
-        else:
-            update_all_server_stats(db)
-            return {"status": "success", "message": "Updated stats for all servers"}
-    except Exception as e:
-        logger.error(f"Failed to update server stats: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/api/rankings/power-index")
-def get_power_index_rankings(
-    server: Optional[str] = None,
-    class_name: Optional[str] = Query(None, alias="class"),
-    page: int = 1,
-    limit: int = 20,
-    db: Session = Depends(get_db)
-):
-    """
-    투력(Power Index) 기반 랭킹 조회
-
-    Args:
-        server: 서버 필터
-        class_name: 클래스 필터
-        page: 페이지 번호
-        limit: 페이지당 아이템 수
-    """
-    filter_key = f"power_index:{server or 'all'}:{class_name or 'all'}:page:{page}:limit:{limit}"
-    cache_key = f"rank:{filter_key}"
-
-    cached = cache.get(cache_key)
-    if cached:
-        return json.loads(cached)
-
-    # 쿼리 빌드
-    query = db.query(Character).filter(Character.power_score.isnot(None))
-
-    if server:
-        query = query.filter(Character.server == server)
-    if class_name:
-        query = query.filter(Character.class_name == class_name)
-
-    # 투력 기준 정렬
-    query = query.order_by(Character.power_score.desc())
-
-    results = query.offset((page-1)*limit).limit(limit).all()
-
-    items = [
-        {
-            "rank": (page-1)*limit + i + 1,
-            "name": c.name,
-            "server": c.server,
-            "class": c.class_name,
-            "level": c.level,
-            "power": c.power,
-            "power_index": c.power_score,
-            "tier_rank": c.power_rank,
-            "percentile": c.percentile,
-        } for i, c in enumerate(results)
-    ]
-
-    response = {
-        "items": items,
-        "generated_at": datetime.now(),
-        "type": "power_index",
-        "filter_key": filter_key,
-        "is_realtime": True,
-    }
-
-    cache.setex(cache_key, 120, json.dumps(response, default=str))
-    return response
-
-
-@app.get("/api/servers/compare")
-def compare_servers(db: Session = Depends(get_db)):
-    """
-    Compare servers across multiple metrics:
-    - Average power per server
-    - Top ranker distribution (TOP 100, TOP 500)
-    - Server activity (based on search count)
-    """
-    cache_key = "servers:compare"
-    cached = cache.get(cache_key)
-    if cached:
-        return json.loads(cached)
-
-    # 1. Server-wise average power and character count
-    server_stats = db.query(
-        Character.server,
-        func.avg(Character.power).label('avg_power'),
-        func.max(Character.power).label('max_power'),
-        func.count(Character.id).label('count')
-    ).group_by(Character.server).all()
-
-    server_data = {}
-    for s in server_stats:
-        server_data[s.server] = {
-            "server": s.server,
-            "avg_power": round(s.avg_power, 2) if s.avg_power else 0,
-            "max_power": s.max_power or 0,
-            "total_characters": s.count
-        }
-
-    # 2. Top ranker distribution (TOP 100, TOP 500)
-    top_100 = db.query(Character).order_by(Character.power.desc()).limit(100).all()
-    top_500 = db.query(Character).order_by(Character.power.desc()).limit(500).all()
-
-    for server in server_data.keys():
-        server_data[server]["top_100_count"] = sum(1 for c in top_100 if c.server == server)
-        server_data[server]["top_500_count"] = sum(1 for c in top_500 if c.server == server)
-
-    # 3. Server activity (based on search logs)
-    search_stats = db.query(SearchLog.keyword, SearchLog.count).all()
-    server_search_count = {}
-    for keyword, count in search_stats:
-        # keyword format: "server:name"
-        if ':' in keyword:
-            server = keyword.split(':')[0]
-            server_search_count[server] = server_search_count.get(server, 0) + count
-
-    for server in server_data.keys():
-        server_data[server]["search_count"] = server_search_count.get(server, 0)
-
-    response = {
-        "servers": list(server_data.values()),
-        "generated_at": datetime.now()
-    }
-
-    # Cache for 5 minutes
+    
     cache.setex(cache_key, 300, json.dumps(response, default=str))
     return response
-
-
-# ============================================================================
-# New MVP Endpoints (검색 기반 데이터 누적)
-# ============================================================================
-
-from .new_endpoints import (
-    post_search,
-    get_character,
-    get_ranking_top,
-    get_ranking_paginated,
-    get_updates
-)
-
-@app.post("/api/search", response_model=SearchResponse)
-def search_endpoint(request: SearchRequest, db: Session = Depends(get_db)):
-    """캐릭터 검색 및 데이터 수집"""
-    return post_search(request, db)
-
-@app.get("/api/character", response_model=SearchResponse)
-def character_detail(server: str, name: str, db: Session = Depends(get_db)):
-    """캐릭터 상세 조회"""
-    return get_character(server, name, db)
-
-@app.get("/api/ranking/top")
-def ranking_top(server: Optional[str] = None, limit: int = 100, db: Session = Depends(get_db)):
-    """TOP N 랭킹"""
-    return get_ranking_top(server, limit, db)
-
-@app.get("/api/ranking")
-def ranking_paginated(
-    server: Optional[str] = None,
-    page: int = 1,
-    page_size: int = 20,
-    db: Session = Depends(get_db)
-):
-    """페이지네이션 랭킹"""
-    return get_ranking_paginated(server, page, page_size, db)
-
-@app.get("/api/updates")
-def updates_list(limit: int = 10, db: Session = Depends(get_db)):
-    """업데이트 로그"""
-    return get_updates(limit, db)
-
-
-@app.post("/api/admin/generate-dummy-data")
-def generate_dummy_data(count: int = 50, db: Session = Depends(get_db)):
-    """
-    더미 데이터 생성 (개발/테스트용)
-
-    Args:
-        count: 생성할 캐릭터 수 (기본: 50)
-    """
-    import random
-
-    servers = ["Siel", "Israphel", "Nezakan", "Zikel", "Chantra"]
-    classes = ["검성", "궁성", "마도성", "호법성", "살성", "창성", "치유성"]
-
-    # 한글 이름 생성을 위한 음절 리스트
-    first_chars = ["김", "이", "박", "최", "정", "강", "조", "윤", "장", "임", "오", "한", "신", "서", "권", "황"]
-    middle_chars = ["민", "서", "예", "지", "하", "도", "우", "승", "현", "준", "영", "수", "동", "재", "성"]
-    last_chars = ["준", "서", "우", "진", "호", "민", "성", "재", "혁", "영", "훈", "석", "원", "현", "수"]
-
-    created_characters = []
-
-    try:
-        for i in range(count):
-            # 랜덤 캐릭터 이름 생성
-            name = random.choice(first_chars) + random.choice(middle_chars) + random.choice(last_chars)
-            # 중복 방지를 위해 숫자 추가
-            name = f"{name}{random.randint(1, 999)}"
-
-            server = random.choice(servers)
-            class_name = random.choice(classes)
-            level = random.randint(50, 80)
-
-            # 레벨에 따른 파워 범위 설정
-            base_power = level * 10000
-            power = base_power + random.randint(-30000, 100000)
-            power = max(100000, power)  # 최소값 보장
-
-            # 스탯 생성
-            stats_payload = {
-                "attack": random.randint(15000, 35000),
-                "damage_amp": random.randint(5000, 15000),
-                "crit_rate": random.randint(3000, 8000),
-                "crit_damage": random.randint(10000, 25000),
-                "attack_speed": random.randint(2000, 5000),
-                "defense": random.randint(8000, 20000),
-                "damage_reduction": random.randint(3000, 10000),
-                "hp": random.randint(80000, 200000)
-            }
-
-            # 기존 캐릭터 확인
-            existing_char = db.query(Character).filter(
-                Character.server == server,
-                Character.name == name
-            ).first()
-
-            if existing_char:
-                # 이미 존재하면 업데이트
-                existing_char.class_name = class_name
-                existing_char.level = level
-                existing_char.power = power
-                existing_char.stats_payload = stats_payload
-                existing_char.updated_at = datetime.now()
-                existing_char.last_fetched_at = datetime.now()
-                existing_char.is_dummy = True
-                char = existing_char
-            else:
-                # 새로 생성
-                char = Character(
-                    server=server,
-                    name=name,
-                    class_name=class_name,
-                    level=level,
-                    power=power,
-                    stats_payload=stats_payload,
-                    last_fetched_at=datetime.now(),
-                    updated_at=datetime.now(),
-                    is_dummy=True
-                )
-                db.add(char)
-
-            db.commit()
-            db.refresh(char)
-
-            created_characters.append({
-                "name": char.name,
-                "server": char.server,
-                "class": char.class_name,
-                "level": char.level,
-                "power": char.power
-            })
-
-        logger.info(f"Successfully generated {len(created_characters)} dummy characters")
-
-        return {
-            "status": "success",
-            "message": f"Generated {count} dummy characters",
-            "characters": [c["name"] for c in created_characters[:10]]  # Show first 10
-        }
-    
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to generate dummy data: {e}")
-        raise HTTPException(status_code=500, detail=f"더미 데이터 생성 실패: {str(e)}")
-
-@app.delete("/api/admin/delete-dummy-data")
-def delete_dummy_data(db: Session = Depends(get_db)):
-    """
-    더미 데이터 삭제 (개발/테스트용)
-
-    is_dummy=True로 표시된 캐릭터만 삭제합니다.
-    """
-    try:
-        # 더미 데이터만 조회
-        dummy_chars = db.query(Character).filter(Character.is_dummy == True).all()
-        count = len(dummy_chars)
-
-        if count == 0:
-            return {
-                "status": "success",
-                "message": "삭제할 더미 데이터가 없습니다.",
-                "deleted_count": 0
-            }
-
-        # 더미 데이터 삭제
-        db.query(Character).filter(Character.is_dummy == True).delete()
-        db.commit()
-
-        logger.info(f"Successfully deleted {count} dummy characters")
-
-        return {
-            "status": "success",
-            "message": f"{count}개의 더미 캐릭터를 삭제했습니다.",
-            "deleted_count": count
-        }
-
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed to delete dummy data: {e}")
-        raise HTTPException(status_code=500, detail=f"더미 데이터 삭제 실패: {str(e)}")
-
-# ============================================================================
-# Development / Testing Endpoints
-# ============================================================================
-
-@app.get("/api/dev/test-fetch")
-def test_fetch_character(
-    server: str = "Siel",
-    name: str = "테스트",
-    db: Session = Depends(get_db)
-):
-    """
-    개발용 엔드포인트: 한 개의 캐릭터 데이터만 수집하여 테스트
-    
-    Args:
-        server: 서버 이름 (기본값: Siel)
-        name: 캐릭터 이름
-        
-    Returns:
-        실제 adapter를 통해 수집된 캐릭터 데이터와 메타 정보
-    """
-    logger.info(f"[DEV] Testing character fetch: {server}:{name}")
-    
-    result = {
-        "test_info": {
-            "server": server,
-            "name": name,
-            "timestamp": datetime.now().isoformat(),
-            "adapter_type": os.getenv("SOURCE_ADAPTER_TYPE", "dummy")
-        },
-        "character_data": None,
-        "error": None,
-        "db_saved": False
-    }
-    
-    try:
-        # 1. adapter로 데이터 수집
-        logger.info(f"[DEV] Calling adapter.get_character({server}, {name})")
-        character_dto = adapter.get_character(server, name)
-        
-        result["character_data"] = {
-            "name": character_dto.name,
-            "server": character_dto.server,
-            "class_name": character_dto.class_name,
-            "level": character_dto.level,
-            "power": character_dto.power,
-            "updated_at": character_dto.updated_at.isoformat(),
-            "stats_json": character_dto.stats_json if hasattr(character_dto, 'stats_json') else None,
-            "character_image_url": character_dto.character_image_url,
-            "equipment_data": character_dto.equipment_data,
-            "raw_payload": character_dto.raw_payload if hasattr(character_dto, 'raw_payload') else None,
-            "stats_payload": character_dto.stats_payload if hasattr(character_dto, 'stats_payload') else None
-        }
-        
-        logger.info(f"[DEV] ✓ Successfully fetched character: {character_dto.name}")
-        
-        # 2. DB에 저장 (선택적)
-        try:
-            char = db.query(Character).filter(
-                Character.server == server,
-                Character.name == name
-            ).first()
-            
-            if not char:
-                char = Character(server=server, name=name)
-                db.add(char)
-            
-            char.class_name = character_dto.class_name
-            char.level = character_dto.level
-            char.power = character_dto.power
-            char.updated_at = character_dto.updated_at
-            
-            # Update new fields
-            if character_dto.character_image_url:
-                char.character_image_url = character_dto.character_image_url
-            if character_dto.equipment_data:
-                char.equipment_data = character_dto.equipment_data
-            
-            # char.last_seen_at = datetime.now() # Removed: Field does not exist in model
-            
-            db.commit()
-            result["db_saved"] = True
-            logger.info(f"[DEV] ✓ Saved to database: {char.id}")
-            
-            # 스탯도 저장
-            if hasattr(character_dto, 'stats_json') and character_dto.stats_json:
-                stat = CharacterStat(
-                    character_id=char.id,
-                    stats_json=character_dto.stats_json
-                )
-                db.add(stat)
-                db.commit()
-                logger.info(f"[DEV] ✓ Saved stats to database")
-                
-        except Exception as db_error:
-            logger.warning(f"[DEV] ⚠ DB save failed: {db_error}")
-            result["db_error"] = str(db_error)
-        
-    except Exception as e:
-        result["error"] = {
-            "type": type(e).__name__,
-            "message": str(e)
-        }
-        logger.error(f"[DEV] ✗ Fetch failed: {e}", exc_info=True)
-    
-    return result
