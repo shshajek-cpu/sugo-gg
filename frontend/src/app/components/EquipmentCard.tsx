@@ -5,7 +5,9 @@ interface EquipmentCardProps {
     item?: {
         name: string
         enhancement: string  // "+15"
-        tier: number  // 5
+        tier: number
+        image?: string
+        category?: string
         soulEngraving?: {
             grade: string  // "S", "A", "B"
             percentage: number  // 98.5
@@ -58,133 +60,125 @@ export default function EquipmentCard({ slot, item }: EquipmentCardProps) {
 
     return (
         <div style={{
-            padding: '1rem',
+            padding: '0.75rem',
             background: '#1A1D29',
-            border: `2px solid ${tierColor}40`,
+            border: `1px solid ${tierColor}40`,
             borderRadius: '8px',
             position: 'relative',
             transition: 'all 0.2s',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            display: 'flex',
+            gap: '0.75rem',
+            alignItems: 'flex-start'
         }}
             className="equipment-card-hover"
         >
-            {/* Slot Label */}
+            {/* Item Image */}
             <div style={{
-                fontSize: '0.75rem',
-                color: '#9CA3AF',
-                marginBottom: '0.5rem'
+                width: '48px',
+                height: '48px',
+                background: '#0B0D12',
+                borderRadius: '6px',
+                border: `1px solid ${tierColor}60`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                overflow: 'hidden',
+                flexShrink: 0,
+                position: 'relative'
             }}>
-                {slot}
-            </div>
+                {item.image ? (
+                    <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : (
+                    <div style={{ fontSize: '0.5rem', color: '#4B5563', textAlign: 'center' }}>No IMG</div>
+                )}
 
-            {/* Enhancement Badge */}
-            <div style={{
-                position: 'absolute',
-                top: '0.5rem',
-                right: '0.5rem',
-                padding: '0.25rem 0.5rem',
-                background: enhancementColor,
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                fontWeight: 'bold',
-                color: '#0B0D12'
-            }}>
-                {item.enhancement}
-            </div>
-
-            {/* Item Name */}
-            <div style={{
-                fontSize: '0.875rem',
-                color: '#E5E7EB',
-                fontWeight: '500',
-                marginBottom: '0.5rem',
-                lineHeight: '1.2'
-            }}>
-                {item.name}
-            </div>
-
-            {/* Tier Badge */}
-            <div style={{
-                display: 'inline-block',
-                padding: '0.25rem 0.5rem',
-                background: `${tierColor}20`,
-                border: `1px solid ${tierColor}`,
-                borderRadius: '4px',
-                fontSize: '0.75rem',
-                color: tierColor,
-                marginBottom: '0.5rem'
-            }}>
-                Tier {item.tier}
-            </div>
-
-            {/* Soul Engraving */}
-            {item.soulEngraving && (
-                <div style={{
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    background: '#0B0D1220',
-                    borderRadius: '4px',
-                    borderLeft: `3px solid ${item.soulEngraving.grade === 'S' ? '#FACC15' : item.soulEngraving.grade === 'A' ? '#FBBF24' : '#94A3B8'}`
-                }}>
+                {/* Enhancement Badge (Overlay on Image) */}
+                {item.enhancement && (
                     <div style={{
-                        fontSize: '0.75rem',
+                        position: 'absolute',
+                        bottom: '0',
+                        right: '0',
+                        background: 'rgba(0,0,0,0.8)',
+                        color: enhancementColor,
+                        fontSize: '0.7rem',
+                        fontWeight: 'bold',
+                        padding: '0 2px',
+                        borderTopLeftRadius: '4px'
+                    }}>
+                        {item.enhancement}
+                    </div>
+                )}
+            </div>
+
+            {/* Info Column */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+                {/* Slot & Tier Row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>{slot}</span>
+                    <span style={{ fontSize: '0.65rem', color: tierColor, border: `1px solid ${tierColor}40`, padding: '0 4px', borderRadius: '3px' }}>
+                        T{item.tier}
+                    </span>
+                </div>
+
+                {/* Item Name */}
+                <div style={{
+                    fontSize: '0.85rem',
+                    color: '#E5E7EB',
+                    fontWeight: '600',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    marginBottom: '0.5rem'
+                }}>
+                    {item.name}
+                </div>
+
+                {/* Soul Engraving */}
+                {item.soulEngraving && (
+                    <div style={{
+                        fontSize: '0.7rem',
                         color: '#9CA3AF',
-                        marginBottom: '0.25rem'
-                    }}>
-                        소울 각인
-                    </div>
-                    <div style={{
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        gap: '4px',
+                        marginTop: '2px'
                     }}>
-                        <span style={{
-                            fontSize: '0.875rem',
-                            fontWeight: 'bold',
-                            color: item.soulEngraving.grade === 'S' ? '#FACC15' : item.soulEngraving.grade === 'A' ? '#FBBF24' : '#94A3B8'
-                        }}>
-                            {item.soulEngraving.grade} 등급
-                        </span>
-                        <span style={{
-                            fontSize: '0.75rem',
-                            color: '#E5E7EB'
-                        }}>
-                            {item.soulEngraving.percentage}%
-                        </span>
+                        <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: item.soulEngraving.grade === 'S' ? '#FACC15' : '#94A3B8' }}></span>
+                        <span>각인 {item.soulEngraving.grade} ({item.soulEngraving.percentage}%)</span>
                     </div>
-                </div>
-            )}
+                )}
 
-            {/* Manastones */}
-            {item.manastones && item.manastones.length > 0 && (
-                <div style={{
-                    marginTop: '0.5rem',
-                    display: 'flex',
-                    flexWrap: 'wrap',
-                    gap: '0.25rem'
-                }}>
-                    {item.manastones.map((stone, idx) => (
-                        <div
-                            key={idx}
-                            style={{
-                                padding: '0.25rem 0.5rem',
-                                background: '#2D374840',
-                                borderRadius: '4px',
-                                fontSize: '0.7rem',
-                                color: '#9CA3AF'
-                            }}
-                        >
-                            {stone.type} +{stone.value}
-                        </div>
-                    ))}
-                </div>
-            )}
+                {/* Manastones (Collapsed view) */}
+                {item.manastones && item.manastones.length > 0 && (
+                    <div style={{
+                        marginTop: '4px',
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '2px'
+                    }}>
+                        {item.manastones.slice(0, 3).map((stone, idx) => (
+                            <div key={idx}
+                                title={`${stone.type} +${stone.value}`}
+                                style={{
+                                    width: '6px',
+                                    height: '6px',
+                                    borderRadius: '50%',
+                                    background: stone.type.includes('공격') ? '#EF4444' : stone.type.includes('치명') ? '#F59E0B' : '#3B82F6',
+                                }} />
+                        ))}
+                        {item.manastones.length > 3 && (
+                            <span style={{ fontSize: '0.6rem', color: '#6B7280' }}>+{item.manastones.length - 3}</span>
+                        )}
+                    </div>
+                )}
+            </div>
 
             <style jsx>{`
         .equipment-card-hover:hover {
           border-color: ${tierColor};
-          box-shadow: 0 0 20px ${tierColor}40;
-          transform: translateY(-2px);
+          box-shadow: 0 0 15px ${tierColor}20;
+          transform: translateY(-1px);
         }
       `}</style>
         </div>

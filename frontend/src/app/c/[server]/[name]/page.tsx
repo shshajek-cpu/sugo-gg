@@ -63,6 +63,8 @@ const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[]
       name: item.itemName,
       enhancement: item.enchantLevel > 0 ? `+${item.enchantLevel}` : '',
       tier: item.gradeCode || 3, // Fallback tier
+      image: item.image || item.itemArt,
+      category: item.categoryName,
       soulEngraving: item.soulEngraving ? { grade: item.soulEngraving.grade, percentage: item.soulEngraving.value } : undefined,
       manastones: item.manastoneList?.map((m: any) => ({ type: m.name, value: m.point })) || []
     }
