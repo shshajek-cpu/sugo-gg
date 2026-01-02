@@ -29,12 +29,20 @@ def get_character_full_detail(character_id: int, db: Session = Depends(get_db)):
     - Stats (primary + detailed with percentiles)
     - Equipment (detailed info with soul engraving, manastones)
     - Titles (collection status)
+    - Ranking (abyss, nightmare, etc.)
+    - Pet/Wings
+    - Skills
+    - Stigma
     - Devanion (board status)
+    - Arcana
     """
     char = db.query(Character).filter(Character.id == character_id).first()
     
     if not char:
         raise HTTPException(status_code=404, detail="Character not found")
+    
+    # Safely extract stats
+    stats_payload = char.stats_payload or {}
     
     # Build profile section
     profile = {
@@ -43,30 +51,35 @@ def get_character_full_detail(character_id: int, db: Session = Depends(get_db)):
         "server": char.server,
         "class": char.class_name,
         "level": char.level,
-        "race": char.race,
-        "title": char.title,
+        "race": getattr(char, 'race', None),
+        "legion": getattr(char, 'legion', None),
         "character_image_url": char.character_image_url
     }
     
     # Build power section
     power = {
-        "combat_score": char.power_index,  # Our calculated score
-        "item_level": char.item_level,  # Official item level
-        "tier_rank": char.tier_rank,  # D1-S5
-        "percentile": char.percentile,  # Top X%
-        "server_rank": None  # TODO: Calculate actual server rank
+        "combat_score": char.power_score or char.power,
+        "item_level": 0,
+        "tier_rank": char.power_rank,  
+        "percentile": char.percentile,  
+        "server_rank": None  
     }
     
     # Build stats section
     stats = {
-        "primary": char.primary_stats or {},
-        "detailed": char.detailed_stats or {}
+        "primary": stats_payload.get("primary", {}),
+        "detailed": stats_payload.get("detailed", {})
     }
     
-    # Equipment, titles, devanion
-    equipment = char.equipment_data
-    titles = char.title_data
-    devanion = char.devanion_data
+    # All data sections from new columns
+    equipment = char.equipment_data or []
+    titles = getattr(char, 'titles_data', None) or []
+    ranking = getattr(char, 'ranking_data', None) or []
+    pet_wings = getattr(char, 'pet_wings_data', None) or []
+    skills = getattr(char, 'skills_data', None) or []
+    stigma = getattr(char, 'stigma_data', None) or []
+    devanion = getattr(char, 'devanion_data', None) or {}
+    arcana = getattr(char, 'arcana_data', None) or []
     
     return CharacterFullResponse(
         profile=profile,
@@ -74,5 +87,10 @@ def get_character_full_detail(character_id: int, db: Session = Depends(get_db)):
         stats=stats,
         equipment=equipment,
         titles=titles,
-        devanion=devanion
+        ranking=ranking,
+        pet_wings=pet_wings,
+        skills=skills,
+        stigma=stigma,
+        devanion=devanion,
+        arcana=arcana
     )

@@ -1,124 +1,124 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, root_validator
+from typing import Optional, List, Dict, Any, Union
 from datetime import datetime
-from typing import Optional, List, Dict, Any
-
-# ============================================================================
-# Character Schemas
-# ============================================================================
-
-class Character(BaseModel):
-    name: str
-    server: str
-    class_name: str = Field(alias="class")
-    level: int
-    power: int
-    updated_at: datetime
-    raw_payload: Optional[Dict[str, Any]] = None
-    stats_payload: Optional[Dict[str, Any]] = None
-
-    # 신규 필드
-    item_level: Optional[int] = None
-    race: Optional[str] = None
-    title: Optional[str] = None
-    character_image_url: Optional[str] = None
-    primary_stats: Optional[Dict[str, Any]] = None
-    detailed_stats: Optional[Dict[str, Any]] = None
-    equipment_data: Optional[List[Dict[str, Any]]] = None
-    title_data: Optional[Dict[str, Any]] = None
-    devanion_data: Optional[Dict[str, Any]] = None
-
-    class Config:
-        from_attributes = True
-
-
-class CharacterFullResponse(BaseModel):
-    """Full character detail response"""
-    profile: Dict[str, Any]
-    power: Dict[str, Any]
-    stats: Dict[str, Any]
-    equipment: Optional[List[Dict[str, Any]]] = None
-    titles: Optional[Dict[str, Any]] = None
-    devanion: Optional[Dict[str, Any]] = None
-
 
 class CharacterDTO(BaseModel):
+    id: Optional[int] = None
     server: str
-    name: str
-    class_name: str = Field(default="Unknown")
-    level: int = Field(default=1)
-    power: int = Field(default=0)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    stats_json: Optional[Dict[str, Any]] = None
+    name: str = Field(..., alias="character_name")
+    class_name: str = Field(..., alias="character_class")
+    level: int
+    power: int = Field(default=0, alias="combat_score")
+    updated_at: Optional[datetime] = None
+    
+    # Extended Data
     character_image_url: Optional[str] = None
-    equipment_data: Optional[List[Dict[str, Any]]] = None
-    raw_payload: Optional[Dict[str, Any]] = None
+    stats_json: Optional[Dict[str, Any]] = None
     stats_payload: Optional[Dict[str, Any]] = None
+    equipment_data: Optional[List[Dict[str, Any]]] = None
+    
+    # AION2 Extended Data
+    race: Optional[str] = None
+    legion: Optional[str] = None
+    titles_data: Optional[List[Dict[str, Any]]] = None
+    ranking_data: Optional[List[Dict[str, Any]]] = None
+    pet_wings_data: Optional[List[Dict[str, Any]]] = None
+    skills_data: Optional[List[Dict[str, Any]]] = None
+    stigma_data: Optional[List[Dict[str, Any]]] = None
+    devanion_data: Optional[Dict[str, Any]] = None
+    arcana_data: Optional[List[Dict[str, Any]]] = None
     
     class Config:
+        from_attributes = True
         populate_by_name = True
+        alias_generator = None  # Disable auto alias generation to use explicit aliases
+        
+    @root_validator(pre=True)
+    def normalize_aliases(cls, values):
+        # Allow 'class' as input for 'class_name'
+        if 'class' in values:
+            values['class_name'] = values.pop('class')
+        # Allow 'character_class' as input for 'class_name'
+        if 'character_class' in values:
+            values['class_name'] = values['character_class']
+            
+        # Allow 'name' as input for 'name'
+        if 'name' in values:
+            values['name'] = values['name']
+        # Allow 'character_name' as input for 'name'
+        if 'character_name' in values:
+            values['name'] = values['character_name']
+
+        return values
 
 class SearchRequest(BaseModel):
     server: str
     name: str
 
 class SearchResponse(BaseModel):
-    id: int
-    name: str
     server: str
-    class_name: str = Field(alias="class")
+    name: str
+    class_name: str
     level: int
     power: int
-    power_score: Optional[int] = None
-    power_rank: Optional[str] = None
-    percentile: Optional[float] = None
-    last_fetched_at: Optional[datetime] = None
-    last_scored_at: Optional[datetime] = None
-    stats_payload: Optional[Dict[str, Any]] = None
-    fetch_status: Optional[str] = None  # "success", "cached", "failed"
-
-    class Config:
-        populate_by_name = True
+    updated_at: datetime
+    message: Optional[str] = None
 
 class RankingItem(BaseModel):
+    rank: int
     name: str
     server: str
     class_name: str
     level: int
     power: int
-    rank: int
 
 class RankingResponse(BaseModel):
     items: List[RankingItem]
-    total: Optional[int] = 0
-    generated_at: datetime = Field(default_factory=datetime.now)
-    type: str = "realtime"
-    filter_key: str = "all"
+    generated_at: datetime
+    type: str # 'power', 'level', 'updated_at'
+    filter_key: str
+    is_realtime: bool
+    message: Optional[str] = None
 
 class CharacterStatHistory(BaseModel):
     id: int
     power: int
     level: int
     captured_at: datetime
-    stats_json: dict
+    stats_json: Dict
 
 class CharacterDetailResponse(BaseModel):
     id: int
     name: str
     server: str
-    class_name: str = Field(alias="class")
+    class_name: str
     level: int
     power: int
-    power_index: Optional[int] = None  # 사이트 고유 투력 지표
-    tier_rank: Optional[str] = None  # D1~S5 랭크
-    percentile: Optional[float] = None  # 퍼센타일 (0~100)
-    nextRankPower: Optional[int] = None  # 다음 랭크까지 필요한 투력
-    statContribution: Optional[dict] = None  # 스탯별 기여도
-    updated_at: datetime
-    stats: Optional[dict] = None
-    rank: Optional[int] = None # Added for Detail Badge (전체 순위)
+    power_index: Optional[int]
+    tier_rank: Optional[str] # S, A, B, C
+    percentile: Optional[int] # 0-100
+    nextRankPower: Optional[int]
+    statContribution: Optional[List[Dict]]
+    stats: Dict
+    rank: int
+    updated_at: Optional[datetime]
     warning: Optional[str] = None
     power_change: Optional[int] = None
     level_change: Optional[int] = None
 
-    class Config:
-        populate_by_name = True
+class CharacterFullResponse(BaseModel):
+    profile: Dict[str, Any]
+    power: Dict[str, Any]
+    stats: Dict[str, Any]
+    equipment: List[Dict[str, Any]]
+    
+    # New sections for AION2
+    titles: List[Dict[str, Any]]
+    ranking: List[Dict[str, Any]]
+    pet_wings: List[Dict[str, Any]]
+    skills: List[Dict[str, Any]]
+    stigma: List[Dict[str, Any]]
+    devanion: Dict[str, Any]
+    arcana: List[Dict[str, Any]]
+    
+    warning: Optional[str] = None
