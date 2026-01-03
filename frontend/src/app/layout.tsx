@@ -43,10 +43,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </div>
                 </header>
 
-                {/* Fixed Search Bar - Appears on ALL pages, STICKY POSITION */}
+                {/* Search Bar - Appears on ALL pages, STATIC POSITION */}
                 <div style={{
-                    position: 'sticky',
-                    top: '60px',
+                    position: 'relative',
                     zIndex: 50,
                     background: 'var(--bg-main)',
                     paddingTop: '2rem',

@@ -118,9 +118,55 @@
 
 
 .rankingTable tr:hover {
-
     background: rgba(255, 255, 255, 0.02);
+}
 
+.rankRow1 {
+    background: linear-gradient(90deg, rgba(255, 215, 0, 0.15) 0%, rgba(255, 215, 0, 0.02) 100%);
+    position: relative;
+}
+
+.rankRow1::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #FFD700;
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.rankRow2 {
+    background: linear-gradient(90deg, rgba(192, 192, 192, 0.15) 0%, rgba(192, 192, 192, 0.02) 100%);
+    position: relative;
+}
+
+.rankRow2::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #C0C0C0;
+    box-shadow: 0 0 10px rgba(192, 192, 192, 0.5);
+}
+
+.rankRow3 {
+    background: linear-gradient(90deg, rgba(205, 127, 50, 0.15) 0%, rgba(205, 127, 50, 0.02) 100%);
+    position: relative;
+}
+
+.rankRow3::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: #CD7F32;
+    box-shadow: 0 0 10px rgba(205, 127, 50, 0.5);
 }
 
 
@@ -329,13 +375,13 @@
 
     padding: 0.8rem 2rem;
 
-    borderRadius: 4px;
+    border-radius: 4px;
 
     cursor: pointer;
 
-    fontSize: 0.95rem;
+    font-size: 0.95rem;
 
-    fontWeight: 600;
+    font-weight: 600;
 
     transition: all 0.2s;
 
@@ -381,27 +427,19 @@
 
 
 
-    background: linear-gradient(
+    background: linear-gradient(90deg,
 
 
 
-        90deg,
+            rgba(255, 255, 255, 0.05) 25%,
 
 
 
-        rgba(255, 255, 255, 0.05) 25%,
+            rgba(255, 255, 255, 0.1) 50%,
 
 
 
-        rgba(255, 255, 255, 0.1) 50%,
-
-
-
-        rgba(255, 255, 255, 0.05) 75%
-
-
-
-    );
+            rgba(255, 255, 255, 0.05) 75%);
 
 
 
@@ -509,11 +547,23 @@
 
 
 
+
+
+
+
     width: 60%;
 
 
 
+
+
+
+
     height: 0.8rem;
+
+
+
+
 
 
 
@@ -522,3 +572,1543 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+/* =========================================
+
+
+
+
+
+
+
+   New Integrated Search Bar Styles
+
+
+
+
+
+
+
+   ========================================= */
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.searchContainer {
+
+
+
+
+
+
+
+    position: relative;
+
+
+
+
+
+
+
+    width: 100%;
+
+
+
+
+
+
+
+    max-width: 800px;
+
+
+
+
+
+
+
+    margin: 0 auto;
+
+
+
+
+
+
+
+    z-index: 50;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* The Main Bar */
+
+
+
+
+
+
+
+.searchBarGlass {
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    align-items: center;
+
+
+
+
+
+
+
+    background: rgba(0, 0, 0, 0.6);
+
+
+
+
+
+
+
+    backdrop-filter: blur(12px);
+
+
+
+
+
+
+
+    -webkit-backdrop-filter: blur(12px);
+
+
+
+
+
+
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+    border-radius: 16px;
+
+
+
+
+
+
+
+    padding: 8px;
+
+
+
+
+
+
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+
+
+
+
+
+
+    transition: all 0.3s ease;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.searchBarGlass:focus-within {
+
+
+
+
+
+
+
+    border-color: rgba(250, 204, 21, 0.5);
+    /* Gold glow on focus */
+
+
+
+
+
+
+
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 15px rgba(250, 204, 21, 0.1);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Server Selector Trigger Button */
+
+
+
+
+
+
+
+.serverTriggerBtn {
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    align-items: center;
+
+
+
+
+
+
+
+    gap: 8px;
+
+
+
+
+
+
+
+    padding: 12px 20px;
+
+
+
+
+
+
+
+    background: rgba(255, 255, 255, 0.05);
+
+
+
+
+
+
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+    border-radius: 12px;
+
+
+
+
+
+
+
+    color: #e5e7eb;
+
+
+
+
+
+
+
+    font-size: 15px;
+
+
+
+
+
+
+
+    font-weight: 600;
+
+
+
+
+
+
+
+    cursor: pointer;
+
+
+
+
+
+
+
+    white-space: nowrap;
+
+
+
+
+
+
+
+    transition: all 0.2s;
+
+
+
+
+
+
+
+    min-width: 140px;
+
+
+
+
+
+
+
+    justify-content: center;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverTriggerBtn:hover {
+
+
+
+
+
+
+
+    background: rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverTriggerBtn.elyos {
+
+
+
+
+
+
+
+    color: #60a5fa;
+
+
+
+
+
+
+
+    border-color: rgba(96, 165, 250, 0.3);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverTriggerBtn.asmodian {
+
+
+
+
+
+
+
+    color: #f87171;
+
+
+
+
+
+
+
+    border-color: rgba(248, 113, 113, 0.3);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Input Field */
+
+
+
+
+
+
+
+.searchInputField {
+
+
+
+
+
+
+
+    flex: 1;
+
+
+
+
+
+
+
+    background: transparent;
+
+
+
+
+
+
+
+    border: none;
+
+
+
+
+
+
+
+    color: white;
+
+
+
+
+
+
+
+    font-size: 16px;
+
+
+
+
+
+
+
+    padding: 12px 20px;
+
+
+
+
+
+
+
+    outline: none;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.searchInputField::placeholder {
+
+
+
+
+
+
+
+    color: rgba(255, 255, 255, 0.4);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Search Action Button */
+
+
+
+
+
+
+
+.searchActionBtn {
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    align-items: center;
+
+
+
+
+
+
+
+    justify-content: center;
+
+
+
+
+
+
+
+    width: 48px;
+
+
+
+
+
+
+
+    height: 48px;
+
+
+
+
+
+
+
+    background: linear-gradient(135deg, #facc15 0%, #ca8a04 100%);
+
+
+
+
+
+
+
+    color: #000;
+
+
+
+
+
+
+
+    border: none;
+
+
+
+
+
+
+
+    border-radius: 12px;
+
+
+
+
+
+
+
+    cursor: pointer;
+
+
+
+
+
+
+
+    transition: transform 0.2s, box-shadow 0.2s;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.searchActionBtn:hover {
+
+
+
+
+
+
+
+    transform: translateY(-2px);
+
+
+
+
+
+
+
+    box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Dropdown Panel */
+
+
+
+
+
+
+
+.dropdownPanel {
+
+
+
+
+
+
+
+    position: absolute;
+
+
+
+
+
+
+
+    top: calc(100% + 12px);
+
+
+
+
+
+
+
+    left: 0;
+
+
+
+
+
+
+
+    width: 100%;
+
+
+
+
+
+
+
+    background: rgba(15, 15, 20, 0.95);
+
+
+
+
+
+
+
+    backdrop-filter: blur(16px);
+
+
+
+
+
+
+
+    -webkit-backdrop-filter: blur(16px);
+
+
+
+
+
+
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+    border-radius: 16px;
+
+
+
+
+
+
+
+    padding: 20px;
+
+
+
+
+
+
+
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+
+
+
+
+
+
+
+    z-index: 100;
+
+
+
+
+
+
+
+    animation: slideDown 0.2s ease-out;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@keyframes slideDown {
+
+
+
+
+
+
+
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+
+
+
+
+
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Race Toggles */
+
+
+
+
+
+
+
+.raceToggleGroup {
+
+
+
+
+
+
+
+    display: flex;
+
+
+
+
+
+
+
+    gap: 10px;
+
+
+
+
+
+
+
+    margin-bottom: 20px;
+
+
+
+
+
+
+
+    padding-bottom: 20px;
+
+
+
+
+
+
+
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.raceBtn {
+
+
+
+
+
+
+
+    flex: 1;
+
+
+
+
+
+
+
+    padding: 12px;
+
+
+
+
+
+
+
+    border: 1px solid rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+    background: rgba(0, 0, 0, 0.3);
+
+
+
+
+
+
+
+    color: #9ca3af;
+
+
+
+
+
+
+
+    border-radius: 8px;
+
+
+
+
+
+
+
+    font-size: 15px;
+
+
+
+
+
+
+
+    font-weight: 700;
+
+
+
+
+
+
+
+    cursor: pointer;
+
+
+
+
+
+
+
+    transition: all 0.2s;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.raceBtn:hover {
+
+
+
+
+
+
+
+    background: rgba(255, 255, 255, 0.05);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.raceBtn.activeElyos {
+
+
+
+
+
+
+
+    background: rgba(59, 130, 246, 0.15);
+
+
+
+
+
+
+
+    border-color: #3b82f6;
+
+
+
+
+
+
+
+    color: #60a5fa;
+
+
+
+
+
+
+
+    box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.raceBtn.activeAsmodian {
+
+
+
+
+
+
+
+    background: rgba(239, 68, 68, 0.15);
+
+
+
+
+
+
+
+    border-color: #ef4444;
+
+
+
+
+
+
+
+    color: #f87171;
+
+
+
+
+
+
+
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.2);
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* Server Grid */
+
+
+
+
+
+
+
+.serverGrid {
+
+
+
+
+
+
+
+    display: grid;
+
+
+
+
+
+
+
+    grid-template-columns: repeat(6, 1fr);
+    /* 6 Columns as requested */
+
+
+
+
+
+
+
+    gap: 8px;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverItem {
+
+
+
+
+
+
+
+    padding: 10px 4px;
+
+
+
+
+
+
+
+    background: rgba(255, 255, 255, 0.03);
+
+
+
+
+
+
+
+    border: 1px solid transparent;
+
+
+
+
+
+
+
+    border-radius: 6px;
+
+
+
+
+
+
+
+    color: #d1d5db;
+
+
+
+
+
+
+
+    font-size: 14px;
+
+
+
+
+
+
+
+    text-align: center;
+
+
+
+
+
+
+
+    cursor: pointer;
+
+
+
+
+
+
+
+    transition: all 0.2s;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverItem:hover {
+
+
+
+
+
+
+
+    background: rgba(255, 255, 255, 0.1);
+
+
+
+
+
+
+
+    color: white;
+
+
+
+
+
+
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.serverItem.selected {
+
+
+
+
+
+
+
+    background: rgba(250, 204, 21, 0.1);
+
+
+
+
+
+
+
+    border-color: rgba(250, 204, 21, 0.5);
+
+
+
+
+
+
+
+    color: #facc15;
+
+
+
+
+
+
+
+    font-weight: bold;
+
+
+
+
+
+
+
+}

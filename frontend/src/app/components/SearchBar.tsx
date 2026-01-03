@@ -2,11 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search } from 'lucide-react'
+import { Search, ChevronDown, Check } from 'lucide-react'
 import SearchAutocomplete from './SearchAutocomplete'
 import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID } from '../../lib/supabaseApi'
+import styles from './ranking/Ranking.module.css'
 
-// Define servers (Reused from page.tsx logic, ideally centralize this)
+// Define servers
 const ELYOS_SERVERS = [
     '시엘', '네자칸', '바이젤', '카이시넬', '유스티엘', '아리엘', '프레기온',
     '메스람타에다', '히타니에', '나니아', '타하바타', '루터스', '페르노스',
@@ -23,73 +24,136 @@ export default function SearchBar() {
     const router = useRouter()
 
     // Search State
-    const [race, setRace] = useState('elyos')
+    const [race, setRace] = useState<'elyos' | 'asmodian'>('elyos')
     const [server, setServer] = useState('')
     const [name, setName] = useState('')
-    const [loading, setLoading] = useState(false) // For main search button submission
+    const [loading, setLoading] = useState(false)
     const [error, setError] = useState('')
 
+    // UI State
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+    
     // Autocomplete State
     const [showResults, setShowResults] = useState(false)
     const [results, setResults] = useState<CharacterSearchResult[]>([])
-    const [isSearching, setIsSearching] = useState(false) // For autocomplete loading indicator
+    const [isSearching, setIsSearching] = useState(false)
 
     const wrapperRef = useRef<HTMLDivElement>(null)
+    const dropdownRef = useRef<HTMLDivElement>(null)
+
+    const suppressResultsRef = useRef(false)
+
+    const pendingSyncRef = useRef<Map<string, CharacterSearchResult>>(new Map())
+
+    const normalizeNameForKey = (value: string) => value.replace(/<\/?[^>]+(>|$)/g, '').trim().toLowerCase()
+    const buildSyncKey = (value: CharacterSearchResult) => {
+        if (value.characterId) return `id:${value.characterId}`
+        const serverKey = value.server_id ?? value.server
+        return `sv:${serverKey}|name:${normalizeNameForKey(value.name)}`
+    }
+
+    const enqueueSync = (items: CharacterSearchResult[]) => {
+        items.forEach(item => {
+            pendingSyncRef.current.set(buildSyncKey(item), item)
+        })
+    }
+
+    const flushPendingSync = () => {
+        const pending = Array.from(pendingSyncRef.current.values())
+        if (pending.length === 0) return
+        pendingSyncRef.current.clear()
+        supabaseApi.syncCharacters(pending)
+    }
+
+    useEffect(() => {
+        const intervalId = setInterval(() => {
+            flushPendingSync()
+        }, 10000)
+
+        return () => {
+            clearInterval(intervalId)
+            flushPendingSync()
+        }
+    }, [])
 
     // Debounce Logic
     useEffect(() => {
         const timer = setTimeout(() => {
+            if (suppressResultsRef.current) {
+                setResults([])
+                setShowResults(false)
+                return
+            }
             if (name.trim().length >= 1) {
                 performHybridSearch(name)
             } else {
                 setResults([])
                 setShowResults(false)
             }
-        }, 300) // 300ms debounce
-
+        }, 300)
         return () => clearTimeout(timer)
-    }, [name, race, server]) // Re-run if any constraint changes, though mainly name
+    }, [name, race, server])
 
-    // Outside Click Handler to close dropdown
+    // Outside Click Handler
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
                 setShowResults(false)
+                // Don't close server dropdown here if user clicked inside it
+            }
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) && 
+                wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false)
             }
         }
         document.addEventListener("mousedown", handleClickOutside)
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [])
 
-    // Dynamic Server List
+    // Dynamic Server List based on Race
     const currentServerList = race === 'elyos' ? ELYOS_SERVERS : ASMODIAN_SERVERS
 
-    // Auto-select first server when race changes
-    useEffect(() => {
-        if (server && !currentServerList.includes(server)) {
-            setServer(currentServerList[0] || '')
-        } else if (!server && currentServerList.length > 0) {
-            setServer(currentServerList[0])
-        }
-    }, [race, server, currentServerList])
+    const effectiveRace = server ? race : undefined
+
+    // Auto-select first server logic (Optional: Can keep empty to force selection)
+    // Removed auto-select to let user choose explicitly or default to empty
 
     const performHybridSearch = async (searchTerm: string) => {
         setIsSearching(true)
         setShowResults(true)
         setResults([])
 
-        // Resolve Server ID if selected
         const serverId = server ? SERVER_NAME_TO_ID[server] : undefined
-        // Race is already stored as 'elyos'/'asmodian' string in state
+        const raceFilter = effectiveRace
+        
+        const normalizeName = (value: string) => value.replace(/<\/?[^>]+(>|$)/g, '').trim().toLowerCase()
+        const buildKey = (value: CharacterSearchResult) => {
+            if (value.characterId) return `id:${value.characterId}`
+            const serverKey = value.server_id ?? value.server
+            return `sv:${serverKey}|name:${normalizeName(value.name)}`
+        }
 
-        // Helper to update results with deduplication
         const updateResults = (newResults: CharacterSearchResult[]) => {
             setResults(prev => {
                 const combined = [...prev]
-                const seen = new Set(prev.map(p => `${p.server}_${p.name}`))
+                const seen = new Set(prev.map(p => buildKey(p)))
 
-                newResults.forEach(r => {
-                    const key = `${r.server}_${r.name}`
+                const filtered = newResults.filter(r => {
+                    if (serverId && r.server_id !== serverId) return false
+                    if (raceFilter) {
+                        const rRace = r.race.toLowerCase()
+                        const selectedRace = raceFilter.toLowerCase()
+                        const isElyos = rRace === 'elyos' || rRace === '천족'
+                        const isAsmodian = rRace === 'asmodian' || rRace === '마족'
+                        if (selectedRace === 'elyos' && !isElyos) return false
+                        if (selectedRace === 'asmodian' && !isAsmodian) return false
+                    }
+                    return true
+                })
+
+                enqueueSync(filtered)
+                filtered.forEach(r => {
+                    const key = buildKey(r)
                     if (!seen.has(key)) {
                         combined.push(r)
                         seen.add(key)
@@ -99,181 +163,210 @@ export default function SearchBar() {
             })
         }
 
-        // Trigger Local Search with filters
-        supabaseApi.searchLocalCharacter(searchTerm, serverId, race)
+        supabaseApi.searchLocalCharacter(searchTerm, serverId, raceFilter)
             .then(res => updateResults(res))
             .catch(e => console.error("Local search err", e))
 
-        // Trigger Live Search with filters
-        supabaseApi.searchCharacter(searchTerm, serverId, race, 1)
+        supabaseApi.searchCharacter(searchTerm, serverId, raceFilter, 1)
             .then(res => {
                 updateResults(res)
-                // Background Sync: Save new live results to local DB
-                if (res.length > 0) {
-                    supabaseApi.syncCharacters(res)
-                }
             })
             .catch(e => console.error("Live search err", e))
-            .finally(() => setIsSearching(false)) // Stop spinner when Live finishes (longest)
+            .finally(() => setIsSearching(false))
     }
 
-    const handleSearch = (e: React.FormEvent) => {
+    const handleSearch = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!validateSearch()) return
-
-        executeSearch(server, name, race)
-    }
-
-    const validateSearch = () => {
-        setError('')
+        suppressResultsRef.current = true
+        setResults([])
+        setShowResults(false)
+        setIsDropdownOpen(false)
         if (!name.trim()) {
             setError('캐릭터명을 입력해주세요')
-            return false
+            return
         }
-        if (!server) {
-            setError('서버를 선택해주세요')
-            return false
-        }
-        return true
-    }
 
-    const executeSearch = (srv: string, charName: string, raceVal: string) => {
+        // If server is selected, proceed as usual
+        if (server) {
+            setError('')
+            setLoading(true)
+            const query = race ? `?race=${race}` : ''
+            setShowResults(false)
+            flushPendingSync()
+            router.push(`/c/${server}/${name}${query}`)
+            setLoading(false)
+            return
+        }
+
+        // If no server is selected (All Servers search)
+        
+        // 1. Check if we have results from the autocomplete
+        if (results.length > 0) {
+            const exactMatch = results.find(r => r.name === name) || results[0]
+            setLoading(true)
+            handleResultSelect(exactMatch)
+            return
+        }
+
+        // 2. No results locally yet? Perform explicit global search
         setLoading(true)
-        const query = raceVal ? `?race=${raceVal}` : ''
-        setShowResults(false)
-        router.push(`/c/${srv}/${charName}${query}`)
-        setLoading(false)
+        setError('')
+        
+        try {
+            // Search globally (server=undefined)
+            const searchResults = await supabaseApi.searchCharacter(name, undefined, effectiveRace, 1)
+            
+            if (searchResults && searchResults.length > 0) {
+                 if (searchResults.length === 1) {
+                     // Single match -> Auto Navigate
+                     handleResultSelect(searchResults[0])
+                 } else {
+                     // Multiple matches -> Show results for user selection
+                     setResults(searchResults)
+                     setShowResults(true)
+                     setLoading(false)
+                     // Sync just in case
+                     enqueueSync(searchResults)
+                 }
+            } else {
+                setError('검색 결과가 없습니다.')
+                setLoading(false)
+            }
+        } catch (e) {
+            console.error("Global search error", e)
+            setError('검색 중 오류가 발생했습니다.')
+            setLoading(false)
+        }
     }
 
     const handleResultSelect = (char: CharacterSearchResult) => {
-        // Populate fields and search
+        suppressResultsRef.current = true
+        setResults([])
+        setShowResults(false)
+        setIsDropdownOpen(false)
+        flushPendingSync()
+        supabaseApi.syncCharacters([char])
         setServer(char.server)
-
-        // Infer race from character data if possible
-        let raceVal = race
+        let raceVal: 'elyos' | 'asmodian' = race
         if (char.race === 'Elyos' || char.race === '천족') raceVal = 'elyos'
         if (char.race === 'Asmodian' || char.race === '마족') raceVal = 'asmodian'
         setRace(raceVal)
-
         setName(char.name)
-        executeSearch(char.server, char.name, raceVal)
+        
+        const query = raceVal ? `?race=${raceVal}` : ''
+        setShowResults(false)
+        router.push(`/c/${char.server}/${char.name}${query}`)
     }
 
+    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
+
+    const selectRace = (selectedRace: 'elyos' | 'asmodian') => {
+        setRace(selectedRace)
+        // Reset server if it doesn't exist in the new race list
+        const newServerList = selectedRace === 'elyos' ? ELYOS_SERVERS : ASMODIAN_SERVERS
+        if (server && !newServerList.includes(server)) {
+            setServer('') 
+        }
+    }
+
+    const selectServer = (selectedServer: string) => {
+        setServer(selectedServer)
+        setIsDropdownOpen(false)
+        setError('')
+    }
+
+    // Determine Trigger Button Class
+    const triggerClass = `${styles.serverTriggerBtn} ${server ? (race === 'elyos' ? styles.elyos : styles.asmodian) : ''}`
+    
+    // Display Text
+    const triggerText = server 
+        ? `${race === 'elyos' ? '천족' : '마족'} | ${server}`
+        : '전체 서버'
+
     return (
-        <section ref={wrapperRef} style={{ maxWidth: '750px', margin: '0 auto', position: 'relative' }}>
-            {/* Search Form Container */}
-            <form
-                onSubmit={handleSearch}
-                style={{
-                    display: 'flex',
-                    width: '100%',
-                    gap: '0.5rem',
-                    background: 'var(--bg-secondary)',
-                    backgroundColor: '#1f2937',
-                    padding: '0.5rem',
-                    borderRadius: '8px',
-                    border: '1px solid #374151',
-                    position: 'relative',
-                    zIndex: 20
-                }}
-            >
-                <select
-                    className="input"
-                    value={server}
-                    onChange={(e) => setServer(e.target.value)}
-                    style={{
-                        width: '120px',
-                        background: 'transparent',
-                        color: 'white',
-                        border: 'none',
-                        borderRight: '1px solid #374151',
-                        borderRadius: 0,
-                        cursor: 'pointer',
-                        outline: 'none',
-                        padding: '0.5rem'
-                    }}
+        <div className={styles.searchContainer} ref={wrapperRef}>
+            <form onSubmit={handleSearch} className={styles.searchBarGlass}>
+                {/* Integrated Selector Trigger */}
+                <button 
+                    type="button" 
+                    className={triggerClass}
+                    onClick={toggleDropdown}
                 >
-                    <option value="" style={{ color: 'black' }}>서버 선택</option>
-                    {currentServerList.map(s => (
-                        <option key={s} value={s} style={{ color: 'black' }}>
-                            {s}
-                        </option>
-                    ))}
-                </select>
+                    {triggerText}
+                    <ChevronDown size={16} style={{ opacity: 0.7 }} />
+                </button>
 
-                <select
-                    className="input"
-                    value={race}
-                    onChange={(e) => setRace(e.target.value)}
-                    style={{
-                        width: '100px',
-                        background: 'transparent',
-                        color: 'white',
-                        border: 'none',
-                        borderRight: '1px solid #374151',
-                        borderRadius: 0,
-                        cursor: 'pointer',
-                        outline: 'none',
-                        padding: '0.5rem'
-                    }}
-                >
-                    <option value="" style={{ color: 'black' }}>전체 종족</option>
-                    <option value="elyos" style={{ color: 'black' }}>천족</option>
-                    <option value="asmodian" style={{ color: 'black' }}>마족</option>
-                </select>
-
+                {/* Input Field */}
                 <input
                     type="text"
                     placeholder="캐릭터명을 입력하세요"
                     value={name}
-                    onChange={(e) => setName(e.target.value)}
+                    onChange={(e) => {
+                        suppressResultsRef.current = false
+                        setName(e.target.value)
+                    }}
                     onFocus={() => {
-                        if (name.length >= 1) setShowResults(true)
+                        if (!suppressResultsRef.current && name.length >= 1) setShowResults(true)
                     }}
-                    style={{
-                        flex: 1,
-                        border: 'none',
-                        background: 'transparent',
-                        fontSize: '1rem',
-                        color: 'white',
-                        outline: 'none',
-                        padding: '0 0.5rem'
-                    }}
+                    className={styles.searchInputField}
                 />
 
-                <button
-                    type="submit"
-                    disabled={loading}
-                    style={{
-                        padding: '0 2rem',
-                        background: '#eab308', /* Yellow-500 */
-                        color: 'black',
-                        fontWeight: 'bold',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = '#ca8a04'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = '#eab308'}
-                >
-                    {loading ? '검색 중...' : '검색'}
+                {/* Search Action Button */}
+                <button type="submit" disabled={loading} className={styles.searchActionBtn}>
+                    <Search size={20} strokeWidth={2.5} />
                 </button>
             </form>
 
             {/* Error Message */}
             {error && (
                 <div style={{
-                    marginTop: '1rem',
-                    padding: '0.75rem',
-                    background: 'rgba(239, 68, 68, 0.1)',
-                    border: '1px solid rgba(239, 68, 68, 0.3)',
-                    borderRadius: '6px',
-                    color: '#ef4444',
-                    fontSize: '0.9rem',
-                    textAlign: 'center'
+                    position: 'absolute',
+                    top: '-40px',
+                    left: '0',
+                    background: 'rgba(239, 68, 68, 0.9)',
+                    color: 'white',
+                    padding: '4px 12px',
+                    borderRadius: '4px',
+                    fontSize: '0.85rem',
+                    backdropFilter: 'blur(4px)'
                 }}>
                     {error}
+                </div>
+            )}
+
+            {/* Integrated Dropdown Panel */}
+            {isDropdownOpen && (
+                <div className={styles.dropdownPanel} ref={dropdownRef}>
+                    {/* Race Toggles */}
+                    <div className={styles.raceToggleGroup}>
+                        <button
+                            type="button"
+                            className={`${styles.raceBtn} ${race === 'elyos' ? styles.activeElyos : ''}`}
+                            onClick={() => selectRace('elyos')}
+                        >
+                            천족 (Elyos)
+                        </button>
+                        <button
+                            type="button"
+                            className={`${styles.raceBtn} ${race === 'asmodian' ? styles.activeAsmodian : ''}`}
+                            onClick={() => selectRace('asmodian')}
+                        >
+                            마족 (Asmodian)
+                        </button>
+                    </div>
+
+                    {/* Server Grid */}
+                    <div className={styles.serverGrid}>
+                        {currentServerList.map(srv => (
+                            <div
+                                key={srv}
+                                className={`${styles.serverItem} ${server === srv ? styles.selected : ''}`}
+                                onClick={() => selectServer(srv)}
+                            >
+                                {srv}
+                            </div>
+                        ))}
+                    </div>
                 </div>
             )}
 
@@ -284,6 +377,6 @@ export default function SearchBar() {
                 isLoading={isSearching}
                 onSelect={handleResultSelect}
             />
-        </section>
+        </div>
     )
 }

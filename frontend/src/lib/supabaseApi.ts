@@ -88,14 +88,36 @@ export const supabaseApi = {
         let allResults: CharacterSearchResult[] = []
 
         if (data && Array.isArray(data.list)) {
+            const resolveRace = (raceValue: any, raceName?: string) => {
+                if (typeof raceName === 'string') {
+                    if (raceName.includes('천족') || raceName.toLowerCase().includes('elyos')) return 'Elyos'
+                    if (raceName.includes('마족') || raceName.toLowerCase().includes('asmodian')) return 'Asmodian'
+                }
+
+                if (typeof raceValue === 'number') {
+                    if (raceValue === 2) return 'Asmodian'
+                    if (raceValue === 0 || raceValue === 1) return 'Elyos'
+                }
+
+                if (typeof raceValue === 'string') {
+                    const normalized = raceValue.toLowerCase()
+                    if (normalized === 'elyos' || normalized === '천족' || normalized === '1' || normalized === '0') return 'Elyos'
+                    if (normalized === 'asmodian' || normalized === '마족' || normalized === '2') return 'Asmodian'
+                }
+
+                return 'Asmodian'
+            }
+
+            const stripTags = (value: string) => value.replace(/<\/?[^>]+(>|$)/g, '')
+
             allResults = data.list.map((item: any) => ({
                 characterId: item.characterId,
-                name: item.name,
+                name: typeof item.name === 'string' ? stripTags(item.name) : item.name,
                 server: item.serverName,
                 server_id: item.serverId,
                 job: 'Unknown',
                 level: item.level,
-                race: item.race === 0 ? 'Elyos' : 'Asmodian',
+                race: resolveRace(item.race, item.raceName),
                 imageUrl: item.profileImageUrl ? (item.profileImageUrl.startsWith('http') ? item.profileImageUrl : `https://profileimg.plaync.com${item.profileImageUrl}`) : undefined,
                 raw: item
             }))

@@ -5,6 +5,8 @@ import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import Image from 'next/image'
 
+const normalizeName = (value: string) => value.replace(/<\/?[^>]+(>|$)/g, '').trim()
+
 // Avatar Component to handle image errors independently
 const CharacterAvatar = ({ char }: { char: CharacterSearchResult }) => {
     const [imgError, setImgError] = useState(false)
@@ -126,7 +128,7 @@ export default function SearchAutocomplete({ results, isVisible, isLoading, onSe
 
                     return (
                         <div
-                            key={`${char.server}_${char.name}`}
+                            key={char.characterId ? `id:${char.characterId}` : `sv:${char.server}|name:${normalizeName(char.name)}`}
                             onClick={() => onSelect(char)}
                             className="group cursor-pointer transition-all duration-200"
                             style={{

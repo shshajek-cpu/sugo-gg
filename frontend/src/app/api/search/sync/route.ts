@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
         // We use 'character_id' as the unique key to detect conflicts
         const { error } = await supabase
             .from('characters')
-            .upsert(rowsToUpsert, { 
+            .upsert(rowsToUpsert, {
                 onConflict: 'character_id',
-                ignoreDuplicates: false // We want to update if it exists
+                ignoreDuplicates: true // Skip existing rows
             })
 
         if (error) {
@@ -58,10 +58,10 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
-        return NextResponse.json({ 
-            success: true, 
+        return NextResponse.json({
+            success: true,
             count: rowsToUpsert.length,
-            message: `Synced ${rowsToUpsert.length} characters` 
+            message: `Synced ${rowsToUpsert.length} characters`
         })
 
     } catch (err: any) {

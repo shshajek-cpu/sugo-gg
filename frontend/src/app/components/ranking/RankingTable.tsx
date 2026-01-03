@@ -162,7 +162,15 @@ export default function RankingTable({ type }: RankingTableProps) {
                     </thead>
                     <tbody>
                         {data.map((char, idx) => (
-                            <tr key={`${char.character_id}_${idx}`}>
+                            <tr
+                                key={`${char.character_id}_${idx}`}
+                                className={
+                                    idx === 0 ? styles.rankRow1 :
+                                        idx === 1 ? styles.rankRow2 :
+                                            idx === 2 ? styles.rankRow3 :
+                                                undefined
+                                }
+                            >
                                 <td style={{ textAlign: 'center' }}>
                                     <div className={styles.rankCell}>
                                         {getRankIcon(idx)}

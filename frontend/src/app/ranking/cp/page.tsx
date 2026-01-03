@@ -1,5 +1,12 @@
 import RankingTable from '../../components/ranking/RankingTable'
+import { Suspense } from 'react'
+
+export const dynamic = 'force-dynamic'
 
 export default function CpRankingPage() {
-    return <RankingTable type="cp" />
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <RankingTable type="cp" />
+        </Suspense>
+    )
 }
