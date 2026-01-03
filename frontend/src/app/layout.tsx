@@ -1,7 +1,5 @@
 import './globals.css'
 import Link from 'next/link'
-import FloatingAPILoader from './components/FloatingAPILoader'
-import FloatingDummyDataGenerator from './components/FloatingDummyDataGenerator'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
@@ -34,14 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             NO<span style={{ color: '#facc15' }}>A</span>
                         </Link>
 
-                        {/* Main Nav */}
+                        {/* Main Nav - Only active pages */}
                         <nav className="nav" style={{ marginBottom: 0 }}>
                             <Link href="/">홈</Link>
-                            <Link href="/ranking">랭킹</Link>
-                            <Link href="/tiers">티어</Link>
-                            <Link href="/stats">통계</Link>
-                            <Link href="/servers">서버</Link>
-                            <Link href="/compare">비교</Link>
+                            {/* Other pages temporarily disabled */}
                         </nav>
                     </div>
                 </header>
@@ -49,9 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div className="container">
                     {children}
                 </div>
-
-                <FloatingAPILoader />
-                <FloatingDummyDataGenerator />
             </body>
         </html>
     )

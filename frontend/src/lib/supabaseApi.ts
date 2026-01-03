@@ -48,6 +48,8 @@ export interface CharacterDetail {
     titles: any
     rankings: any
     daevanion: any
+    pet_wing: any
+    skills: any
     created_at: string
     updated_at: string
 }
@@ -91,7 +93,7 @@ export const supabaseApi = {
                 job: 'Unknown',
                 level: item.level,
                 race: item.race === 0 ? 'Elyos' : 'Asmodian',
-                imageUrl: item.profileImageUrl ? (item.profileImageUrl.startsWith('http') ? item.profileImageUrl : `https://aion2.plaync.com${item.profileImageUrl}`) : undefined,
+                imageUrl: item.profileImageUrl ? (item.profileImageUrl.startsWith('http') ? item.profileImageUrl : `https://profileimg.plaync.com${item.profileImageUrl}`) : undefined,
                 raw: item
             }))
         }
@@ -137,7 +139,7 @@ export const supabaseApi = {
                 job: item.class_name,
                 level: item.level,
                 race: item.race_name,
-                imageUrl: item.profile_image ? (item.profile_image.startsWith('http') ? item.profile_image : `https://aion2.plaync.com${item.profile_image}`) : undefined,
+                imageUrl: item.profile_image ? (item.profile_image.startsWith('http') ? item.profile_image : `https://profileimg.plaync.com${item.profile_image}`) : undefined,
                 raw: item
             }))
         } catch (e) {

@@ -22,7 +22,7 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
         '장화'
     ]
 
-    // Accessory slots
+    // Accessory slots (including runes)
     const accessorySlots = [
         '귀걸이1',
         '귀걸이2',
@@ -48,7 +48,6 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
                 <h3 style={{
                     color: '#E5E7EB',
                     fontSize: '0.9rem',
-                    marginBottom: '0.5rem',
                     fontWeight: 'bold',
                     margin: 0,
                     marginBottom: '0.5rem'
@@ -74,7 +73,6 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
                 <h3 style={{
                     color: '#E5E7EB',
                     fontSize: '0.9rem',
-                    marginBottom: '0.5rem',
                     fontWeight: 'bold',
                     margin: 0,
                     marginBottom: '0.5rem'

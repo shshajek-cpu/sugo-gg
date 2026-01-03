@@ -1,323 +1,174 @@
-# AION2 Tool - Character Ranking & Analytics
+# AION2 Tool - Character Search & Ranking
 
-This project is a character search and ranking accumulation tool for AION2.
+아이온2 캐릭터 검색 및 랭킹 서비스
 
-## Technology Stack
-- **Backend**: FastAPI (Python), SQLAlchemy, PostgreSQL
-- **Frontend**: Next.js (App Router), Vanilla CSS
-- **Cache/Task**: Redis, Celery
-- **Infrastructure**: Docker Compose
+## 기술 스택
+- **Frontend**: Next.js 14 (App Router), TypeScript, Vanilla CSS
+- **Backend**: Supabase Edge Functions (Deno)
+- **Database**: Supabase PostgreSQL
+- **Deployment**: Netlify (Frontend), Supabase (Backend)
 
-## Prerequisites
-- Docker & Docker Compose
+## 주요 기능
+- 🔍 **캐릭터 검색**: 실시간 + 로컬 DB 하이브리드 검색
+- 📊 **캐릭터 상세**: 장비, 스탯, 칭호, 데바니온 보드 등 모든 정보
+- 🏆 **랭킹 시스템**: 서버별/클래스별 랭킹
+- ⚡ **자동 캐싱**: 5분 TTL로 자동 갱신
+- 🎨 **프리미엄 UI**: 다크 테마 기반 고품질 디자인
 
-## Quick Start
-1. Run the entire stack:
-   ```bash
-   docker-compose up -d --build
-   ```
-2. Open your browser:
-   - **Frontend**: [http://localhost:3000](http://localhost:3000)
-   - **API Docs (Swagger)**: [http://localhost:8000/docs](http://localhost:8000/docs)
-   - **Health Check**: [http://localhost:8000/health](http://localhost:8000/health)
+## 개발 환경 설정
 
-## Project Structure
-- `backend/`: FastAPI application and Celery worker logic.
-- `frontend/`: Next.js web application.
-- `docker-compose.yml`: Infrastructure orchestration.
-- `API_SPEC.md`: Detailed API specification and response schemas.
+### 필수 요구사항
+- Node.js 18+
+- Supabase CLI
+- Git
 
-## Features
-- **Character Search**: Automatically updates the local database when a character is searched.
-- **Character History Tracking** ⭐ *NEW*: Tracks power and level changes over time.
-  - View stat progression with `/api/characters/{id}/history`
-  - Shows `+/-` indicators on character detail page
-- **Ranking System**: Background snapshots are generated every 5 minutes.
-  - Displays last update time (`generated_at`)
-  - Shows disclaimer about search-based rankings
-- **Fallback System**:
-  - External source failure → DB fallback
-  - No DB data → Dummy data generation (prevents service interruption)
-- **Toss Blue Theme**: Premium UI design with Toss Blue highlights.
-
-## New API Endpoints
-
-### Character History API
+### 1. 저장소 클론
 ```bash
-# Get character stat history (latest 10 records)
-curl "http://localhost:8000/api/characters/1/history?limit=10"
+git clone <repository-url>
+cd aion
 ```
 
-### Enhanced Search Response
-The search API now returns `power_change` and `level_change` fields:
-```json
-{
-  "id": 1,
-  "name": "TestChar",
-  "power": 443850,
-  "power_change": 267524,  // ← NEW: Change since last search
-  "level_change": -15,     // ← NEW: Change since last search
-  ...
-}
-```
-
-## Testing
-
-### E2E Test Scenarios
-Run these commands to verify all features:
-
+### 2. Supabase 초기화
 ```bash
-# 1. First search (no changes)
-curl "http://localhost:8000/api/characters/search?server=TEST&name=HELLO1"
-# Expected: power_change = null, level_change = null
+# Supabase 프로젝트 연결
+cd supabase
+supabase link --project-ref <your-project-ref>
 
-# 2. Second search (with changes)
-curl "http://localhost:8000/api/characters/search?server=TEST&name=HELLO1"
-# Expected: power_change and level_change calculated
+# 로컬 Supabase 시작
+supabase start
 
-# 3. Check history accumulation
-curl "http://localhost:8000/api/characters/1/history?limit=5"
-# Expected: 2+ history records in descending order by captured_at
-
-# 4. Check rankings with generated_at
-curl "http://localhost:8000/api/rankings"
-# Expected: response includes "generated_at" field
+# Edge Functions 배포 (로컬 테스트용)
+supabase functions serve
 ```
 
-### External Failure Simulation
-The system gracefully handles external source failures:
-- DB fallback: Returns last known data with warning
-- Dummy fallback: Generates data when no DB record exists
-
-## API Documentation
-See [API_SPEC.md](./API_SPEC.md) for detailed API specifications, including:
-- Request/response schemas
-- New fields and their meanings
-- Fallback behavior
-- Error handling
-
-## Deployment
+### 3. 프론트엔드 실행
 ```bash
-# Production deployment
-docker-compose up -d --build
-
-# View logs
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Stop all services
-docker-compose down
+cd frontend
+npm install
+npm run dev
 ```
 
-## Quality Gate & Testing
+프론트엔드는 http://localhost:3000 에서 실행됩니다.
 
-### Running Tests Locally
+## 프로젝트 구조
+```
+aion/
+├── frontend/              # Next.js 앱
+│   ├── src/
+│   │   ├── app/          # App Router 페이지
+│   │   ├── components/   # React 컴포넌트
+│   │   ├── lib/          # Supabase 클라이언트
+│   │   └── types/        # TypeScript 타입
+│   └── package.json
+│
+├── supabase/             # Supabase 백엔드
+│   ├── functions/        # Edge Functions
+│   │   ├── get-character/
+│   │   ├── search-character/
+│   │   ├── search-local-character/
+│   │   └── refresh-character/
+│   └── migrations/       # DB 마이그레이션
+│
+└── README.md
+```
 
-The project includes comprehensive quality gates with unit tests and E2E checks.
+## 환경 변수
 
-#### Quick Start (Using Make)
+### Frontend (.env.local)
 ```bash
-# Run all tests
-make test
-
-# Run only backend tests
-make test-backend
-
-# Run only frontend E2E checks
-make test-frontend
-
-# Run linters
-make lint
-
-# Full CI pipeline (build + test)
-make ci
+NEXT_PUBLIC_SUPABASE_URL=<your-supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<your-anon-key>
 ```
 
-#### Manual Testing
+### Supabase Functions
+Supabase 대시보드에서 설정:
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
 
-**Backend Unit Tests (9 tests)**
+## 배포
+
+### Frontend (Netlify)
 ```bash
-# Run all backend tests with coverage
-docker-compose run --rm backend pytest -v --cov=app --cov-report=term-missing
-
-# Run specific test
-docker-compose run --rm backend pytest tests/test_api.py::TestCharacterSearch::test_search_character_success -v
+cd frontend
+npm run build
+# Netlify에 연결하여 자동 배포
 ```
 
-**Frontend E2E Checks**
+### Backend (Supabase)
 ```bash
-# Ensure services are running first
-docker-compose up -d
-
-# Run E2E checks
-cd frontend && npm run test:e2e
+cd supabase
+# 모든 함수 배포
+supabase functions deploy get-character
+supabase functions deploy search-character
+supabase functions deploy search-local-character
+supabase functions deploy refresh-character
 ```
 
-**Linting**
+## API 엔드포인트
+
+### Character APIs
+- `GET /functions/v1/get-character` - 캐릭터 상세 정보
+- `GET /functions/v1/search-character` - 외부 API 캐릭터 검색
+- `GET /functions/v1/search-local-character` - 로컬 DB 캐릭터 검색
+- `POST /functions/v1/refresh-character` - 캐릭터 데이터 강제 새로고침
+
+## 개발 가이드
+
+### Edge Function 작성
+```typescript
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+serve(async (req) => {
+  // CORS 처리
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
+  // 로직 구현
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL'),
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  )
+
+  // ...
+})
+```
+
+### 로컬 테스트
 ```bash
-# Backend linting
-docker-compose run --rm backend flake8 app --max-line-length=120
+# Supabase 로컬 환경
+supabase start
+
+# Edge Function 실행
+supabase functions serve --env-file ./supabase/.env.local
+
+# 함수 테스트
+curl http://localhost:54321/functions/v1/get-character
 ```
 
-### Test Coverage
+## 문제 해결
 
-**Backend Tests (9 tests)**
-1. ✅ Character search - normal case
-2. ✅ Character search - detect changes (2nd search)
-3. ✅ External failure → DB fallback
-4. ✅ External failure + No DB → Dummy fallback
-5. ✅ History accumulation and sorting
-6. ✅ Rankings from DB (no snapshot)
-7. ✅ Rankings with snapshot
-8. ✅ Rankings with filters
-9. ✅ Popular keywords
-
-**Frontend E2E Checks (4 checks)**
-1. ✅ Backend health check
-2. ✅ Home page renders
-3. ✅ Ranking page renders
-4. ✅ Rankings API responds
-
-### CI Scripts
-
-The project includes CI scripts that can be run locally or in CI/CD:
-
-**Linux/Mac:**
+### Supabase CLI 문제
 ```bash
-bash scripts/ci.sh
+# Supabase 재시작
+supabase stop
+supabase start
+
+# 함수 로그 확인
+supabase functions logs get-character --follow
 ```
 
-**Windows:**
-```cmd
-scripts\ci.bat
-```
-
-### Troubleshooting Test Failures
-
-#### Backend Test Failures
-
-**1. Check backend logs**
+### Frontend 빌드 오류
 ```bash
-docker-compose logs backend --tail=50
+# 캐시 삭제
+rm -rf .next node_modules
+npm install
+npm run dev
 ```
 
-**2. Check database connection**
-```bash
-docker-compose logs db --tail=20
-```
+## 라이센스
+MIT License
 
-**3. Common issues:**
-- **Import errors**: Rebuild containers with `docker-compose build backend`
-- **Database errors**: Restart services with `docker-compose restart db backend`
-- **Test isolation**: Each test uses an in-memory SQLite database (no cleanup needed)
-
-#### Frontend E2E Failures
-
-**1. Check if services are running**
-```bash
-docker-compose ps
-# All services should be "Up" and "healthy"
-```
-
-**2. Check frontend logs**
-```bash
-docker-compose logs frontend --tail=50
-```
-
-**3. Manual verification**
-```bash
-# Check backend health
-curl http://localhost:8000/health
-
-# Check frontend home page
-curl http://localhost:3000
-
-# Check rankings page
-curl http://localhost:3000/ranking
-```
-
-**4. Common issues:**
-- **Connection refused**: Services not started → Run `docker-compose up -d`
-- **Timeout errors**: Services starting → Wait 10-15 seconds and retry
-- **Port conflicts**: Check if ports 3000/8000 are already in use
-
-#### General Debugging
-
-**View all service logs**
-```bash
-docker-compose logs -f
-```
-
-**Restart specific service**
-```bash
-docker-compose restart backend
-docker-compose restart frontend
-```
-
-**Full reset**
-```bash
-docker-compose down -v
-docker-compose up -d --build
-```
-
-**Check service health**
-```bash
-# Backend health endpoint
-curl http://localhost:8000/health
-# Expected: {"status": "ok"}
-
-# Frontend accessibility
-curl -I http://localhost:3000
-# Expected: HTTP/1.1 200 OK
-```
-
-## Environment Variables
-- `DATABASE_URL`: PostgreSQL connection string
-- `REDIS_URL`: Redis connection string
-- `CORS_ORIGINS`: Comma-separated allowed origins
-- `SOURCE_ADAPTER_TYPE`: `dummy` (default) or `external`
-
-## Real Data Operation (실데이터 운영 모드)
-
-This project supports switching between **Dummy Mode** (Mock Data) and **External Mode** (Real Data).
-
-### 1. Activating Real Data
-To enable real data fetching, update your `.env` file:
-```bash
-SOURCE_ADAPTER_TYPE=external
-```
-> **Note**: Default is `dummy`. Switch to `external` only when ready for production scraping.
-
-### 2. Operational Policies
-The `ExternalSourceAdapter` includes built-in protection mechanisms:
-
-- **Frequency**:
-  - **Rate Limit**: Max 1 request per 60 seconds *per character*.
-  - **Block Protection**: Retries on transient errors (502/503), but strict fail on 429/403.
-- **Caching**:
-  - **TTL**: Successful responses are cached in Redis for **60 seconds**.
-- **Resilience**:
-  - **Timeout**: Connect 3s / Read 10s.
-  - **Fallback Chain**: External API Fail → Stale DB Data → Dummy Data (Zero Downtime).
-
-### 3. Recommended Scenarios
-
-| Scenario | Behavior | Action Required |
-| :--- | :--- | :--- |
-| **Normal** | Fetches live data, updates DB, caches result. | None |
-| **External Outage** | Returns **Stale DB Data** with warning toast. | Monitor logs for recovery. |
-| **New Char + Outage** | Returns **Dummy Data** with warning. | None (prevents white screen). |
-| **IP Block (403)** | Returns Stale/Dummy Data. | Update Proxy/VPN or Check User-Agent. |
-
-## Change Log
-
-### v1.1.0 (Latest)
-- ✅ Character history tracking with power/level changes
-- ✅ New API: `/api/characters/{id}/history`
-- ✅ Enhanced search response with `power_change` and `level_change`
-- ✅ Ranking page displays last update time and disclaimer
-- ✅ Improved fallback system (DB → Dummy)
-- ✅ Stats accumulation (no longer overwrites history)
-
-### v1.0.0
-- Initial release with basic search and ranking features
+## 기여
+Pull Request를 환영합니다!

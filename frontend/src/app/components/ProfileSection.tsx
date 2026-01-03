@@ -1,4 +1,4 @@
-export default function ProfileSection({ character }: { character: any }) {
+export default function ProfileSection({ character, arcana }: { character: any; arcana?: any[] }) {
     if (!character) return null
 
     // Calculate rank tier based on percentile or rank
@@ -21,7 +21,7 @@ export default function ProfileSection({ character }: { character: any }) {
             display: 'flex',
             flexDirection: 'column',
             gap: '1rem',
-            height: '638px',
+            minHeight: '638px',
             boxSizing: 'border-box'
         }}>
             {/* Character Image & Basic Info */}
@@ -241,6 +241,86 @@ export default function ProfileSection({ character }: { character: any }) {
                     <span style={{ color: '#E5E7EB' }}>{character.race}</span>
                 </div>
             </div>
+
+            {/* Arcana Section */}
+            {arcana && arcana.length > 0 && (
+                <div style={{
+                    paddingTop: '0.75rem',
+                    borderTop: '1px solid #1F2433',
+                    marginTop: 'auto'
+                }}>
+                    <div style={{
+                        fontSize: '0.7rem',
+                        color: '#9CA3AF',
+                        marginBottom: '0.5rem',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em'
+                    }}>
+                        Arcana
+                    </div>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(5, 1fr)',
+                        gap: '0.4rem'
+                    }}>
+                        {arcana.slice(0, 5).map((item: any, index: number) => {
+                            const gradeColors: Record<string, string> = {
+                                'Common': '#9CA3AF',
+                                'Rare': '#60A5FA',
+                                'Legend': '#FBBF24',
+                                'Unique': '#A78BFA',
+                                'Epic': '#F472B6',
+                                'Mythic': '#FACC15',
+                            }
+                            const gradeColor = gradeColors[item.grade] || '#9CA3AF'
+
+                            return (
+                                <div
+                                    key={index}
+                                    style={{
+                                        position: 'relative',
+                                        aspectRatio: '1',
+                                        background: '#0B0D12',
+                                        border: `1px solid ${gradeColor}40`,
+                                        borderRadius: '6px',
+                                        overflow: 'hidden',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                    title={`${item.name}${item.enhancement ? ' ' + item.enhancement : ''}`}
+                                >
+                                    {item.image && (
+                                        <img
+                                            src={item.image}
+                                            alt={item.name}
+                                            style={{
+                                                width: '100%',
+                                                height: '100%',
+                                                objectFit: 'cover'
+                                            }}
+                                        />
+                                    )}
+                                    {item.enhancement && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: '2px',
+                                            right: '2px',
+                                            fontSize: '0.6rem',
+                                            fontWeight: 'bold',
+                                            color: gradeColor,
+                                            textShadow: '0 1px 2px rgba(0,0,0,0.8)',
+                                            lineHeight: 1
+                                        }}>
+                                            {item.enhancement}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     )
 }

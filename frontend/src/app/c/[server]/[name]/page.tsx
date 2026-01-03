@@ -10,6 +10,7 @@ import { supabaseApi, CharacterDetail, SERVER_NAME_TO_ID } from '../../../../lib
 import RankingCard from '../../../components/RankingCard'
 import EquipmentDetailList from '../../../components/EquipmentDetailList'
 import ItemDetailModal from '../../../components/ItemDetailModal'
+import SkillSection from '../../../components/SkillSection'
 import { RecentCharacter } from '../../../../types/character'
 
 // --- Types mapping to UI components ---
@@ -33,14 +34,16 @@ type CharacterData = {
   title?: string
   character_image_url?: string
   item_level?: number
+  skills?: any
 }
 
 // --- Helper Functions for Data Mapping ---
 
-const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[] } => {
-  if (!rawEquipment?.equipmentList) return { equipment: [], accessories: [] }
+const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[], arcana: any[] } => {
+  if (!rawEquipment?.equipmentList) return { equipment: [], accessories: [], arcana: [] }
   const equipment: any[] = []
   const accessories: any[] = []
+  const arcana: any[] = []
 
   // Combine equipment and skin lists if necessary, or just use equipmentList for main stats
   // Based on logs, the structure is a flat list in equipmentList
@@ -55,13 +58,15 @@ const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[]
     5: '장화',
     11: '견갑',
     12: '각반',
-    13: '망토', // Wing/Feather slot often acts as Cape/Wing
+    13: '망토',
     14: '허리띠',
-    15: '반지1', 16: '반지2',
-    17: '귀걸이1', 18: '귀걸이2',
-    19: '목걸이',
-    // Extended slots if supported
-    // 20: '날개', 21: '깃털', 22: '부적' ... need to verify exact IDs
+    15: '귀걸이1', 16: '귀걸이2',
+    17: '목걸이',
+    18: '아뮬렛',
+    19: '반지1', 20: '반지2',
+    21: '팔찌1', 22: '팔찌2',
+    23: '룬1', 24: '룬2',
+    // 25: '날개', 26: '펫' // 향후 추가 가능
   }
 
   // Fallback string mapping
@@ -108,29 +113,54 @@ const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[]
     if (slotName === '신발') slotName = '장화'
     if (slotName === '날개' || slotName === 'Bird') slotName = '망토'
 
+    // Check if this is an Arcana item (slotPos 41-45 or slotPosName starts with "Arcana")
+    const isArcana = (item.slotPos >= 41 && item.slotPos <= 45) || rawSlot?.startsWith('Arcana')
+
     // Determine target list based on slot type
-    const isAccessory = ['귀걸이', '목걸이', '반지', '팔찌', '깃털', '망토', '부적', '허리띠'].some(k => slotName?.includes(k))
+    const isAccessory = !isArcana && slotName && (
+      slotName.includes('귀걸이') ||
+      slotName.includes('목걸이') ||
+      slotName.includes('반지') ||
+      slotName.includes('팔찌') ||
+      slotName.includes('룬') ||
+      slotName.includes('아뮬렛') ||
+      slotName.includes('부적')
+    )
+
+    // DEBUG: Log raw item to find breakthrough field
+    if (item.enchantLevel > 0) {
+      console.log('Equipment item:', {
+        name: item.name,
+        enchant: item.enchantLevel,
+        exceed: item.exceedLevel, // 실제 돌파 필드명!
+        rawItem: item
+      })
+    }
 
     const mappedItem = {
       slot: slotName,
       name: item.name || item.itemName,
       enhancement: item.enchantLevel > 0 ? `+${item.enchantLevel}` : '',
       tier: gradeMap[item.grade] || item.gradeCode || 3,
+      grade: item.grade, // 아이템 등급 (색상 결정용)
       image: item.icon || item.image || item.itemArt,
       category: item.categoryName,
+      breakthrough: item.exceedLevel || 0, // 공식 사이트와 동일한 필드명 사용!
       soulEngraving: item.soulEngraving ? { grade: item.soulEngraving.grade, percentage: item.soulEngraving.value } : undefined,
       manastones: item.manastoneList?.map((m: any) => ({ type: m.name, value: m.point })) || [],
       raw: item
     }
 
-    if (isAccessory) {
+    if (isArcana) {
+      arcana.push(mappedItem)
+    } else if (isAccessory) {
       accessories.push(mappedItem)
     } else {
       equipment.push(mappedItem)
     }
   })
 
-  return { equipment, accessories }
+  return { equipment, accessories, arcana }
 }
 
 const mapStats = (rawStats: any): any[] => {
@@ -174,11 +204,12 @@ export default function CharacterDetailPage() {
   const [activeTab, setActiveTab] = useState('basic')
 
   // Mapped Data States
-  const [mappedEquipment, setMappedEquipment] = useState<{ equipment: any[], accessories: any[] }>({ equipment: [], accessories: [] })
+  const [mappedEquipment, setMappedEquipment] = useState<{ equipment: any[], accessories: any[], arcana: any[] }>({ equipment: [], accessories: [], arcana: [] })
   const [mappedStats, setMappedStats] = useState<any>({})
   const [mappedTitles, setMappedTitles] = useState<any>({})
   const [mappedDaevanion, setMappedDaevanion] = useState<any>({})
   const [mappedRankings, setMappedRankings] = useState<any>({})
+  const [mappedSkills, setMappedSkills] = useState<any>(null)
 
   const [selectedItem, setSelectedItem] = useState<any | null>(null)
 
@@ -307,6 +338,7 @@ export default function CharacterDetailPage() {
         percentile: 0,
         rank: 0,
         item_level: 0,
+        skills: detail.skills
       }
 
       setData(mapped)
@@ -317,6 +349,7 @@ export default function CharacterDetailPage() {
       setMappedTitles(detail.titles || {})
       setMappedDaevanion(detail.daevanion || {})
       setMappedRankings(detail.rankings || {})
+      setMappedSkills(detail.skills || {})
 
       saveToHistory(mapped, detail.server_id)
 
@@ -469,7 +502,7 @@ export default function CharacterDetailPage() {
         }}>
           {/* LEFT COLUMN: Profile Section */}
           <div>
-            <ProfileSection character={data} />
+            <ProfileSection character={data} arcana={mappedEquipment.arcana} />
           </div>
 
           {/* CENTER COLUMN: Equipment */}
@@ -525,6 +558,11 @@ export default function CharacterDetailPage() {
 
         {/* Detailed Equipment List */}
         <EquipmentDetailList equipment={mappedEquipment.equipment} accessories={mappedEquipment.accessories} onItemClick={handleItemClick} />
+
+        {/* SKILL SECTION */}
+        <div style={{ width: '100%', marginTop: '1.5rem' }}>
+          <SkillSection skills={mappedSkills} />
+        </div>
 
         {/* Item Detail Modal */}
         {selectedItem && (
