@@ -27,6 +27,9 @@ export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps)
     const tier = item.tier || (item.raw ? (item.raw.grade === 'Mythic' ? 5 : 4) : 3)
     const tierColor = getTierColor(tier)
 
+    // Check if this is an Arcana item (slotPos 41-45)
+    const isArcana = item.raw?.slotPos >= 41 && item.raw?.slotPos <= 45
+
     return (
         <div
             style={{
@@ -115,28 +118,159 @@ export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps)
                             <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '0.9rem' }}>
                                 <div style={{ color: '#A1A1AA' }}>옵션</div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', color: '#E4E4E7' }}>
-                                    {/* Standard Options Display */}
-                                    {item.raw?.attack > 0 && <div>공격력 {item.raw.attack} <span style={{ color: '#3B82F6' }}>{item.raw.bonusAttack ? `(+${item.raw.bonusAttack})` : ''}</span></div>}
-                                    {item.raw?.magicBoost > 0 && <div>마법 증폭력 {item.raw.magicBoost} <span style={{ color: '#3B82F6' }}>{item.raw.bonusMagicBoost ? `(+${item.raw.bonusMagicBoost})` : ''}</span></div>}
-                                    {item.raw?.accuracy > 0 && <div>명중 {item.raw.accuracy}</div>}
-                                    {item.raw?.crit > 0 && <div>물리 치명타 {item.raw.crit}</div>}
-                                    {item.raw?.parry > 0 && <div>막기 {item.raw.parry}</div>}
-                                    {item.raw?.block > 0 && <div>방패 방어 {item.raw.block}</div>}
-                                    {item.raw?.hp > 0 && <div>생명력 {item.raw.hp}</div>}
 
-                                    {/* Bonus Options (Blue) */}
-                                    {item.manastones && item.manastones.map((m: any, idx: number) => (
-                                        <div key={`ms-${idx}`} style={{ color: '#3B82F6' }}>
-                                            {m.type} {m.value > 0 && `+${m.value}`}
+                                    {/* 1. Base Options from Detail API */}
+                                    {item.detail?.options && item.detail.options.length > 0 && item.detail.options.map((opt: any, idx: number) => (
+                                        <div key={`base-${idx}`} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <span style={{ color: '#D4D4D8' }}>{opt.name}</span>
+                                            <span>{opt.value}</span>
                                         </div>
                                     ))}
 
-                                    {/* Random options from raw if available */}
-                                    {item.raw?.randomOptionList?.map((opt: any, idx: number) => (
-                                        <div key={`rnd-${idx}`} style={{ color: '#3B82F6' }}>
-                                            {opt.name} +{opt.value}
+                                    {/* Fallback to raw if detail is missing or empty (Legacy) */}
+                                    {(!item.detail?.options || item.detail.options.length === 0) && item.raw && (
+                                        <>
+                                            {item.raw.attack > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#D4D4D8' }}>공격력</span>
+                                                    <span>{item.raw.attack}</span>
+                                                </div>
+                                            )}
+                                            {item.raw.magicalAttack > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#D4D4D8' }}>마법 공격력</span>
+                                                    <span>{item.raw.magicalAttack}</span>
+                                                </div>
+                                            )}
+                                            {item.raw.hp > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#D4D4D8' }}>생명력</span>
+                                                    <span>{item.raw.hp}</span>
+                                                </div>
+                                            )}
+                                            {item.raw.physicalDefense > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#D4D4D8' }}>물리 방어력</span>
+                                                    <span>{item.raw.physicalDefense}</span>
+                                                </div>
+                                            )}
+                                            {item.raw.magicalDefense > 0 && (
+                                                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                    <span style={{ color: '#D4D4D8' }}>마법 방어력</span>
+                                                    <span>{item.raw.magicalDefense}</span>
+                                                </div>
+                                            )}
+                                            {/* Add a notice if no detail data available */}
+                                            {!item.raw.attack && !item.raw.magicalAttack && !item.raw.hp && !item.raw.physicalDefense && !item.raw.magicalDefense && (
+                                                <div style={{ color: '#71717A', fontSize: '0.85rem' }}>
+                                                    상세 정보를 불러오는 중...
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+
+                                    {/* 2. Random Options (Green) */}
+                                    {item.detail?.randomOptions && item.detail.randomOptions.length > 0 && item.detail.randomOptions.map((opt: any, idx: number) => (
+                                        <div key={`rnd-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', color: '#86EFAC' }}>
+                                            <span>{opt.name}</span>
+                                            <span>+{opt.value}</span>
                                         </div>
                                     ))}
+
+                                    {/* 3. Manastones (Blue) - from detail.manastones (장비만) */}
+                                    {!isArcana && item.detail?.manastones && item.detail.manastones.length > 0 && item.detail.manastones.map((m: any, idx: number) => (
+                                        <div key={`ms-${idx}`} style={{ color: '#60A5FA', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                            {m.icon && (
+                                                <img
+                                                    src={m.icon}
+                                                    alt={m.type}
+                                                    style={{ width: '20px', height: '20px', flexShrink: 0 }}
+                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                />
+                                            )}
+                                            <span style={{ flex: 1 }}>{m.type}</span>
+                                            <span>{m.value}</span>
+                                        </div>
+                                    ))}
+
+                                    {/* 4. God Stones (Purple) - (장비만) */}
+                                    {!isArcana && item.detail?.godstones && item.detail.godstones.length > 0 && (
+                                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #374151' }}>
+                                            <div style={{ color: '#C084FC', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '4px' }}>신석</div>
+                                            {item.detail.godstones.map((stone: any, idx: number) => (
+                                                <div key={`god-${idx}`} style={{ color: '#C084FC', fontSize: '0.85rem', marginBottom: '8px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold', marginBottom: '4px' }}>
+                                                        {stone.icon && (
+                                                            <img
+                                                                src={stone.icon}
+                                                                alt={stone.name}
+                                                                style={{ width: '24px', height: '24px', flexShrink: 0 }}
+                                                                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                            />
+                                                        )}
+                                                        <span>{stone.name}</span>
+                                                    </div>
+                                                    <div style={{ color: '#A1A1AA', fontSize: '0.8rem', marginTop: '2px', whiteSpace: 'pre-wrap', paddingLeft: stone.icon ? '32px' : '0' }}>
+                                                        {stone.desc}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* 5. Arcanas (아르카나 효과) - (아르카나만) */}
+                                    {isArcana && (
+                                        <div style={{ marginTop: '8px', paddingTop: '8px', borderTop: '1px dashed #374151' }}>
+                                            <div style={{ color: '#F59E0B', fontSize: '0.85rem', fontWeight: 'bold', marginBottom: '8px' }}>
+                                                아르카나 효과
+                                            </div>
+
+                                            {item.detail?.arcanas && item.detail.arcanas.length > 0 ? item.detail.arcanas.map((skill: any, idx: number) => {
+                                                return (
+                                                    <div key={`skill-${idx}`} style={{ marginBottom: '10px' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                            {skill.icon && (
+                                                                <img
+                                                                    src={skill.icon}
+                                                                    alt={skill.name}
+                                                                    style={{ width: '32px', height: '32px', flexShrink: 0 }}
+                                                                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                                                                />
+                                                            )}
+                                                            <div style={{ flex: 1 }}>
+                                                                <div style={{ color: '#F59E0B', fontSize: '0.85rem', fontWeight: 'bold' }}>
+                                                                    {skill.name}
+                                                                    {skill.level && <span style={{ color: '#FCD34D', marginLeft: '6px', fontSize: '0.8rem' }}>Lv.{skill.level}</span>}
+                                                                </div>
+                                                                {skill.desc && (
+                                                                    <div style={{ color: '#D4D4D8', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.4' }}>
+                                                                        {skill.desc}
+                                                                    </div>
+                                                                )}
+                                                                {skill.value && (
+                                                                    <div style={{ color: '#86EFAC', fontSize: '0.75rem', marginTop: '2px' }}>
+                                                                        {skill.value}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                )
+                                            }) : null}
+                                        </div>
+                                    )}
+
+                                    {/* Debug info - show if detail exists but transformed incorrectly */}
+                                    {item.detail?._raw && (!item.detail.options || item.detail.options.length === 0) && (
+                                        <div style={{ marginTop: '8px', padding: '8px', background: '#27272A', borderRadius: '4px' }}>
+                                            <div style={{ color: '#FCD34D', fontSize: '0.8rem', marginBottom: '4px' }}>디버그 정보:</div>
+                                            <div style={{ color: '#71717A', fontSize: '0.75rem', maxHeight: '100px', overflow: 'auto' }}>
+                                                <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>
+                                                    {JSON.stringify(item.detail._raw, null, 2).substring(0, 500)}...
+                                                </pre>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -161,15 +295,35 @@ export default function ItemDetailModal({ item, onClose }: ItemDetailModalProps)
                     <div style={{ padding: '24px', background: '#18181B' }}>
                         <div style={{ background: '#27272A', padding: '8px 12px', fontSize: '0.9rem', color: '#A1A1AA', marginBottom: '24px', fontWeight: 'bold' }}>세트 효과</div>
                         <div style={{ color: '#E4E4E7', fontSize: '0.9rem', marginBottom: '48px', minHeight: '100px' }}>
-                            <div style={{ color: '#71717A' }}>없음</div>
+                            {item.detail?.setEffects && item.detail.setEffects.length > 0 ? (
+                                item.detail.setEffects.map((effect: any, idx: number) => (
+                                    <div key={idx} style={{ marginBottom: '12px' }}>
+                                        <div style={{ color: '#FCD34D', marginBottom: '6px', fontSize: '0.95rem', fontWeight: 'bold' }}>
+                                            {effect.name}
+                                            {effect.equippedCount && <span style={{ color: '#86EFAC', marginLeft: '6px', fontSize: '0.85rem' }}>({effect.equippedCount}개 장착)</span>}
+                                        </div>
+                                        {effect.bonuses?.map((bonus: any, bIdx: number) => (
+                                            <div key={bIdx} style={{ marginBottom: '8px', paddingLeft: '8px' }}>
+                                                <div style={{ color: '#F59E0B', fontSize: '0.8rem', marginBottom: '2px' }}>{bonus.degree}세트</div>
+                                                {bonus.descriptions?.map((desc: string, dIdx: number) => (
+                                                    <div key={dIdx} style={{ fontSize: '0.8rem', color: '#D4D4D8', paddingLeft: '8px' }}>• {desc}</div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                        {effect.options?.map((opt: any, oIdx: number) => (
+                                            <div key={oIdx} style={{ fontSize: '0.8rem', color: '#A1A1AA', paddingLeft: '8px' }}>- {opt}</div>
+                                        ))}
+                                    </div>
+                                ))
+                            ) : (
+                                <div style={{ color: '#71717A' }}>없음</div>
+                            )}
                         </div>
 
                         <div style={{ background: '#27272A', padding: '8px 12px', fontSize: '0.9rem', color: '#A1A1AA', marginBottom: '24px', fontWeight: 'bold' }}>획득처</div>
                         <div style={{ display: 'grid', gridTemplateColumns: '100px 1fr', gap: '8px', fontSize: '0.9rem' }}>
-                            <div style={{ color: '#A1A1AA' }}>성역</div>
-                            <div style={{ color: '#E4E4E7' }}>-</div>
-                            <div style={{ color: '#A1A1AA' }}>원정</div>
-                            <div style={{ color: '#E4E4E7' }}>-</div>
+                            <div style={{ color: '#A1A1AA' }}>출처</div>
+                            <div style={{ color: '#E4E4E7' }}>{item.detail?.source || item.raw?.source || '-'}</div>
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,9 @@
-export default function ProfileSection({ character, arcana }: { character: any; arcana?: any[] }) {
+import { useState } from 'react'
+
+export default function ProfileSection({ character, arcana, onArcanaClick }: { character: any; arcana?: any[]; onArcanaClick?: (item: any) => void }) {
     if (!character) return null
+
+    const [hoveredArcana, setHoveredArcana] = useState<any | null>(null)
 
     // Calculate rank tier based on percentile or rank
     const getRankTier = (percentile: number) => {
@@ -11,6 +15,51 @@ export default function ProfileSection({ character, arcana }: { character: any; 
     }
 
     const rankTier = getRankTier(character.percentile || 0)
+
+    // Calculate arcana stats totals
+    const calculateArcanaTotal = () => {
+        if (!arcana || arcana.length === 0) return {}
+
+        const totals: Record<string, number> = {}
+
+        arcana.forEach((item: any) => {
+            // Sum base options
+            if (item.detail?.options) {
+                item.detail.options.forEach((opt: any) => {
+                    const value = parseInt(opt.value) || 0
+                    if (value > 0) {
+                        totals[opt.name] = (totals[opt.name] || 0) + value
+                    }
+                })
+            }
+
+            // Sum random options
+            if (item.detail?.randomOptions) {
+                item.detail.randomOptions.forEach((opt: any) => {
+                    const value = parseInt(opt.value) || 0
+                    if (value > 0) {
+                        totals[opt.name] = (totals[opt.name] || 0) + value
+                    }
+                })
+            }
+
+            // Sum arcana effects (if numeric)
+            if (item.detail?.arcanas) {
+                item.detail.arcanas.forEach((arc: any) => {
+                    // Try to extract numeric values from description
+                    const match = arc.desc?.match(/(\d+)/)
+                    if (match) {
+                        const value = parseInt(match[1])
+                        totals[arc.name] = (totals[arc.name] || 0) + value
+                    }
+                })
+            }
+        })
+
+        return totals
+    }
+
+    const arcanaTotals = calculateArcanaTotal()
 
     return (
         <div style={{
@@ -283,12 +332,28 @@ export default function ProfileSection({ character, arcana }: { character: any; 
                                         background: '#0B0D12',
                                         border: `1px solid ${gradeColor}40`,
                                         borderRadius: '6px',
-                                        overflow: 'hidden',
+                                        overflow: 'visible',
                                         display: 'flex',
                                         alignItems: 'center',
-                                        justifyContent: 'center'
+                                        justifyContent: 'center',
+                                        cursor: onArcanaClick ? 'pointer' : 'default',
+                                        transition: 'all 0.2s ease'
                                     }}
-                                    title={`${item.name}${item.enhancement ? ' ' + item.enhancement : ''}`}
+                                    onClick={() => onArcanaClick?.(item)}
+                                    onMouseEnter={(e) => {
+                                        setHoveredArcana(item)
+                                        if (onArcanaClick) {
+                                            e.currentTarget.style.transform = 'scale(1.05)'
+                                            e.currentTarget.style.borderColor = gradeColor
+                                        }
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        setHoveredArcana(null)
+                                        if (onArcanaClick) {
+                                            e.currentTarget.style.transform = 'scale(1)'
+                                            e.currentTarget.style.borderColor = `${gradeColor}40`
+                                        }
+                                    }}
                                 >
                                     {item.image && (
                                         <img
@@ -315,10 +380,132 @@ export default function ProfileSection({ character, arcana }: { character: any; 
                                             {item.enhancement}
                                         </div>
                                     )}
+
+                                    {/* Tooltip on hover */}
+                                    {hoveredArcana === item && (
+                                        <div style={{
+                                            position: 'absolute',
+                                            bottom: 'calc(100% + 8px)',
+                                            left: '50%',
+                                            transform: 'translateX(-50%)',
+                                            width: '220px',
+                                            background: 'rgba(15, 17, 23, 0.98)',
+                                            border: `1px solid ${gradeColor}80`,
+                                            borderRadius: '6px',
+                                            padding: '8px',
+                                            zIndex: 10000,
+                                            boxShadow: '0 10px 25px rgba(0,0,0,0.8)',
+                                            pointerEvents: 'none',
+                                            textAlign: 'left'
+                                        }}>
+                                            {/* Arrow */}
+                                            <div style={{
+                                                position: 'absolute',
+                                                top: '100%',
+                                                left: '50%',
+                                                transform: 'translateX(-50%) translateY(-1px)',
+                                                width: 0,
+                                                height: 0,
+                                                borderLeft: '6px solid transparent',
+                                                borderRight: '6px solid transparent',
+                                                borderTop: `6px solid ${gradeColor}80`
+                                            }}></div>
+
+                                            {/* Header */}
+                                            <div style={{ borderBottom: '1px solid #1F2433', paddingBottom: '6px', marginBottom: '6px' }}>
+                                                <div style={{ color: gradeColor, fontSize: '0.85rem', fontWeight: 'bold', lineHeight: '1.2' }}>
+                                                    {item.enhancement && <span style={{ marginRight: '4px' }}>{item.enhancement}</span>}
+                                                    {item.name}
+                                                </div>
+                                                <div style={{ fontSize: '0.65rem', color: '#9CA3AF', marginTop: '2px' }}>
+                                                    {item.category || item.slot}
+                                                </div>
+                                            </div>
+
+                                            {/* Options */}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                                {item.detail?.options && item.detail.options.map((opt: any, idx: number) => (
+                                                    <div key={`opt-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#E5E7EB' }}>
+                                                        <span style={{ color: '#9CA3AF' }}>{opt.name}</span>
+                                                        <span>{opt.value}</span>
+                                                    </div>
+                                                ))}
+
+                                                {item.detail?.randomOptions && item.detail.randomOptions.map((opt: any, idx: number) => (
+                                                    <div key={`rnd-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#86EFAC' }}>
+                                                        <span>{opt.name}</span>
+                                                        <span>+{opt.value}</span>
+                                                    </div>
+                                                ))}
+
+                                                {item.detail?.arcanas && item.detail.arcanas.length > 0 && (
+                                                    <div style={{ marginTop: '4px', paddingTop: '4px', borderTop: '1px dashed #374151' }}>
+                                                        <div style={{ fontSize: '0.65rem', color: '#F59E0B', fontWeight: 'bold', marginBottom: '3px' }}>
+                                                            아르카나 효과
+                                                        </div>
+                                                        {item.detail.arcanas.map((arc: any, idx: number) => (
+                                                            <div key={`arc-${idx}`} style={{ marginBottom: '4px' }}>
+                                                                <div style={{ fontSize: '0.65rem', color: '#F59E0B', marginBottom: '1px' }}>
+                                                                    {arc.name}
+                                                                </div>
+                                                                {arc.skill && (
+                                                                    <div style={{ fontSize: '0.6rem', color: '#FCD34D', marginBottom: '1px' }}>
+                                                                        {arc.skill}
+                                                                    </div>
+                                                                )}
+                                                                {arc.skillDesc && (
+                                                                    <div style={{ fontSize: '0.6rem', color: '#D4D4D8', whiteSpace: 'pre-wrap', lineHeight: '1.3' }}>
+                                                                        {arc.skillDesc.substring(0, 100)}{arc.skillDesc.length > 100 ? '...' : ''}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             )
                         })}
                     </div>
+
+                    {/* Arcana Stats Total */}
+                    {Object.keys(arcanaTotals).length > 0 && (
+                        <div style={{
+                            marginTop: '0.75rem',
+                            padding: '0.6rem',
+                            background: '#0B0D12',
+                            border: '1px solid #1F2433',
+                            borderRadius: '6px'
+                        }}>
+                            <div style={{
+                                fontSize: '0.65rem',
+                                color: '#9CA3AF',
+                                marginBottom: '0.5rem',
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                            }}>
+                                아르카나 합계
+                            </div>
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.3rem'
+                            }}>
+                                {Object.entries(arcanaTotals).map(([statName, value], idx) => (
+                                    <div key={idx} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        fontSize: '0.7rem'
+                                    }}>
+                                        <span style={{ color: '#9CA3AF' }}>{statName}</span>
+                                        <span style={{ color: '#F59E0B', fontWeight: 'bold' }}>+{value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>

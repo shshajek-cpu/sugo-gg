@@ -175,6 +175,7 @@ const mapEquipment = (rawEquipment: any): { equipment: any[], accessories: any[]
       breakthrough: item.exceedLevel || 0, // 공식 사이트와 동일한 필드명 사용!
       soulEngraving: item.soulEngraving ? { grade: item.soulEngraving.grade, percentage: item.soulEngraving.value } : undefined,
       manastones: item.manastoneList?.map((m: any) => ({ type: m.name, value: m.point })) || [],
+      detail: item.detail, // Explicitly pass the detail object
       raw: item
     }
 
@@ -349,51 +350,45 @@ export default function CharacterDetailPage() {
         throw new Error(`'${serverName}' 서버에서 '${charName}' 캐릭터를 찾을 수 없습니다. (ID: ${targetSearchServerId || 'unknown'})`)
       }
 
-      // Step 2: Get Detail
-      let detail: CharacterDetail
-      // Use the server ID directly from the search result if available.
-      // Falls back to parsing server name (which likely fails for strings) or defaults to 1.
-      const targetServerId = (match as any).server_id || parseInt(match.server) || 1
+      // Step 2: Get Detail from Local API
+      const serverId = match.server_id || SERVER_NAME_TO_ID[serverName] || 1
+      const res = await fetch(`/api/character?id=${match.characterId}&server=${serverId}`)
 
-      if (refresh) {
-        detail = await supabaseApi.refreshCharacter(match.characterId, targetServerId)
-      } else {
-        detail = await supabaseApi.getCharacterDetail(match.characterId, targetServerId)
+      if (!res.ok) {
+        throw new Error('Failed to fetch character data')
       }
 
-      console.log('Got detail:', detail)
-      setRawData(detail)
+      const detail = await res.json()
 
-      // Step 3: Map to UI Model
-      const mapped: CharacterData = {
-        id: detail.server_id,
-        name: detail.name,
-        server: serverName,
-        class: detail.class_name,
-        level: detail.level,
-        power: detail.combat_power || 0,
-        power_index: detail.combat_power,
-        updated_at: detail.updated_at || new Date().toISOString(),
-        race: detail.race_name,
-        character_image_url: detail.profile_image,
-        tier_rank: 'Unranked', // TODO: Map from ranking info if available
-        percentile: 0,
-        rank: 0,
-        item_level: 0,
-        skills: detail.skills
-      }
+      // Transform logic
+      const mappedStats = detail.stats || {}
+      const mappedTitles = detail.titles || {}
+      const mappedDaevanion = detail.daevanion || {}
+      const mappedRankings = detail.rankings || {}
+      const mappedEquipment = mapEquipment(detail.equipment)
 
-      setData(mapped)
+      // Update State
+      setData({
+        id: 0,
+        name: detail.profile.characterName,
+        server: detail.profile.serverName,
+        class: detail.profile.className,
+        level: detail.profile.characterLevel,
+        power: 0,
+        updated_at: new Date().toISOString(),
+        character_image_url: detail.profile.profileImage,
+        item_level: detail.profile.jobLevel,
+        race: detail.profile.raceName,
+        stats: mappedStats,
+        skills: detail.skill
+      })
 
-      // Map Sub-Components
-      setMappedEquipment(mapEquipment(detail.equipment))
-      setMappedStats(detail.stats || {})
-      setMappedTitles(detail.titles || {})
-      setMappedDaevanion(detail.daevanion || {})
-      setMappedRankings(detail.rankings || {})
-      setMappedSkills(detail.skills || {})
-
-      saveToHistory(mapped, detail.server_id)
+      setMappedEquipment(mappedEquipment)
+      setMappedStats(mappedStats)
+      setMappedTitles(mappedTitles)
+      setMappedDaevanion(mappedDaevanion)
+      setMappedRankings(mappedRankings)
+      setMappedSkills(detail.skill || {})
 
     } catch (err: any) {
       console.error(err)
@@ -544,7 +539,7 @@ export default function CharacterDetailPage() {
         }}>
           {/* LEFT COLUMN: Profile Section */}
           <div>
-            <ProfileSection character={data} arcana={mappedEquipment.arcana} />
+            <ProfileSection character={data} arcana={mappedEquipment.arcana} onArcanaClick={handleItemClick} />
           </div>
 
           {/* CENTER COLUMN: Equipment */}
