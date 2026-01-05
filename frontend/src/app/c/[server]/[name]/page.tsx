@@ -13,6 +13,7 @@ import EquipmentDetailList from '../../../components/EquipmentDetailList'
 import ItemDetailModal from '../../../components/ItemDetailModal'
 import SkillSection from '../../../components/SkillSection'
 import DetailedViewSection from '../../../components/DetailedViewSection'
+import StatsSummaryView from '../../../components/StatsSummaryView'
 import { RecentCharacter } from '../../../../types/character'
 
 // --- Types mapping to UI components ---
@@ -307,7 +308,8 @@ const mapDevanion = (rawDevanion: any) => {
   const result: any = {
     boards: {},
     totalInvestment: rawDevanion?.totalInvestment || 0,
-    globalRank: rawDevanion?.globalRank || 0
+    globalRank: rawDevanion?.globalRank || 0,
+    boardList: rawDevanion?.boardList || []  // 🔥 CRITICAL: Pass boardList to DevanionBoard component
   }
 
   // 1. Try to map real data
@@ -786,7 +788,7 @@ export default function CharacterDetailPage() {
               borderRadius: '8px',
               padding: '0.5rem'
             }}>
-              {['equipment', 'skills', 'network'].map(tab => {
+              {['equipment', 'skills', 'stats'].map(tab => {
                 const isSkillsTab = tab === 'skills'
                 const isActive = activeTab === tab
 
@@ -860,7 +862,7 @@ export default function CharacterDetailPage() {
                       }} />
                     )}
 
-                    {tab === 'equipment' ? '장비' : tab === 'skills' ? '✨ 스킬' : '인맥'}
+                    {tab === 'equipment' ? '장비' : tab === 'skills' ? '✨ 스킬' : '능력치'}
                   </button>
                 )
               })}
@@ -907,10 +909,13 @@ export default function CharacterDetailPage() {
                 <SkillSection skills={mappedSkills} />
               )}
 
-              {activeTab === 'network' && (
-                <div style={{ color: '#6B7280', padding: '2rem', textAlign: 'center' }}>
-                  인맥 네트워크 기능 준비중...
-                </div>
+              {activeTab === 'stats' && (
+                <StatsSummaryView
+                  stats={mappedStats}
+                  equipment={[...mappedEquipment.equipment, ...mappedEquipment.accessories]}
+                  daevanion={mappedDaevanion}
+                  titles={mappedTitles}
+                />
               )}
             </div>
           </div>
@@ -943,7 +948,7 @@ export default function CharacterDetailPage() {
 
           {/* DETAILED VIEW SECTION */}
           <div style={{ width: '100%', position: 'relative', zIndex: 1, gridColumn: '1 / -1' }}>
-            <DetailedViewSection daevanion={mappedDaevanion} characterId={apiCharacterId} serverId={apiServerId} race={data?.race} characterClass={data?.class} />
+            <DetailedViewSection daevanion={mappedDaevanion} characterId={apiCharacterId} serverId={apiServerId} race={data?.race} characterClass={data?.class} boardList={mappedDaevanion?.boardList} />
           </div>
         </div>
 

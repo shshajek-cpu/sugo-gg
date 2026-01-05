@@ -13,6 +13,14 @@ export async function GET(request: NextRequest) {
     console.log('serverId:', serverId, '(type:', typeof serverId, ')')
     console.log('boardId:', boardId, '(type:', typeof boardId, ')')
 
+    // 🔬 VALIDATION: Check if boardId is in valid range
+    const boardIdNum = parseInt(boardId || '0', 10)
+    if (boardIdNum < 11 || boardIdNum > 86) {
+        console.warn('⚠️ [DAEVANION API] boardId out of expected range!')
+        console.warn('Expected: 11-86 (Elyos) or 51-86 (Asmodian)')
+        console.warn('Received:', boardIdNum)
+    }
+
     if (!characterId || !serverId || !boardId) {
         console.error('❌ [DAEVANION API] Missing parameters!')
         return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
@@ -55,6 +63,18 @@ export async function GET(request: NextRequest) {
         console.log('nodeList length:', data.nodeList?.length || 0)
         console.log('openStatEffectList length:', data.openStatEffectList?.length || 0)
         console.log('openSkillEffectList length:', data.openSkillEffectList?.length || 0)
+
+        // 🔬 VALIDATION: Log active nodes sample
+        const activeNodes = data.nodeList?.filter((n: any) => n.open === 1) || []
+        console.log('Active nodes count:', activeNodes.length)
+        if (activeNodes.length > 0) {
+            console.log('Sample active node:', {
+                nodeId: activeNodes[0].nodeId,
+                name: activeNodes[0].name,
+                grade: activeNodes[0].grade,
+                effectCount: activeNodes[0].effectList?.length || 0
+            })
+        }
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
 
         return NextResponse.json(data)

@@ -2,96 +2,32 @@
 import { useState, useEffect } from 'react'
 import type { DaevanionNode, DaevanionBoardResponse } from '../../types/daevanion'
 
+interface DaevanionBoardItem {
+    id: number
+    name: string
+    totalNodeCount: number
+    openNodeCount: number
+    icon?: string
+    open?: number
+}
+
 interface DaevanionBoardProps {
     characterId?: string
     serverId?: string
-    race?: string  // '천족', 'Elyos', '마족', 'Asmodian'
-    characterClass?: string  // 직업명
+    race?: string  // '천족', 'Elyos', '마족', 'Asmodian' - DEPRECATED, not used for boardId calculation
+    characterClass?: string  // 직업명 - DEPRECATED, not used for boardId calculation
+    boardList?: DaevanionBoardItem[]  // Use boardList IDs directly from API response
 }
 
-// Board ID mapping: Depends on BOTH race AND class
-// Elyos (천족): Warriors 11-16, Mages 21-26, Priests 31-36, Scouts 41-46
-// Asmodian (마족): Mages 51-56, Scouts 61-66, Warriors 71-76, Priests 81-86
+// God name mapping - maps god names to their index in the boardList array
 const GODS = [
-    { id: 'nezakan', name: '네자칸', baseIndex: 1, color: '#EF4444', desc: '물리 공격력 및 치명타 강화' },
-    { id: 'zikel', name: '지켈', baseIndex: 2, color: '#FACC15', desc: '방어력 및 생명력 강화' },
-    { id: 'baizel', name: '바이젤', baseIndex: 3, color: '#3B82F6', desc: '이동 속도 및 회피 강화' },
-    { id: 'triniel', name: '트리니엘', baseIndex: 4, color: '#10B981', desc: '상태이상 적중 및 저항' },
-    { id: 'ariel', name: '아리엘', baseIndex: 5, color: '#8B5CF6', desc: '마법 증폭 및 적중' },
-    { id: 'asphel', name: '아스펠', baseIndex: 6, color: '#EC4899', desc: '마법 상쇄 및 저항' }
+    { id: 'nezakan', name: '네자칸', color: '#EF4444', desc: '물리 공격력 및 치명타 강화' },
+    { id: 'zikel', name: '지켈', color: '#FACC15', desc: '방어력 및 생명력 강화' },
+    { id: 'baizel', name: '바이젤', color: '#3B82F6', desc: '이동 속도 및 회피 강화' },
+    { id: 'triniel', name: '트리니엘', color: '#10B981', desc: '상태이상 적중 및 저항' },
+    { id: 'ariel', name: '아리엘', color: '#8B5CF6', desc: '마법 증폭 및 적중' },
+    { id: 'asphel', name: '아스펠', color: '#EC4899', desc: '마법 상쇄 및 저항' }
 ]
-
-// Class category mapping (approximation - may need adjustment)
-const getClassCategory = (className: string): 'warrior' | 'mage' | 'priest' | 'scout' => {
-    const lower = className.toLowerCase()
-
-    // Warriors/Tanks: Gladiator (검성), Templar (수호성/템플러), etc.
-    if (lower.includes('글래디에이터') || lower.includes('gladiator') ||
-        lower.includes('검성') ||  // Gladiator Korean
-        lower.includes('템플러') || lower.includes('templar') ||
-        lower.includes('수호성') ||  // Templar Korean
-        lower.includes('전사') || lower.includes('warrior') ||
-        lower.includes('탱커') || lower.includes('tank')) {
-        return 'warrior'
-    }
-
-    // Scouts: Assassin (살성), Ranger (궁성), etc.
-    if (lower.includes('어쌔신') || lower.includes('assassin') ||
-        lower.includes('살성') ||  // Assassin Korean
-        lower.includes('레인저') || lower.includes('ranger') ||
-        lower.includes('궁성') ||  // Ranger Korean
-        lower.includes('정찰') || lower.includes('scout') ||
-        lower.includes('궁수') || lower.includes('archer')) {
-        return 'scout'
-    }
-
-    // Priests/Healers: Cleric (치유성), Chanter (호법성), etc.
-    if (lower.includes('클레릭') || lower.includes('cleric') ||
-        lower.includes('치유성') ||  // Cleric Korean
-        lower.includes('찬터') || lower.includes('chanter') ||
-        lower.includes('호법성') ||  // Chanter Korean
-        lower.includes('치유') || lower.includes('heal') ||
-        lower.includes('사제') || lower.includes('priest')) {
-        return 'priest'
-    }
-
-    // Mages: Sorcerer (마도성), Spiritmaster (정령성), etc.
-    if (lower.includes('소서러') || lower.includes('sorcerer') ||
-        lower.includes('마도성') ||  // Sorcerer Korean
-        lower.includes('스피릿마스터') || lower.includes('spiritmaster') ||
-        lower.includes('정령성') ||  // Spiritmaster Korean
-        lower.includes('마법사') || lower.includes('mage') ||
-        lower.includes('위저드') || lower.includes('wizard')) {
-        return 'mage'
-    }
-
-    // Default to scout if not matched (safest default as it's most common)
-    return 'scout'
-}
-
-const getBoardIdBase = (race: string, className: string): number => {
-    const isAsmodian = race === '마족' || race === 'Asmodian'
-    const category = getClassCategory(className)
-
-    if (isAsmodian) {
-        switch (category) {
-            case 'mage': return 50
-            case 'scout': return 60
-            case 'warrior': return 70
-            case 'priest': return 80
-            default: return 60 // fallback to scout
-        }
-    } else {
-        // Elyos
-        switch (category) {
-            case 'warrior': return 10
-            case 'mage': return 20
-            case 'priest': return 30
-            case 'scout': return 40
-            default: return 40 // fallback to scout
-        }
-    }
-}
 
 // Grid Constants for 15x15 board
 const GRID_SIZE = 15
@@ -112,7 +48,7 @@ const gradeColors: Record<string, string> = {
     'Start': '#10B981'
 }
 
-export default function DaevanionBoard({ characterId, serverId, race, characterClass }: DaevanionBoardProps) {
+export default function DaevanionBoard({ characterId, serverId, race, characterClass, boardList }: DaevanionBoardProps) {
     const [activeGodIndex, setActiveGodIndex] = useState(0)
     const [hoveredNode, setHoveredNode] = useState<DaevanionNode | null>(null)
     const [boardData, setBoardData] = useState<DaevanionBoardResponse | null>(null)
@@ -129,19 +65,24 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
 
     const activeGod = GODS[activeGodIndex]
 
-    // Determine correct boardId based on race AND class
-    const isAsmodian = race === '마족' || race === 'Asmodian'
-    const boardIdBase = characterClass ? getBoardIdBase(race || '', characterClass) : (isAsmodian ? 60 : 40)
-    const boardId = boardIdBase + activeGod.baseIndex
+    // Get boardId directly from boardList by matching god name
+    // This is the correct approach - use the API response directly instead of calculating!
+    const boardId = boardList && boardList.length > 0
+        ? boardList.find(board => board.name === activeGod.name)?.id || boardList[activeGodIndex]?.id || 0
+        : 0
 
     // Fetch board data when god changes
     useEffect(() => {
         // 🔍 DEBUG: Log received props
         console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
         console.log('🎯 [DAEVANION BOARD] useEffect triggered')
-        console.log('characterId:', characterId, '(type:', typeof characterId, ')')
-        console.log('serverId:', serverId, '(type:', typeof serverId, ')')
-        console.log('activeGod:', activeGod.name, 'boardId:', boardId)
+        console.log('📝 Props received:')
+        console.log('  - characterId:', characterId, '(type:', typeof characterId, ')')
+        console.log('  - serverId:', serverId, '(type:', typeof serverId, ')')
+        console.log('  - boardList:', boardList, '(length:', boardList?.length || 0, ')')
+        console.log('📊 Calculated values:')
+        console.log('  - activeGod:', activeGod.name)
+        console.log('  - FINAL boardId:', boardId, '(from boardList)')
 
         if (!characterId || !serverId) {
             console.warn('⚠️ [DAEVANION BOARD] Missing characterId or serverId - skipping fetch')
@@ -149,6 +90,16 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
             setBoardData(null)
             setDebugInfo({
                 errorDetails: 'characterId 또는 serverId가 없습니다.'
+            })
+            return
+        }
+
+        if (!boardList || boardList.length === 0 || boardId === 0) {
+            console.warn('⚠️ [DAEVANION BOARD] Missing boardList or invalid boardId - skipping fetch')
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+            setBoardData(null)
+            setDebugInfo({
+                errorDetails: 'boardList가 없습니다. 캐릭터 정보를 먼저 로드해주세요.'
             })
             return
         }
@@ -385,8 +336,25 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
                         <div style={{ color: '#9CA3AF' }}>서버 ID:</div>
                         <div style={{ color: serverId ? '#10B981' : '#EF4444' }}>{serverId || '❌ 없음'}</div>
 
-                        <div style={{ color: '#9CA3AF' }}>종족/직업/보드 ID:</div>
-                        <div>{isAsmodian ? '마족' : '천족'} / {characterClass || 'Unknown'} / {boardId} ({activeGod.name})</div>
+                        <div style={{ color: '#9CA3AF' }}>BoardList 상태:</div>
+                        <div style={{ color: boardList && boardList.length > 0 ? '#10B981' : '#EF4444' }}>
+                            {boardList && boardList.length > 0
+                                ? `✅ ${boardList.length}개 보드 데이터 있음`
+                                : '❌ boardList 없음 (캐릭터 정보 로드 필요)'}
+                        </div>
+
+                        <div style={{ color: '#9CA3AF' }}>현재 신:</div>
+                        <div>{activeGod.name}</div>
+
+                        <div style={{ color: '#9CA3AF' }}>보드 ID:</div>
+                        <div>
+                            <span style={{ color: boardId ? '#FACC15' : '#EF4444', fontWeight: 'bold' }}>
+                                {boardId || '❌ 없음'}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: '#6B7280', marginLeft: '0.5rem' }}>
+                                ({activeGod.name}, boardList에서 직접 사용)
+                            </span>
+                        </div>
 
                         {debugInfo.apiUrl && (
                             <>
