@@ -35,19 +35,16 @@ const SkillSection: React.FC<SkillSectionProps> = ({ skills }) => {
         return null
     }
 
-    // Separate skills and stigmas
-    const normalSkills = skillList.filter(skill =>
-        !skill.type?.toLowerCase().includes('stigma') &&
-        !skill.category?.toLowerCase().includes('stigma') &&
-        !skill.name?.includes('스티그마') &&
-        !skill.skillName?.includes('스티그마')
+    // Separate skills by skillCategory (based on sequence number)
+    // If skillCategory exists, use it. Otherwise, fallback to old logic
+    const activeSkills = skillList.filter(skill =>
+        skill.skillCategory === 'active' ||
+        (!skill.skillCategory && !skill.type?.toLowerCase().includes('stigma') && !skill.category?.toLowerCase().includes('stigma'))
     )
-
+    const passiveSkills = skillList.filter(skill => skill.skillCategory === 'passive')
     const stigmaSkills = skillList.filter(skill =>
-        skill.type?.toLowerCase().includes('stigma') ||
-        skill.category?.toLowerCase().includes('stigma') ||
-        skill.name?.includes('스티그마') ||
-        skill.skillName?.includes('스티그마')
+        skill.skillCategory === 'stigma' ||
+        (!skill.skillCategory && (skill.type?.toLowerCase().includes('stigma') || skill.category?.toLowerCase().includes('stigma')))
     )
 
     const renderSkillGrid = (skills: Skill[], title: string) => {
@@ -65,18 +62,18 @@ const SkillSection: React.FC<SkillSectionProps> = ({ skills }) => {
                     paddingBottom: '0.75rem'
                 }}>
                     <h3 style={{
-                        fontSize: '1.1rem',
+                        fontSize: '0.85rem',
                         fontWeight: 'bold',
                         color: '#E5E7EB',
                         margin: 0,
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '8px'
+                        gap: '6px'
                     }}>
                         <span style={{ color: '#FCD34D' }}>✦</span>
                         {title}
                     </h3>
-                    <span style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
+                    <span style={{ fontSize: '0.7rem', color: '#9CA3AF' }}>
                         총 {skills.length}개
                     </span>
                 </div>
@@ -109,8 +106,8 @@ const SkillSection: React.FC<SkillSectionProps> = ({ skills }) => {
                                 onMouseLeave={() => setHoveredSkill(null)}
                                 title={skillName} // Native tooltip fallback
                                 style={{
-                                    width: '59px',
-                                    height: '59px',
+                                    width: '50px',
+                                    height: '50px',
                                     borderRadius: '8px',
                                     overflow: 'hidden',
                                     background: '#1a1d24',
@@ -204,24 +201,27 @@ const SkillSection: React.FC<SkillSectionProps> = ({ skills }) => {
                 paddingBottom: '0.75rem'
             }}>
                 <h2 style={{
-                    fontSize: '1.25rem',
+                    fontSize: '0.95rem',
                     fontWeight: 'bold',
                     color: '#E5E7EB',
                     margin: 0,
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '8px'
+                    gap: '6px'
                 }}>
                     <span style={{ color: '#FCD34D' }}>✦</span>
                     스킬 & 스티그마
                 </h2>
-                <span style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>
+                <span style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>
                     총 {skillList.length}개
                 </span>
             </div>
 
-            {/* Normal Skills Section */}
-            {renderSkillGrid(normalSkills, '스킬')}
+            {/* Active Skills Section */}
+            {renderSkillGrid(activeSkills, '액티브 스킬')}
+
+            {/* Passive Skills Section */}
+            {renderSkillGrid(passiveSkills, '패시브 스킬')}
 
             {/* Stigma Skills Section */}
             {renderSkillGrid(stigmaSkills, '스티그마')}

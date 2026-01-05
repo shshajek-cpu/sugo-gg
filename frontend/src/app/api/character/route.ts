@@ -180,6 +180,22 @@ export async function GET(request: NextRequest) {
 
 
 
+        // Debug Daevanion -> Write to file for inspection
+        try {
+            const fs = require('fs');
+            const path = require('path');
+            const debugPath = path.join(process.cwd(), 'debug_daevanion.json');
+            fs.writeFileSync(debugPath, JSON.stringify({
+                keys: Object.keys(infoData),
+                daevanion: infoData.daevanion,
+                full_info_sample: infoData
+            }, null, 2));
+            console.log('[API] Debug file written to', debugPath);
+        } catch (err) {
+            console.error('[API] Failed to write debug file', err);
+        }
+
+
         // 2. Fetch Detailed Info for EACH item in parallel
         let enrichedEquipmentList: any[] = []
 

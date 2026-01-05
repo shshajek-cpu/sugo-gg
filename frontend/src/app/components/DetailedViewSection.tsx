@@ -9,9 +9,11 @@ interface DetailedViewSectionProps {
     daevanion?: any
     characterId?: string
     serverId?: string
+    race?: string
+    characterClass?: string
 }
 
-export default function DetailedViewSection({ daevanion, characterId, serverId }: DetailedViewSectionProps) {
+export default function DetailedViewSection({ daevanion, characterId, serverId, race, characterClass }: DetailedViewSectionProps) {
     const [activeTab, setActiveTab] = useState<'growth' | 'equipment' | 'daevanion' | 'legion'>('growth')
 
     return (
@@ -49,7 +51,7 @@ export default function DetailedViewSection({ daevanion, characterId, serverId }
             <div>
                 {activeTab === 'growth' && <GrowthChartView />}
                 {activeTab === 'equipment' && <EquipmentDetailView />}
-                {activeTab === 'daevanion' && <DaevanionBoard characterId={characterId} serverId={serverId} />}
+                {activeTab === 'daevanion' && <DaevanionBoard characterId={characterId} serverId={serverId} race={race} characterClass={characterClass} />}
                 {activeTab === 'legion' && <LegionView />}
             </div>
         </div>

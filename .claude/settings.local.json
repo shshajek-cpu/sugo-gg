@@ -42,7 +42,19 @@
       "Bash(node fix-duplicate-characters.js:*)",
       "Bash(node extract-class-mapping.js:*)",
       "Bash(node update-unknown-classes.js:*)",
-      "Bash(node delete-level-zero.js:*)"
+      "Bash(node delete-level-zero.js:*)",
+      "Bash(uvicorn:*)",
+      "Bash(git diff:*)",
+      "Bash(powershell:*)",
+      "Bash(dir C:Usersshsha.claude)",
+      "Bash(ls:*)",
+      "WebSearch",
+      "Bash(npm search:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp list:*)",
+      "WebFetch(domain:opencode.ai)",
+      "Bash(claude mcp remove:*)",
+      "Bash(npx:*)"
     ]
   }
 }

@@ -2,108 +2,87 @@ export default function DaevanionCard({ daevanion, isEmbedded = false }: { daeva
     if (!daevanion) return null
 
     const boardList = daevanion.boardList || []
-    const totalBoards = 6 // AION typically has 6 Daevanion gods
-    const activeBoards = boardList.length
 
-    // Calculate total nodes (if available in data)
-    const totalNodes = boardList.reduce((sum: number, board: any) => {
-        return sum + (board.activatedNodes || board.nodeCount || 0)
-    }, 0)
-
-    // God icons/names (placeholder, can be customized)
-    const godNames = ['Vaizel', 'Lumiel', 'Marchutan', 'Nezekan', 'Israphel', 'Siel']
+    // Korean God Names order (matches typical UI order)
+    const godNames = ['네자칸', '지켈', '바이젤', '트리니엘', '아리엘', '아스펠']
 
     return (
         <div style={isEmbedded ? { width: '100%' } : {
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.8rem',
+            marginTop: '0.5rem',
             background: '#111318',
             border: '1px solid #1F2433',
             borderRadius: '12px',
-            padding: '1rem',
-            height: '90px',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column'
+            padding: '1.25rem',
+            boxSizing: 'border-box'
         }}>
             {/* Header */}
             {!isEmbedded && (
                 <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '0.4rem',
-                    flexShrink: 0
+                    fontSize: '0.9rem',
+                    color: '#9CA3AF',
+                    fontWeight: 600,
+                    marginBottom: '-0.3rem',
+                    paddingLeft: '0.2rem'
                 }}>
-                    <h3 style={{
-                        fontSize: '0.85rem',
-                        fontWeight: 'bold',
-                        color: '#E5E7EB',
-                        margin: 0
-                    }}>
-                        주신 능력치
-                    </h3>
-                    <div style={{
-                        padding: '0.15rem 0.4rem',
-                        background: '#0B0D12',
-                        border: '1px solid #1F2433',
-                        borderRadius: '12px',
-                        fontSize: '0.7rem',
-                        color: activeBoards >= 4 ? '#FACC15' : '#E5E7EB',
-                        fontWeight: 'bold'
-                    }}>
-                        {activeBoards}/{totalBoards}
-                    </div>
+                    데바니온
                 </div>
             )}
 
-            {/* God Grid - 1행으로 변경 */}
+            {/* Grid Container */}
             <div style={{
-                display: 'flex',
-                gap: '0.3rem',
-                flex: 1,
-                alignItems: 'center'
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '0.5rem'
             }}>
-                {godNames.map((god, idx) => {
-                    const isActive = idx < activeBoards
+                {godNames.map((godName, idx) => {
+                    // Use name matching for reliability
+                    const board = boardList.find((b: any) => b.name === godName) || {}
+
+                    // Use correct field names from API debug
+                    const current = board.openNodeCount || 0
+                    const total = board.totalNodeCount || 0
+
+                    // Highlight logic: if current > 0, consider it active
+                    const isActive = current > 0
+
+                    // Dynamic text color for name (using distinct colors like in the image if possible, or consistent white)
+                    // Image shows: Orange for Ariel, Purple for Asphel, White for others.
+                    // Let's implement this subtle detail.
+                    let nameColor = '#E5E7EB'
+                    if (godName === '아리엘') nameColor = '#FF7B54' // Orange-ish
+                    if (godName === '아스펠') nameColor = '#A78BFA' // Purple-ish
+
                     return (
-                        <div
-                            key={idx}
-                            title={god}
-                            style={{
-                                width: `calc((100% - 1.5rem) / 6)`,
-                                aspectRatio: '1',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                background: '#0B0D12',
-                                border: isActive
-                                    ? '1px solid #FACC1540'
-                                    : '1px solid #1F2433',
-                                borderRadius: '6px',
-                                transition: 'all 0.2s',
-                                cursor: 'pointer',
-                                padding: '0.2rem'
-                            }}
-                            className="god-card-hover"
-                        >
-                            <div style={{
-                                fontSize: '0.9rem',
-                                filter: isActive ? 'grayscale(0)' : 'grayscale(1)',
-                                opacity: isActive ? 1 : 0.3
+                        <div key={godName} style={{
+                            background: '#111318',
+                            border: '1px solid #1F2433',
+                            borderRadius: '8px',
+                            padding: '0.6rem 1rem',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                        }}>
+                            <span style={{
+                                color: nameColor,
+                                fontWeight: 'bold',
+                                fontSize: '0.9rem'
                             }}>
-                                ⭐
-                            </div>
+                                {godName}
+                            </span>
+                            <span style={{
+                                color: isActive ? '#F3F4F6' : '#6B7280',
+                                fontWeight: 500,
+                                fontSize: '0.9rem'
+                            }}>
+                                {current}{total > 0 ? `/${total}` : ''}
+                            </span>
                         </div>
                     )
                 })}
             </div>
-
-            <style jsx>{`
-                .god-card-hover:hover {
-                    border-color: #FACC15;
-                    transform: translateY(-2px);
-                }
-            `}</style>
         </div>
     )
 }

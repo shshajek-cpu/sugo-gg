@@ -943,7 +943,7 @@ export default function CharacterDetailPage() {
 
           {/* DETAILED VIEW SECTION */}
           <div style={{ width: '100%', position: 'relative', zIndex: 1, gridColumn: '1 / -1' }}>
-            <DetailedViewSection daevanion={mappedDaevanion} characterId={apiCharacterId} serverId={apiServerId} />
+            <DetailedViewSection daevanion={mappedDaevanion} characterId={apiCharacterId} serverId={apiServerId} race={data?.race} characterClass={data?.class} />
           </div>
         </div>
 

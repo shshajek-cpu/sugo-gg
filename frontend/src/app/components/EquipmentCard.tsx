@@ -7,6 +7,7 @@ interface EquipmentCardProps {
         name: string
         enhancement: string  // "+15"
         tier: number
+        itemLevel?: number  // 아이템 레벨
         grade?: string  // "Legendary", "Mythic", etc.
         image?: string
         category?: string
@@ -56,25 +57,14 @@ const getItemNameColor = (grade: string): string => {
 export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProps) {
     const [isHovered, setIsHovered] = useState(false)
 
-    if (!item) {
-        return (
-            <div style={{
-                padding: '1rem',
-                background: '#111318',
-                border: '1px solid #1F2433',
-                borderRadius: '8px',
-                textAlign: 'center',
-                color: '#9CA3AF'
-            }}>
-                <div style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>{slot}</div>
-                <div style={{ fontSize: '0.75rem' }}>장착 없음</div>
-            </div>
-        )
-    }
+    // Unified render to ensure consistent size
+    // If no item, we just render placeholders
+    const isEmpty = !item
 
-    const tierColor = getTierColor(item.tier)
-    const enhancementColor = getEnhancementColor(item.enhancement)
-    const isHighTier = item.tier >= 4
+    // Default colors for empty state
+    const displayTierColor = isEmpty ? '#1F2433' : getTierColor(item.tier)
+    const displayEnhancementColor = isEmpty ? '#E5E7EB' : getEnhancementColor(item.enhancement)
+    const isDisplayHighTier = !isEmpty && item.tier >= 4
 
     return (
         <div style={{
@@ -83,35 +73,37 @@ export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProp
             border: '1px solid #1F2433',
             borderRadius: '6px',
             position: 'relative',
-            cursor: 'pointer',
+            cursor: isEmpty ? 'default' : 'pointer',
             transition: 'all 0.2s',
             display: 'flex',
             gap: '0.35rem',
             alignItems: 'center',
-            maxWidth: '100%',
+            width: '100%',
+            height: '46px', // Slightly more compact height
             boxSizing: 'border-box',
-            height: '100%',
-            zIndex: isHovered ? 9999 : 1
+            zIndex: isHovered && !isEmpty ? 9999 : 1,
+            // opacity: isEmpty ? 1 : 1 // Removing opacity change for uniformity
         }}
-            className="equipment-card-hover"
+            className={isEmpty ? '' : "equipment-card-hover"}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            onClick={() => item && onClick?.(item)}
+            onClick={() => !isEmpty && item && onClick?.(item)}
         >
             {/* Tooltip */}
-            {isHovered && <EquipmentTooltip item={item} />}
+            {!isEmpty && isHovered && item && <EquipmentTooltip item={item} />}
 
-            {/* Breakthrough Badge - 프리미엄 다이아몬드 보석 디자인 */}
-            {item.breakthrough && item.breakthrough > 0 && (
-                <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    minWidth: '20px',
-                    height: '32px',
-                    flexShrink: 0,
-                    marginRight: '3px'
-                }}>
+            {/* Breakthrough Badge (Placeholder if empty) */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minWidth: '20px',
+                height: '32px',
+                flexShrink: 0,
+                marginRight: '3px',
+                visibility: !isEmpty && item.breakthrough != null && item.breakthrough > 0 ? 'visible' : 'hidden'
+            }}>
+                {!isEmpty && item.breakthrough != null && item.breakthrough > 0 && (
                     <div style={{
                         position: 'relative',
                         width: '16px',
@@ -147,8 +139,8 @@ export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProp
                             {item.breakthrough}
                         </span>
                     </div>
-                </div>
-            )}
+                )}
+            </div>
 
             <style jsx>{`
                 @keyframes gemSparkle {
@@ -167,7 +159,7 @@ export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProp
                 height: '32px',
                 background: '#0B0D12',
                 borderRadius: '4px',
-                border: `1px solid ${isHighTier ? tierColor + '60' : '#1F2433'}`,
+                border: `1px solid ${isDisplayHighTier ? displayTierColor + '60' : '#1F2433'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -175,20 +167,20 @@ export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProp
                 flexShrink: 0,
                 position: 'relative'
             }}>
-                {item.image ? (
+                {!isEmpty && item.image ? (
                     <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 ) : (
-                    <div style={{ fontSize: '0.5rem', color: '#9CA3AF', textAlign: 'center' }}>No</div>
+                    <div style={{ fontSize: '0.5rem', color: '#374151', textAlign: 'center' }}>Empty</div>
                 )}
 
                 {/* Enhancement Badge (Overlay on Image) */}
-                {item.enhancement && (
+                {!isEmpty && item.enhancement && (
                     <div style={{
                         position: 'absolute',
                         bottom: '0',
                         right: '0',
                         background: 'rgba(11,13,18,0.95)',
-                        color: enhancementColor,
+                        color: displayEnhancementColor,
                         fontSize: '0.6rem',
                         fontWeight: 'bold',
                         padding: '0 2px',
@@ -202,36 +194,26 @@ export default function EquipmentCard({ slot, item, onClick }: EquipmentCardProp
 
             {/* Info Column */}
             <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                {/* Slot & Tier Row */}
+                {/* Slot Name */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: '0.65rem', color: '#9CA3AF' }}>{slot}</span>
-                    <span style={{
-                        fontSize: '0.6rem',
-                        color: tierColor,
-                        border: `1px solid ${isHighTier ? tierColor + '40' : '#1F2433'}`,
-                        padding: '0 3px',
-                        borderRadius: '2px',
-                        lineHeight: '1.2'
-                    }}>
-                        T{item.tier}
-                    </span>
                 </div>
 
-                {/* Item Name with Grade Color */}
+                {/* Item Name */}
                 <div style={{
                     fontSize: '0.75rem',
-                    color: getItemNameColor(item.grade || ''),
-                    fontWeight: '500',
+                    color: !isEmpty ? getItemNameColor(item.grade || '') : '#4B5563',
+                    fontWeight: !isEmpty ? '500' : 'normal',
                     marginTop: '2px',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis',
                     whiteSpace: 'nowrap'
                 }}>
-                    {item.name}
+                    {!isEmpty ? item.name : '장착 없음'}
                 </div>
 
-                {/* Manastones (very compact) */}
-                {item.manastones && item.manastones.length > 0 && (
+                {/* Manastones (very compact) - Placeholder if empty to keep height? No, flex center handles vertical */}
+                {!isEmpty && item.manastones && item.manastones.length > 0 && (
                     <div style={{
                         marginTop: '2px',
                         display: 'flex',

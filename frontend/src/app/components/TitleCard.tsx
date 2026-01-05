@@ -46,26 +46,25 @@ export default function TitleCard({ titles }: { titles: any }) {
 
     // 카테고리별 분류
     const categorizeTitle = (title: any): string => {
-        const name = title.titleName || title.name || ''
-        const category = title.categoryName || title.category || ''
+        const equipCategory = title.equipCategory || ''
 
-        // 카테고리명으로 분류
-        if (category.includes('공격') || category.includes('Attack')) return 'attack'
-        if (category.includes('방어') || category.includes('Defense')) return 'defense'
-        if (category.includes('기타') || category.includes('Other')) return 'other'
-
-        // 이름으로 추론
-        if (name.includes('처단') || name.includes('학살') || name.includes('파괴')) return 'attack'
-        if (name.includes('수호') || name.includes('방패') || name.includes('성자')) return 'defense'
+        // API uses: "Defense", "Attack", "Etc"
+        if (equipCategory === 'Attack') return 'attack'
+        if (equipCategory === 'Defense') return 'defense'
+        if (equipCategory === 'Etc') return 'other'
 
         return 'other'
     }
 
     // 효과 파싱
     const parseEffects = (title: any): string[] => {
-        if (title.effects && Array.isArray(title.effects)) return title.effects
-        if (title.effectText) return [title.effectText]
-        if (title.description) return [title.description]
+        // API uses equipStatList array with desc field
+        if (title.equipStatList && Array.isArray(title.equipStatList)) {
+            return title.equipStatList.map((stat: any) => stat.desc).filter(Boolean)
+        }
+        if (title.statList && Array.isArray(title.statList)) {
+            return title.statList.map((stat: any) => stat.desc).filter(Boolean)
+        }
         return []
     }
 
@@ -84,32 +83,32 @@ export default function TitleCard({ titles }: { titles: any }) {
         {
             name: '공격계열',
             icon: <AttackIcon />,
-            total: Math.round(totalCount * 0.34) || attackTitles.length || 104,
-            owned: Math.round(ownedCount * 0.34) || attackTitles.filter((t: any) => t.owned).length || 76,
+            total: Math.round(totalCount * 0.34) || attackTitles.length,
+            owned: attackTitles.filter((t: any) => t.owned || t.isOwned).length,
             representativeTitle: getRepresentative(attackTitles) ? {
-                name: getRepresentative(attackTitles)?.titleName || getRepresentative(attackTitles)?.name || '알트가르드 수호자',
-                effects: parseEffects(getRepresentative(attackTitles)) || ['PVE 피해 증폭 +3.7%', '강타 +2%']
-            } : { name: '알트가르드 수호자', effects: ['PVE 피해 증폭 +3.7%', '강타 +2%'] }
+                name: getRepresentative(attackTitles)?.name,
+                effects: parseEffects(getRepresentative(attackTitles))
+            } : undefined
         },
         {
             name: '방어계열',
             icon: <DefenseIcon />,
-            total: Math.round(totalCount * 0.33) || defenseTitles.length || 100,
-            owned: Math.round(ownedCount * 0.33) || defenseTitles.filter((t: any) => t.owned).length || 73,
+            total: Math.round(totalCount * 0.33) || defenseTitles.length,
+            owned: defenseTitles.filter((t: any) => t.owned || t.isOwned).length,
             representativeTitle: getRepresentative(defenseTitles) ? {
-                name: getRepresentative(defenseTitles)?.titleName || getRepresentative(defenseTitles)?.name || '알트가르드의 성자',
-                effects: parseEffects(getRepresentative(defenseTitles)) || ['추가 방어력 +300', '피해 내성 +5%', '막기 +110']
-            } : { name: '알트가르드의 성자', effects: ['추가 방어력 +300', '피해 내성 +5%', '막기 +110'] }
+                name: getRepresentative(defenseTitles)?.name,
+                effects: parseEffects(getRepresentative(defenseTitles))
+            } : undefined
         },
         {
             name: '기타계열',
             icon: <OtherIcon />,
-            total: Math.round(totalCount * 0.33) || otherTitles.length || 101,
-            owned: Math.round(ownedCount * 0.33) || otherTitles.filter((t: any) => t.owned).length || 79,
+            total: Math.round(totalCount * 0.33) || otherTitles.length,
+            owned: otherTitles.filter((t: any) => t.owned || t.isOwned).length,
             representativeTitle: getRepresentative(otherTitles) ? {
-                name: getRepresentative(otherTitles)?.titleName || getRepresentative(otherTitles)?.name || '군단장 라그타 처단자',
-                effects: parseEffects(getRepresentative(otherTitles)) || ['전투 속도 +3.5%', '이동 속도 +3.5%']
-            } : { name: '군단장 라그타 처단자', effects: ['전투 속도 +3.5%', '이동 속도 +3.5%'] }
+                name: getRepresentative(otherTitles)?.name,
+                effects: parseEffects(getRepresentative(otherTitles))
+            } : undefined
         }
     ]
 
@@ -122,7 +121,6 @@ export default function TitleCard({ titles }: { titles: any }) {
             border: '1px solid #1F2433',
             borderRadius: '12px',
             padding: '1rem',
-            height: '120px',
             boxSizing: 'border-box',
             display: 'flex',
             flexDirection: 'column'
@@ -162,8 +160,7 @@ export default function TitleCard({ titles }: { titles: any }) {
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '0.4rem',
-                flex: 1
+                gap: '0.6rem'
             }}>
                 {categories.map((category, idx) => (
                     <div
@@ -172,27 +169,26 @@ export default function TitleCard({ titles }: { titles: any }) {
                             background: '#0B0D12',
                             border: '1px solid #1F2433',
                             borderRadius: '8px',
-                            padding: '0.4rem',
+                            padding: '0.8rem',
                             transition: 'all 0.2s',
                             display: 'flex',
                             flexDirection: 'column',
-                            justifyContent: 'center'
+                            minHeight: '180px'
                         }}
                         className="category-card-hover"
-                        title={category.representativeTitle ? `${category.representativeTitle.name}\n${category.representativeTitle.effects.join('\n')}` : ''}
                     >
                         {/* Category Header */}
                         <div style={{
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.3rem',
-                            marginBottom: '0.3rem'
+                            marginBottom: '0.4rem'
                         }}>
                             <span style={{ color: '#9CA3AF', flexShrink: 0 }}>
                                 {category.icon}
                             </span>
                             <span style={{
-                                fontSize: '0.7rem',
+                                fontSize: '0.75rem',
                                 fontWeight: 'bold',
                                 color: '#E5E7EB'
                             }}>
@@ -202,7 +198,8 @@ export default function TitleCard({ titles }: { titles: any }) {
 
                         {/* Count */}
                         <div style={{
-                            fontSize: '0.7rem'
+                            fontSize: '0.75rem',
+                            marginBottom: '0.4rem'
                         }}>
                             <span style={{ color: '#E5E7EB', fontWeight: 'bold' }}>
                                 {category.owned}
@@ -210,17 +207,36 @@ export default function TitleCard({ titles }: { titles: any }) {
                             <span style={{ color: '#9CA3AF' }}>/{category.total}</span>
                         </div>
 
-                        {/* Representative Title - 1줄만 */}
+                        {/* Representative Title Name */}
+                        {category.representativeTitle && (
+                            <div style={{
+                                fontSize: '0.75rem',
+                                color: '#FACC15',
+                                fontWeight: 'bold',
+                                marginBottom: '0.4rem',
+                                lineHeight: '1.4'
+                            }}>
+                                {category.representativeTitle.name}
+                            </div>
+                        )}
+
+                        {/* All Effects */}
                         {category.representativeTitle && category.representativeTitle.effects.length > 0 && (
                             <div style={{
-                                fontSize: '0.65rem',
-                                color: '#60A5FA',
-                                marginTop: '0.25rem',
-                                whiteSpace: 'nowrap',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis'
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.25rem'
                             }}>
-                                {category.representativeTitle.effects[0]}
+                                {category.representativeTitle.effects.map((effect, effectIdx) => (
+                                    <div key={effectIdx} style={{
+                                        fontSize: '0.7rem',
+                                        color: '#60A5FA',
+                                        lineHeight: '1.4',
+                                        whiteSpace: 'nowrap'
+                                    }}>
+                                        • {effect}
+                                    </div>
+                                ))}
                             </div>
                         )}
                     </div>

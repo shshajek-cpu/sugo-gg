@@ -12,6 +12,9 @@ const nextConfig = {
             }
         ],
     },
+    experimental: {
+        caseSensitiveRoutes: false,
+    },
 }
 
 module.exports = nextConfig

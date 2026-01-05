@@ -1,261 +1,225 @@
 'use client'
 import { useState } from 'react'
 
-interface MainStat {
-    key: string
-    label: string
-    value: number
-    icon: React.ReactNode
+// Image Paths
+const STAT_ICONS = {
+    OFFENSE: '/주요능력/1.png', // 공격, 치명, 명중, 지식, 민첩
+    DEFENSE: '/주요능력/2.png', // 방어, 저항, 회피, 방패
+    SUPPORT: '/주요능력/3.png'  // 생명, 정신, 의지
 }
 
-// SVG 아이콘 컴포넌트들
-const PowerIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2C8.5 2 5 4.5 5 9c0 2.5 1.5 4.5 3.5 5.5L9 22l3-3 3 3 .5-7.5C17.5 13.5 19 11.5 19 9c0-4.5-3.5-7-7-7z"
-            fill="currentColor" opacity="0.3" />
-        <path d="M7 9a5 5 0 1 1 10 0c0 2-1 3.5-2.5 4.5l-.5 6-2-2-2 2-.5-6C8 13.5 7 12 7 9z"
-            stroke="currentColor" strokeWidth="1.5" fill="none" />
-    </svg>
-)
-
-const AgilityIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 3L4 8v8l8 5 8-5V8l-8-5z" fill="currentColor" opacity="0.3" />
-        <path d="M12 3L4 8l8 5 8-5-8-5z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M4 8v8l8 5 8-5V8" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M12 13v8" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-)
-
-const AccuracyIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="12" cy="12" r="8" fill="currentColor" opacity="0.3" />
-        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <circle cx="12" cy="12" r="4" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-    </svg>
-)
-
-const WillIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2L9 9l-7 1 5 5-1 7 6-3 6 3-1-7 5-5-7-1-3-7z" fill="currentColor" opacity="0.3" />
-        <path d="M12 2L9 9l-7 1 5 5-1 7 6-3 6 3-1-7 5-5-7-1-3-7z" stroke="currentColor" strokeWidth="1.5" fill="none" />
-    </svg>
-)
-
-const KnowledgeIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 4h16v16H4z" fill="currentColor" opacity="0.3" />
-        <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
-        <path d="M8 8h8M8 12h8M8 16h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-)
-
-const StaminaIcon = () => (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 21c-4-4-8-6.5-8-10.5a5.5 5.5 0 0 1 11 0 5.5 5.5 0 0 1 11 0c0 4-4 6.5-8 10.5l-3-2.5-3 2.5z"
-            fill="currentColor" opacity="0.3" />
-        <path d="M12 6a4 4 0 0 1 4 4c0 3-4 6-4 8-0-2-4-5-4-8a4 4 0 0 1 4-4z"
-            stroke="currentColor" strokeWidth="1.5" fill="none" />
-    </svg>
+const StatImage = ({ src, alt }: { src: string, alt: string }) => (
+    <div style={{
+        width: '24px',
+        height: '24px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+    }}>
+        <img src={src} alt={alt} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+    </div>
 )
 
 export default function MainStatsCard({ stats, isEmbedded = false }: { stats: any, isEmbedded?: boolean }) {
-    const [expanded, setExpanded] = useState(false)
+    const [viewMode, setViewMode] = useState<'basic' | 'detail'>('basic')
 
-    if (!stats) return null
+    if (!stats || !stats.statList) return null
 
-    const statList = stats.statList || []
+    // Get Icon based on stat name
+    const getIconForStat = (name: string) => {
+        if (!name) return <StatImage src={STAT_ICONS.SUPPORT} alt="Stat" />
 
-    // 스텟 값 가져오기 헬퍼
-    const getStatValue = (names: string[]): number => {
-        for (const name of names) {
-            const stat = statList.find((s: any) =>
-                s.name === name || s.statName === name ||
-                s.name?.includes(name) || s.statName?.includes(name)
-            )
-            if (stat) {
-                const val = stat.value || stat.statValue || 0
-                return typeof val === 'string' ? parseInt(val.replace(/,/g, '')) : val
-            }
+        // 1. Offense (1.png)
+        if (name.includes('공격') || name.includes('위력') ||
+            name.includes('치명') ||
+            name.includes('명중') || name.includes('적중') || name.includes('정확') ||
+            name.includes('지식') || name.includes('증폭') ||
+            name.includes('민첩')) {
+            return <StatImage src={STAT_ICONS.OFFENSE} alt="Offense" />
         }
-        return 0
+
+        // 2. Defense (2.png)
+        if (name.includes('방어') || name.includes('저항') ||
+            name.includes('회피') || name.includes('방패') ||
+            name.includes('무기방어')) {
+            return <StatImage src={STAT_ICONS.DEFENSE} alt="Defense" />
+        }
+
+        // 3. Support/Vitals (3.png) - Default fallback for HP/MP/Will etc.
+        return <StatImage src={STAT_ICONS.SUPPORT} alt="Support" />
     }
 
-    // 주요 6개 스텟
-    const mainStats: MainStat[] = [
-        { key: 'power', label: '위력', value: getStatValue(['위력', 'Power', '공격력']), icon: <PowerIcon /> },
-        { key: 'agility', label: '민첩', value: getStatValue(['민첩', 'Agility', '공격속도']), icon: <AgilityIcon /> },
-        { key: 'accuracy', label: '정확', value: getStatValue(['정확', 'Accuracy', '명중']), icon: <AccuracyIcon /> },
-        { key: 'will', label: '의지', value: getStatValue(['의지', 'Will', '마법저항']), icon: <WillIcon /> },
-        { key: 'knowledge', label: '지식', value: getStatValue(['지식', 'Knowledge', '마법력']), icon: <KnowledgeIcon /> },
-        { key: 'stamina', label: '체력', value: getStatValue(['체력', 'Stamina', 'HP', '생명력']), icon: <StaminaIcon /> }
-    ]
-
-    // 전체 스텟 리스트 (더보기용)
-    const allStats = statList.map((s: any) => ({
-        name: s.name || s.statName,
-        value: s.value || s.statValue
-    }))
+    // Filter out '전투력' (Combat Power) if it is treated separately, or keep it if user wants ALL stats.
+    // Usually Combat Power is shown in the header, not in the stat grid.
+    // Let's filter out '전투력' just in case to avoid duplication if it's main.
+    const displayStats = stats.statList.filter((s: any) => s.name !== '전투력' && s.name !== '아이템레벨')
 
     return (
-        <div style={isEmbedded ? { width: '100%' } : {
-            background: '#111318',
-            border: '1px solid #1F2433',
-            borderRadius: '12px',
-            padding: '1rem',
-            height: '220px',
-            boxSizing: 'border-box',
+        <div style={{
+            background: isEmbedded ? 'transparent' : '#111318',
+            border: isEmbedded ? 'none' : '1px solid #1F2433',
+            borderRadius: isEmbedded ? '0' : '12px',
+            padding: isEmbedded ? '0' : '1rem',
             display: 'flex',
-            flexDirection: 'column'
+            flexDirection: 'column',
+            gap: '1rem',
+            width: '100%',
+            boxSizing: 'border-box'
         }}>
-            {/* Header - Hidden if embedded */}
-            {!isEmbedded && (
-                <h3 style={{
-                    fontSize: '0.95rem',
-                    fontWeight: 'bold',
-                    color: '#E5E7EB',
-                    margin: 0,
-                    marginBottom: '0.75rem',
-                    height: '20px'
-                }}>
-                    주요 스텟
-                </h3>
-            )}
-
-            {/* 6 Stats Grid */}
+            {/* Header with Switch */}
             <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(6, 1fr)',
-                gap: '0.4rem',
-                marginBottom: '0.5rem',
-                flex: 1
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                paddingBottom: '0.5rem',
+                borderBottom: '1px solid #1F2433'
             }}>
-                {mainStats.map((stat) => (
-                    <div
-                        key={stat.key}
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            padding: '0.5rem 0.2rem',
-                            background: '#0B0D12',
-                            borderRadius: '8px',
-                            border: '1px solid #1F2433',
-                            transition: 'all 0.2s',
-                            cursor: 'default'
-                        }}
-                        className="stat-item-hover"
-                    >
-                        {/* Icon */}
-                        <div style={{
-                            color: '#9CA3AF',
-                            marginBottom: '0.35rem'
-                        }}>
-                            {stat.icon}
-                        </div>
+                <div style={{ fontWeight: 'bold', color: '#E5E7EB', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1rem' }}>주요 능력치</span>
+                </div>
 
-                        {/* Label */}
-                        <span style={{
-                            fontSize: '0.7rem',
-                            color: '#9CA3AF',
-                            marginBottom: '0.2rem'
-                        }}>
-                            {stat.label}
-                        </span>
-
-                        {/* Value */}
-                        <span style={{
-                            fontSize: '0.85rem',
-                            fontWeight: 'bold',
-                            color: '#E5E7EB'
-                        }}>
-                            {stat.value.toLocaleString()}
-                        </span>
-                    </div>
-                ))}
+                {/* Custom Toggle Switch */}
+                <div
+                    onClick={() => setViewMode(prev => prev === 'basic' ? 'detail' : 'basic')}
+                    style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        background: '#1F2433',
+                        borderRadius: '20px',
+                        padding: '2px',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        width: '80px',
+                        height: '24px',
+                        userSelect: 'none'
+                    }}
+                >
+                    <div style={{
+                        position: 'absolute',
+                        left: viewMode === 'basic' ? '2px' : '40px',
+                        background: '#3B82F6',
+                        borderRadius: '16px',
+                        width: '38px',
+                        height: '20px',
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                    }} />
+                    <span style={{
+                        zIndex: 1,
+                        flex: 1,
+                        textAlign: 'center',
+                        fontSize: '0.7rem',
+                        color: viewMode === 'basic' ? '#FFF' : '#9CA3AF',
+                        transition: 'color 0.3s'
+                    }}>
+                        기본
+                    </span>
+                    <span style={{
+                        zIndex: 1,
+                        flex: 1,
+                        textAlign: 'center',
+                        fontSize: '0.7rem',
+                        color: viewMode === 'detail' ? '#FFF' : '#9CA3AF',
+                        transition: 'color 0.3s'
+                    }}>
+                        상세
+                    </span>
+                </div>
             </div>
 
-            {/* Expand Button */}
-            <button
-                onClick={() => setExpanded(!expanded)}
-                style={{
-                    width: '100%',
-                    padding: '0.5rem',
-                    background: 'transparent',
-                    border: '1px solid #1F2433',
-                    borderRadius: '6px',
-                    color: '#9CA3AF',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem',
-                    transition: 'all 0.2s',
-                    height: '32px',
-                    flexShrink: 0
-                }}
-                className="expand-btn-hover"
-            >
-                더보기
-                <span style={{
-                    transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)',
-                    transition: 'transform 0.2s'
-                }}>
-                    ∨
-                </span>
-            </button>
-
-            {/* Expanded Stats List */}
-            {expanded && allStats.length > 0 && (
-                <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: '#0B0D12',
-                    borderRadius: '8px',
-                    border: '1px solid #1F2433',
-                    maxHeight: '300px',
-                    overflowY: 'auto'
-                }}>
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.5rem'
-                    }}>
-                        {allStats.map((stat: any, idx: number) => (
-                            <div
-                                key={idx}
-                                style={{
+            {/* Content: 6-Column Grid for ALL stats */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(4, 1fr)',
+                gap: '0.5rem',
+                width: '100%'
+            }}>
+                {displayStats.map((stat: any, index: number) => {
+                    const isBasic = viewMode === 'basic'
+                    return (
+                        <div
+                            key={index}
+                            style={{
+                                background: '#0B0D12',
+                                border: '1px solid #1F2433',
+                                borderRadius: '8px',
+                                padding: '0.75rem 0.5rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                gap: isBasic ? '0.5rem' : '0',
+                                minHeight: '95px',
+                                transition: 'all 0.2s',
+                                boxSizing: 'border-box',
+                                overflow: 'hidden'
+                            }}
+                        >
+                            {/* Icon */}
+                            {isBasic && (
+                                <div style={{
+                                    color: '#60A5FA',
+                                    flexShrink: 0,
+                                    height: '22px',
                                     display: 'flex',
-                                    justifyContent: 'space-between',
-                                    padding: '0.5rem',
-                                    borderBottom: idx < allStats.length - 1 ? '1px solid #1F2433' : 'none'
-                                }}
-                            >
-                                <span style={{ color: '#9CA3AF', fontSize: '0.875rem' }}>
-                                    {stat.name}
-                                </span>
-                                <span style={{ color: '#E5E7EB', fontSize: '0.875rem', fontWeight: 'bold' }}>
-                                    {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
-                                </span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+                                    alignItems: 'center',
+                                    justifyContent: 'center'
+                                }}>
+                                    {getIconForStat(stat.name || stat.statName)}
+                                </div>
+                            )}
 
-            <style jsx>{`
-                .stat-item-hover:hover {
-                    border-color: #FACC15;
-                    transform: translateY(-2px);
-                }
-                .expand-btn-hover:hover {
-                    border-color: #9CA3AF;
-                    color: #E5E7EB;
-                }
-            `}</style>
+                            {/* Text Content */}
+                            <div style={{
+                                textAlign: 'center',
+                                width: '100%',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0.25rem',
+                                overflow: 'hidden',
+                                justifyContent: 'center',
+                                height: isBasic ? 'auto' : '100%'
+                            }}>
+                                {isBasic && (
+                                    <div style={{
+                                        fontSize: '0.7rem',
+                                        color: '#9CA3AF',
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis'
+                                    }}>
+                                        {stat.name || stat.statName}
+                                    </div>
+                                )}
+
+                                {/* Value vs Detail */}
+                                <div style={{
+                                    fontSize: isBasic ? '0.95rem' : '0.75rem',
+                                    fontWeight: isBasic ? 'bold' : 'normal',
+                                    color: '#E5E7EB',
+                                    whiteSpace: isBasic ? 'nowrap' : 'normal', // Allow wrap in detail for full visibility
+                                    wordBreak: 'keep-all', // Korean word break optimization
+                                    lineHeight: '1.2',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: '100%',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textAlign: 'center'
+                                }}>
+                                    {isBasic
+                                        ? (typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value)
+                                        : (stat.statSecondList && stat.statSecondList.length > 0
+                                            ? stat.statSecondList.join(' ')
+                                            : '-')
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
         </div>
     )
 }

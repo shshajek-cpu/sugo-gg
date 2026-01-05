@@ -1,9 +1,34 @@
 import { useState } from 'react'
+import { calculateCombatPower, getTierInfo, getTierBadgeStyle } from '../utils/combatPower'
 
-export default function ProfileSection({ character, arcana, onArcanaClick }: { character: any; arcana?: any[]; onArcanaClick?: (item: any) => void }) {
+export default function ProfileSection({ character, arcana, onArcanaClick, stats, equipment }: { character: any; arcana?: any[]; onArcanaClick?: (item: any) => void; stats?: any; equipment?: any[] }) {
     if (!character) return null
 
     const [hoveredArcana, setHoveredArcana] = useState<any | null>(null)
+
+    // Extract item level from stats (same way as MainStatsCard)
+    const statList = stats?.statList || []
+    const getStatValue = (names: string[]): number => {
+        for (const name of names) {
+            const stat = statList.find((s: any) =>
+                s.name === name || s.statName === name ||
+                s.name?.includes(name) || s.statName?.includes(name)
+            )
+            if (stat) {
+                const val = stat.value || stat.statValue || 0
+                return typeof val === 'string' ? parseInt(val.replace(/,/g, '')) : val
+            }
+        }
+        return 0
+    }
+
+    const itemLevel = getStatValue(['아이템', 'Item', 'item'])
+
+    // Calculate combat power and tier
+    const allEquipment = equipment || []
+    const combatPower = calculateCombatPower(stats, allEquipment)
+    const tierInfo = getTierInfo(combatPower)
+    const tierBadgeStyle = getTierBadgeStyle(tierInfo)
 
     // Calculate rank tier based on percentile or rank
     const getRankTier = (percentile: number) => {
@@ -63,14 +88,14 @@ export default function ProfileSection({ character, arcana, onArcanaClick }: { c
 
     return (
         <div style={{
-            background: '#111318',
-            border: '1px solid #1F2433',
+            background: 'transparent',
+            border: 'none',
             borderRadius: '12px',
             padding: '1rem',
             display: 'flex',
             flexDirection: 'column',
             gap: '1rem',
-            minHeight: '638px',
+            height: '100%',
             boxSizing: 'border-box'
         }}>
             {/* Character Image & Basic Info */}
@@ -174,6 +199,16 @@ export default function ProfileSection({ character, arcana, onArcanaClick }: { c
                         }}>
                             {character.class}
                         </span>
+                        <span style={{
+                            padding: '0.2rem 0.6rem',
+                            background: '#0B0D12',
+                            border: '1px solid #60A5FA40',
+                            borderRadius: '4px',
+                            fontSize: '0.75rem',
+                            color: '#60A5FA'
+                        }}>
+                            아이템 Lv.{itemLevel || character.item_level || 0}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -195,18 +230,39 @@ export default function ProfileSection({ character, arcana, onArcanaClick }: { c
                 <div style={{
                     fontSize: '0.65rem',
                     color: '#9CA3AF',
-                    marginBottom: '0.35rem',
+                    marginBottom: '0.5rem',
                     textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
+                    letterSpacing: '0.1em',
+                    fontWeight: '600'
                 }}>
-                    Combat Power
+                    NOA 전투력
                 </div>
                 <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: 'bold',
-                    color: rankTier.isTop ? rankTier.color : '#E5E7EB'
+                    fontSize: '2.5rem',
+                    fontWeight: '900',
+                    background: 'linear-gradient(135deg, #FACC15 0%, #FDE047 50%, #FACC15 100%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    backgroundClip: 'text',
+                    letterSpacing: '-0.02em',
+                    lineHeight: '1',
+                    textShadow: '0 0 30px rgba(250, 204, 21, 0.5)',
+                    filter: 'drop-shadow(0 0 10px rgba(250, 204, 21, 0.3))'
                 }}>
-                    {character.power?.toLocaleString() || '0'}
+                    {combatPower.toLocaleString()}
+                </div>
+                {/* Tier Badge */}
+                <div style={{
+                    marginTop: '0.75rem',
+                    display: 'flex',
+                    justifyContent: 'center'
+                }}>
+                    <div style={{
+                        ...tierBadgeStyle,
+                        boxShadow: `0 0 15px ${tierInfo.color}40`
+                    }}>
+                        {tierInfo.displayName}
+                    </div>
                 </div>
             </div>
 

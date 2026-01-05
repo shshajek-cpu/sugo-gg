@@ -27,7 +27,7 @@ export default function EquipmentTooltip({ item }: EquipmentTooltipProps) {
             border: `1px solid ${tierColor}80`,
             borderRadius: '8px',
             padding: '12px',
-            zIndex: 10000,
+            zIndex: 99999, // Ensure it's on top of everything
             boxShadow: '0 10px 25px rgba(0,0,0,0.8)',
             pointerEvents: 'none', // Prevent tooltip from capturing mouse events
             textAlign: 'left'

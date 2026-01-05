@@ -32,23 +32,10 @@ https.get(url, options, (res) => {
             console.log('\n=== STAT KEYS ===');
             console.log(Object.keys(json.stat || {}));
 
-            console.log('\n=== SEARCHING FOR 3047 or similar number ===');
-            const searchNumber = (obj, path = '') => {
-                for (const key in obj) {
-                    const value = obj[key];
-                    const currentPath = path ? `${path}.${key}` : key;
-
-                    if (typeof value === 'number' && value >= 3000 && value <= 3100) {
-                        console.log(`FOUND: ${currentPath} = ${value}`);
-                    }
-
-                    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-                        searchNumber(value, currentPath);
-                    }
-                }
-            };
-
-            searchNumber(json);
+            console.log('\n=== STAT LIST SAMPLE ===');
+            if (json.stat && json.stat.statList) {
+                console.log(JSON.stringify(json.stat.statList.slice(0, 5), null, 2));
+            }
 
         } catch (e) {
             console.error('Failed to parse JSON:', e.message);

@@ -2,13 +2,16 @@
 import EquipmentCard from './EquipmentCard'
 
 interface EquipmentGridProps {
-    equipment?: any[]
-    accessories?: any[]
+    equipment: any[]
+    accessories: any[]
+    pets?: any[]
+    wings?: any[]
+    appearance?: any[]
+    debugInfo?: any // Added for debugging
     onItemClick?: (item: any) => void
 }
 
-export default function EquipmentGrid({ equipment = [], accessories = [], onItemClick }: EquipmentGridProps) {
-    // Equipment slots
+export default function EquipmentGrid({ equipment = [], accessories = [], pets = [], wings = [], appearance = [], debugInfo, onItemClick }: EquipmentGridProps) {
     // Equipment slots - Ordered by User Request (Top-Left to Bottom-Right)
     const weaponSlots = [
         '주무기',   // 1
@@ -41,11 +44,11 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
         <div style={{
             display: 'flex',
             flexDirection: 'column',
-            gap: '1rem',
-            height: '100%'
+            gap: '1.5rem', // Slight gap between major sections
+            // height: '100%' // Removed to prevent stretching
         }}>
             {/* Weapons & Armor */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{
                     color: '#E5E7EB',
                     fontSize: '0.9rem',
@@ -57,9 +60,10 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
                 </h3>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '0.5rem',
-                    flex: 1
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '2px',
+                    alignContent: 'start',
+                    // flex: 1
                 }}>
                     {weaponSlots.map(slot => {
                         const item = equipment?.find(e => e.slot === slot)
@@ -69,7 +73,7 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
             </div>
 
             {/* Accessories */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <h3 style={{
                     color: '#E5E7EB',
                     fontSize: '0.9rem',
@@ -81,9 +85,10 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
                 </h3>
                 <div style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(2, 1fr)',
-                    gap: '0.5rem',
-                    flex: 1
+                    gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                    gap: '2px',
+                    alignContent: 'start',
+                    // flex: 1
                 }}>
                     {accessorySlots.map(slot => {
                         const item = accessories?.find(a => a.slot === slot)
@@ -91,6 +96,78 @@ export default function EquipmentGrid({ equipment = [], accessories = [], onItem
                     })}
                 </div>
             </div>
+
+            {/* Pets & Wings */}
+            {(pets.length > 0 || wings.length > 0) && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h3 style={{
+                        color: '#E5E7EB',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        margin: 0,
+                        marginBottom: '0.5rem'
+                    }}>
+                        펫 / 날개
+                    </h3>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: '2px',
+                        alignContent: 'start'
+                    }}>
+                        {pets.map((pet, idx) => (
+                            <EquipmentCard key={`pet-${idx}`} slot="펫" item={pet} onClick={onItemClick} />
+                        ))}
+                        {wings.map((wing, idx) => (
+                            <EquipmentCard key={`wing-${idx}`} slot="날개" item={wing} onClick={onItemClick} />
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Appearance */}
+            {appearance.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <h3 style={{
+                        color: '#E5E7EB',
+                        fontSize: '0.9rem',
+                        fontWeight: 'bold',
+                        margin: 0,
+                        marginBottom: '0.5rem'
+                    }}>
+                        외형 / 모션
+                    </h3>
+                    <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
+                        gap: '2px',
+                        alignContent: 'start'
+                    }}>
+                        {/* Sort Appearance Items: Head -> Body -> Hands -> Legs -> Feet -> Others */}
+                        {[...appearance].sort((a, b) => {
+                            const order: Record<string, number> = {
+                                '투구': 1, '머리': 1, '두건': 1, '모자': 1, '머리장식': 1, '가발': 1,
+                                '흉갑': 2, '상의': 2, '의상': 2, '옷': 2, '전신': 2,
+                                '견갑': 3, '어깨': 3,
+                                '장갑': 4, '손': 4,
+                                '각반': 5, '하의': 5,
+                                '장화': 6, '신발': 6, '발': 6,
+                                '주무기': 7, '무기': 7,
+                                '보조무기': 8, '방패': 8,
+                                '날개': 9,
+                                '모션': 10
+                            }
+                            const slotA = a.slot || a.categoryName || ''
+                            const slotB = b.slot || b.categoryName || ''
+                            const scoreA = order[slotA] || 99
+                            const scoreB = order[slotB] || 99
+                            return scoreA - scoreB
+                        }).map((item, idx) => (
+                            <EquipmentCard key={`appearance-${idx}`} slot={item.slot || "외형"} item={item} onClick={onItemClick} />
+                        ))}
+                    </div>
+                </div>
+            )}
         </div >
     )
 }

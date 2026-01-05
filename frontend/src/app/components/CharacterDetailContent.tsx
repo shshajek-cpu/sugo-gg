@@ -4,41 +4,10 @@ import CharacterHeader from './CharacterHeader'
 import PowerDisplay from './PowerDisplay'
 import EquipmentGrid from './EquipmentGrid'
 import StatCard from './StatCard'
+import SkillSection from './SkillSection'
+import { useSkillProcessing } from '../hooks/useSkillProcessing'
+import { useCharacterData } from '../hooks/useCharacterData'
 import styles from './CharacterDetailContent.module.css'
-
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000').replace(/\/api$/, '')
-
-interface FullCharacterData {
-    profile: {
-        id: number
-        name: string
-        server: string
-        class: string
-        level: number
-        race?: string
-        legion?: string
-        character_image_url?: string
-    }
-    power: {
-        combat_score: number
-        item_level: number
-        tier_rank: string
-        percentile: number
-    }
-    stats: {
-        primary: any
-        detailed: any
-    }
-    equipment: any[]
-    titles: any[]
-    ranking: any[]
-    pet_wings: any[]
-    skills: any[]
-    stigma: any[]
-    devanion: any
-    arcana: any[]
-    warning?: string
-}
 
 interface CharacterDetailContentProps {
     server: string
@@ -47,9 +16,6 @@ interface CharacterDetailContentProps {
 }
 
 export default function CharacterDetailContent({ server, name, onBack }: CharacterDetailContentProps) {
-    const [data, setData] = useState<FullCharacterData | null>(null)
-    const [loading, setLoading] = useState(true)
-    const [error, setError] = useState<string | null>(null)
     const [activeTab, setActiveTab] = useState('basic')
 
     // Processed Data State
@@ -57,94 +23,48 @@ export default function CharacterDetailContent({ server, name, onBack }: Charact
     const [accessories, setAccessories] = useState<any[]>([])
     const [statList, setStatList] = useState<any[]>([])
 
+    // Fetch character data using custom hook
+    const { data, loading, error, refetch } = useCharacterData(server, name)
+
+    // Process skills using custom hook
+    const { processedSkills, stats: skillStats } = useSkillProcessing(
+        data?.skills || [],
+        data?.stigma || []
+    )
+
+    // Process equipment and stats when data changes
     useEffect(() => {
-        if (!server || !name) return
+        if (data) {
+            // Process Equipment
+            const gearSlots = ['주무기', '보조무기', '투구', '견갑', '흉갑', '허리띠', '각반', '장갑', '망토', '장화']
+            const accSlots = ['귀걸이1', '귀걸이2', '목걸이', '아뮬렛', '반지1', '반지2', '팔찌1', '팔찌2', '룬1', '룬2']
 
-        setLoading(true)
-        setError(null)
+            const gears = (data.equipment || []).filter(item => gearSlots.includes(item.slot))
+            const accs = (data.equipment || []).filter(item => accSlots.includes(item.slot))
 
-        // Step 1: Search to get ID
-        fetch(`${API_BASE_URL}/api/characters/search?server=${server}&name=${encodeURIComponent(name)}`)
-            .then(res => {
-                if (!res.ok) throw new Error(`캐릭터를 찾을 수 없습니다. (Status: ${res.status})`)
-                return res.json()
+            setGear(gears)
+            setAccessories(accs)
+
+            // Process Stats
+            const primary = data.stats?.primary || {}
+            const detailed = data.stats?.detailed || {}
+            const list: any[] = []
+
+            Object.entries(primary).forEach(([key, value]) => {
+                list.push({ name: key, value: value, type: 'primary' })
             })
-            .then(searchData => {
-                // Step 2: Fetch Full Details using ID
-                return fetch(`${API_BASE_URL}/api/characters/${searchData.id}/full`)
+
+            Object.entries(detailed).forEach(([key, value]) => {
+                if (typeof value === 'object' && value !== null) {
+                    list.push({ name: key, value: (value as any).total || value, ...value, type: 'detailed' })
+                } else {
+                    list.push({ name: key, value: value, type: 'detailed' })
+                }
             })
-            .then(res => {
-                if (!res.ok) throw new Error(`상세 정보를 불러올 수 없습니다. (Status: ${res.status})`)
-                return res.json()
-            })
-            .then((fullData: FullCharacterData) => {
-                setData(fullData)
-                processEquipment(fullData.equipment || [])
-                processStats(fullData.stats || {})
-                setLoading(false)
-            })
-            .catch(err => {
-                setError(err.message || '정보를 불러오는 중 오류가 발생했습니다.')
-                setLoading(false)
-            })
-    }, [server, name])
 
-    const processEquipment = (equipList: any[]) => {
-        const gearSlots = ['주무기', '보조무기', '투구', '견갑', '흉갑', '허리띠', '각반', '장갑', '망토', '장화']
-        const accSlots = ['귀걸이1', '귀걸이2', '목걸이', '아뮬렛', '반지1', '반지2', '팔찌1', '팔찌2', '룬1', '룬2']
-
-        const gears = equipList.filter(item => gearSlots.includes(item.slot))
-        const accs = equipList.filter(item => accSlots.includes(item.slot))
-
-        setGear(gears)
-        setAccessories(accs)
-    }
-
-    const processStats = (statsData: any) => {
-        const primary = statsData.primary || {}
-        const detailed = statsData.detailed || {}
-        const list: any[] = []
-
-        // Add primary stats (base stats)
-        Object.entries(primary).forEach(([key, value]) => {
-            list.push({ name: key, value: value, type: 'primary' })
-        })
-
-        // Add detailed stats
-        Object.entries(detailed).forEach(([key, value]) => {
-            if (typeof value === 'object' && value !== null) {
-                list.push({ name: key, value: (value as any).total || value, ...value, type: 'detailed' })
-            } else {
-                list.push({ name: key, value: value, type: 'detailed' })
-            }
-        })
-
-        setStatList(list)
-    }
-
-    const handleRefresh = async () => {
-        if (loading || !data) return
-        const confirmRefresh = window.confirm('최신 데이터를 강제로 불러오시겠습니까? 시간이 소요될 수 있습니다.')
-        if (!confirmRefresh) return
-
-        setLoading(true)
-        setError(null)
-
-        try {
-            await fetch(`${API_BASE_URL}/api/characters/search?server=${server}&name=${encodeURIComponent(name)}&refresh_force=true`)
-            const res = await fetch(`${API_BASE_URL}/api/characters/${data.profile.id}/full`)
-            if (!res.ok) throw new Error('갱신된 데이터를 불러오는데 실패했습니다.')
-
-            const fullData = await res.json()
-            setData(fullData)
-            processEquipment(fullData.equipment || [])
-            processStats(fullData.stats || {})
-        } catch (err: any) {
-            setError(err.message || '데이터 갱신 중 오류가 발생했습니다.')
-        } finally {
-            setLoading(false)
+            setStatList(list)
         }
-    }
+    }, [data])
 
     if (loading) {
         return (
@@ -200,10 +120,11 @@ export default function CharacterDetailContent({ server, name, onBack }: Charact
 
             {/* Manual Refresh Button */}
             <button
-                onClick={handleRefresh}
+                onClick={refetch}
                 disabled={loading}
                 className={styles.refreshButton}
                 title="데이터 강제 갱신"
+                aria-label="캐릭터 데이터 강제 갱신"
             >
                 🔄
             </button>
@@ -382,24 +303,48 @@ export default function CharacterDetailContent({ server, name, onBack }: Charact
                     {/* Skills Tab */}
                     {activeTab === 'skills' && (
                         <div className={styles.skillsContent}>
-                            <h3 className={styles.sectionTitle}>⚡ 스킬</h3>
-                            {data.skills && data.skills.length > 0 ? (
-                                <div className={styles.skillGrid}>
-                                    {data.skills.map((skill, idx) => (
-                                        <div key={idx} className={styles.skillCard}>
-                                            {skill.icon && (
-                                                <img src={skill.icon} alt="skill" className={styles.skillIcon} />
-                                            )}
-                                            <span className={styles.skillLevel}>
-                                                {skill.level ? `Lv.${skill.level}` : ''}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
+                            {processedSkills.length === 0 ? (
                                 <div className={styles.emptyState}>
                                     ⚡ 스킬 정보가 없습니다
                                 </div>
+                            ) : (
+                                <>
+                                    {/* Debug Info Panel - 개발 환경에서만 표시 */}
+                                    {process.env.NODE_ENV === 'development' && (
+                                        <div style={{
+                                            background: '#1a1d24',
+                                            border: '1px solid #2d3748',
+                                            borderRadius: '8px',
+                                            padding: '1rem',
+                                            marginBottom: '1rem',
+                                            fontFamily: 'monospace',
+                                            fontSize: '0.875rem'
+                                        }}>
+                                            <div style={{
+                                                color: '#FCD34D',
+                                                fontWeight: 'bold',
+                                                marginBottom: '0.5rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem'
+                                            }}>
+                                                🐛 디버그 정보
+                                            </div>
+                                            <div style={{ color: '#E5E7EB', lineHeight: '1.8' }}>
+                                                <div>📊 전체 스킬: <strong style={{ color: '#60A5FA' }}>{skillStats.total}개</strong></div>
+                                                <div>⚡ 액티브 스킬 (1-12번): <strong style={{ color: skillStats.activeCount === 12 ? '#10B981' : '#EF4444' }}>{skillStats.activeCount}개</strong> {skillStats.activeCount !== 12 && '❌'}</div>
+                                                <div>🎯 패시브 스킬 (13-22번): <strong style={{ color: skillStats.passiveCount === 10 ? '#10B981' : '#EF4444' }}>{skillStats.passiveCount}개</strong> {skillStats.passiveCount !== 10 && '❌'}</div>
+                                                <div>✨ 스티그마 (23-33번): <strong style={{ color: skillStats.stigmaCount > 0 ? '#10B981' : '#EF4444' }}>{skillStats.stigmaCount}개</strong> {skillStats.stigmaCount === 0 && '❌'}</div>
+                                                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#9CA3AF' }}>
+                                                    {data.skills?.length && `• API skills: ${data.skills.length}개`}
+                                                    {data.stigma?.length && ` • API stigma: ${data.stigma.length}개`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <SkillSection skills={{ skillList: processedSkills }} />
+                                </>
                             )}
                         </div>
                     )}
