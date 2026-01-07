@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import ProfileSection from '../../../components/ProfileSection'
 import TitleCard from '../../../components/TitleCard'
-import MainStatsCard from '../../../components/MainStatsCard'
+
 import DaevanionCard from '../../../components/DaevanionCard'
 import EquipmentGrid from '../../../components/EquipmentGrid'
 import AccordionCard from '../../../components/AccordionCard'
@@ -418,6 +418,19 @@ export default function CharacterDetailPage() {
   const [mappedRankings, setMappedRankings] = useState<any>({})
   const [mappedSkills, setMappedSkills] = useState<any>(null)
 
+  // 디버그 패널 상태
+  const [debugInfo, setDebugInfo] = useState<any>({})
+
+  // 전역 디버그 함수 등록 (window에 등록해서 어디서든 호출 가능)
+  useEffect(() => {
+    (window as any).setDebugInfo = (info: any) => {
+      setDebugInfo((prev: any) => ({ ...prev, ...info }))
+    }
+    return () => {
+      delete (window as any).setDebugInfo
+    }
+  }, [])
+
   // API params for DevanionBoard
   const [apiCharacterId, setApiCharacterId] = useState<string | undefined>(undefined)
   const [apiServerId, setApiServerId] = useState<string | undefined>(undefined)
@@ -700,6 +713,37 @@ export default function CharacterDetailPage() {
       position: 'relative',
       boxSizing: 'border-box'
     }}>
+      {/* 왼쪽 고정 디버그 패널 */}
+      <div style={{
+        position: 'fixed',
+        top: '100px',
+        left: '10px',
+        width: '220px',
+        maxHeight: 'calc(100vh - 120px)',
+        overflowY: 'auto',
+        padding: '12px',
+        background: 'rgba(15, 17, 23, 0.95)',
+        border: '1px solid #374151',
+        borderRadius: '8px',
+        fontSize: '0.75rem',
+        color: '#9CA3AF',
+        zIndex: 9999,
+      }}>
+        <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '0.85rem', color: '#FACC15', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          🔧 디버그 패널
+        </div>
+        {Object.keys(debugInfo).length === 0 ? (
+          <div style={{ color: '#6B7280' }}>장비에 마우스를 올리면 정보가 표시됩니다</div>
+        ) : (
+          Object.entries(debugInfo).map(([key, value]) => (
+            <div key={key} style={{ marginBottom: '4px', borderBottom: '1px solid #27272A', paddingBottom: '4px' }}>
+              <span style={{ color: '#60A5FA' }}>{key}:</span>{' '}
+              <span style={{ color: '#E5E7EB' }}>{typeof value === 'object' ? JSON.stringify(value) : String(value)}</span>
+            </div>
+          ))
+        )}
+      </div>
+
       {/* Refresh FAB */}
       <button
         onClick={handleRefresh}
@@ -940,9 +984,9 @@ export default function CharacterDetailPage() {
             {/* 1. Title Card (Always Visible) */}
             <TitleCard titles={mappedTitles} />
 
-            {/* 2. Main Stats */}
+            {/* 2. Ranking Info - Replaces MainStats */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              <MainStatsCard stats={mappedStats} />
+              <RankingCard rankings={mappedRankings} />
             </div>
 
             {/* 3. Daevanion Card (Bottom Fixed) */}
@@ -956,10 +1000,7 @@ export default function CharacterDetailPage() {
               onClose={() => setSelectedItem(null)}
             />
           )}
-          {/* BOTTOM SECTION: Ranking Info */}
-          <div style={{ width: '100%', position: 'relative', zIndex: 1, gridColumn: '1 / -1' }}>
-            <RankingCard rankings={mappedRankings} />
-          </div>
+
 
           {/* DETAILED VIEW SECTION */}
           <div style={{ width: '100%', position: 'relative', zIndex: 1, gridColumn: '1 / -1' }}>

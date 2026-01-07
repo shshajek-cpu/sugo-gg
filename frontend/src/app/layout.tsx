@@ -27,15 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             justifyContent: 'space-between',
                             padding: '0 2rem'
                         }}>
-                            {/* Text Logo */}
-                            <Link href="/" style={{
-                                fontSize: '1.5rem',
-                                fontWeight: '800',
-                                color: 'white',
-                                textDecoration: 'none',
-                                letterSpacing: '-0.5px'
-                            }}>
-                                NO<span style={{ color: '#facc15' }}>A</span>
+                            <Link href="/" style={{ display: 'flex', alignItems: 'center' }}>
+                                <img src="/logo.png" alt="HitOn" style={{ height: '32px', width: 'auto' }} />
                             </Link>
 
                             {/* Main Nav - Only active pages */}
@@ -68,7 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                     marginBottom: '0.5rem',
                                     color: 'white'
                                 }}>
-                                    NO<span style={{ color: '#facc15' }}>A</span>
+                                    <img src="/logo.png" alt="HitOn" style={{ height: '60px', width: 'auto', marginBottom: '0.5rem', display: 'inline-block' }} />
                                 </h1>
                                 <p style={{ color: 'var(--text-secondary)', fontSize: '1rem' }}>
                                     실시간 캐릭터 정보를 빠르게 검색하세요.

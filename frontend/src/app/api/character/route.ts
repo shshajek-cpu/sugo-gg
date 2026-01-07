@@ -219,8 +219,8 @@ export async function GET(request: NextRequest) {
                             return { ...item, detail: null }
                         }
 
-                        // Correct endpoint and parameters
-                        const detailUrl = `https://aion2.plaync.com/api/character/equipment/item?id=${encodeURIComponent(itemId)}&enchantLevel=${item.enchantLevel || 0}&characterId=${encodeURIComponent(characterId)}&serverId=${serverId}&slotPos=${item.slotPos}&lang=ko`
+                        // Correct endpoint and parameters (exceedLevel 추가!)
+                        const detailUrl = `https://aion2.plaync.com/api/character/equipment/item?id=${encodeURIComponent(itemId)}&enchantLevel=${item.enchantLevel || 0}&exceedLevel=${item.exceedLevel || 0}&characterId=${encodeURIComponent(characterId)}&serverId=${serverId}&slotPos=${item.slotPos}&lang=ko`
 
                         const detailRes = await fetch(detailUrl, { headers })
 

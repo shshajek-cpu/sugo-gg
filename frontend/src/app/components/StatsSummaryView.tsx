@@ -24,6 +24,26 @@ const CATEGORY_TABS: { id: StatCategory, label: string, icon: string }[] = [
   { id: 'utility', label: '유틸', icon: '✨' },
 ]
 
+// 퍼센트만 표시할 스탯들 (고정값 숨김)
+const PERCENTAGE_ONLY_STATS = new Set([
+  '전투 속도',
+  '이동 속도',
+  '피해 증폭',
+  '피해 내성',
+  '치명타 피해 증폭',
+  '치명타 피해 내성',
+  '다단 히트 적중',
+  '다단 히트 저항',
+  '완벽',
+  '완벽 저항',
+  '재생',
+  '재생 관통',
+  '철벽',
+  '철벽 관통',
+  '재사용 시간',
+  '재사용 시간 감소',
+])
+
 export default function StatsSummaryView({ stats, equipment, daevanion, titles, equippedTitleId, characterId, serverId }: StatsSummaryViewProps) {
   const [activeCategory, setActiveCategory] = useState<StatCategory>('attack')
   const [debugMode, setDebugMode] = useState(DEBUG_CONFIG.enabled)
@@ -40,18 +60,18 @@ export default function StatsSummaryView({ stats, equipment, daevanion, titles, 
   const [showDebugPanel, setShowDebugPanel] = useState(false)
 
   const getDebugData = () => {
-    if (!equipment?.[0]) return '장비 데이터 없음'
+    if (!equipment?.length) return '장비 데이터 없음'
 
-    const weapon = equipment[0]
-    const rawData = weapon.detail?._raw || {}
+    // 모든 장비의 돌파 상태 확인
+    const allEquipBreakthrough = equipment.map(item => ({
+      slot: item.slot,
+      name: item.name,
+      enhancement: item.enhancement,
+      breakthrough: item.breakthrough,
+    }))
 
     return {
-      '★ weapon 객체의 모든 키': Object.keys(weapon),
-      '★ exceedLevel': weapon.exceedLevel,
-      '★ enchantLevel': weapon.enchantLevel,
-      '아이템명': weapon.name,
-      'mainStats': rawData.mainStats || '없음',
-      'subStats': rawData.subStats || '없음',
+      '★★★ 전체 장비 돌파 현황': allEquipBreakthrough,
     }
   }
 
@@ -461,14 +481,25 @@ export default function StatsSummaryView({ stats, equipment, daevanion, titles, 
                     }}>
                       {/* 메인 값 */}
                       <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.25rem' }}>
-                        {stat.totalValue > 0 && stat.totalValue.toLocaleString()}
-                        {stat.totalPercentage > 0 && (
-                          <span style={{ 
-                            fontSize: stat.totalValue > 0 ? '0.7rem' : '0.9rem', 
-                            color: stat.totalValue > 0 ? (inconsistency ? '#FCA5A5' : stat.color) : '#F3F4F6' 
-                          }}>
-                            {stat.totalValue > 0 ? '(+' : '+'}{stat.totalPercentage.toFixed(1)}%{stat.totalValue > 0 ? ')' : ''}
+                        {/* 퍼센트 기반 스탯은 퍼센트만 표시, 고정값 숨김 */}
+                        {PERCENTAGE_ONLY_STATS.has(stat.name) ? (
+                          // 퍼센트 기반 스탯: 퍼센트만 크게 표시
+                          <span style={{ color: inconsistency ? '#FCA5A5' : '#F3F4F6' }}>
+                            +{(stat.totalPercentage + stat.totalValue).toFixed(1)}%
                           </span>
+                        ) : (
+                          // 일반 스탯: 고정값 + 퍼센트 표시
+                          <>
+                            {stat.totalValue > 0 && stat.totalValue.toLocaleString()}
+                            {stat.totalPercentage > 0 && (
+                              <span style={{
+                                fontSize: stat.totalValue > 0 ? '0.75rem' : '0.9rem',
+                                color: inconsistency ? '#FCA5A5' : '#F3F4F6'
+                              }}>
+                                +{stat.totalPercentage.toFixed(1)}%
+                              </span>
+                            )}
+                          </>
                         )}
                       </div>
                       

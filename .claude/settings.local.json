@@ -80,7 +80,11 @@
       "Bash(do echo \"Testing: $endpoint\")",
       "Bash(node:*)",
       "Bash(npm install:*)",
-      "Bash(opencode --version:*)"
+      "Bash(opencode --version:*)",
+      "Bash(timeout:*)",
+      "Bash(cmd //c \"taskkill /PID 52036 /F\")",
+      "mcp__ide__getDiagnostics",
+      "Bash(cmd //c \"taskkill /PID 45596 /F\")"
     ]
   }
 }

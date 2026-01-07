@@ -36,6 +36,28 @@ const STAT_MERGE_GROUPS: Record<string, string[]> = {
 }
 
 /**
+ * 퍼센트 증가 스탯 매핑
+ * key: 기본 스탯, value: 퍼센트 증가 스탯
+ * 기본 스탯에 퍼센트 증가를 적용하여 최종값 계산
+ */
+const PERCENTAGE_INCREASE_MAP: Record<string, string> = {
+  '공격력': '공격력 증가',
+  '방어력': '방어력 증가',
+  '정신력': '정신력 증가',
+  '생명력': '생명력 증가',
+}
+
+/**
+ * 숨길 스탯 목록 (다른 스탯에 합산되어 적용됨)
+ */
+const HIDDEN_STATS = new Set([
+  '공격력 증가',
+  '방어력 증가',
+  '정신력 증가',
+  '생명력 증가',
+])
+
+/**
  * 스탯 카테고리 매핑
  */
 const STAT_CATEGORY_MAP: Record<string, StatCategory> = {
@@ -244,7 +266,56 @@ export function parseStatString(statStr: string): { name: string, value: number,
 }
 
 /**
- * 장비에서 스탯 추출
+ * 돌파(breakthrough) 보너스 계산
+ * - 무기/가더: 공격력 +30, 공격력 증가 +1% (per level)
+ * - 방어구: 방어력 +40, 생명력 +40, 방어력 증가 +1% (per level)
+ * - 장신구: 공격력 +20, 방어력 +20, 공격력 증가 +1% (per level)
+ */
+function calculateBreakthroughBonus(item: any): { name: string, value: number, percentage: number }[] {
+  // 엄격한 체크: breakthrough가 숫자이고 1 이상이어야 함
+  const breakthrough = typeof item.breakthrough === 'number' ? item.breakthrough : parseInt(item.breakthrough) || 0
+  if (!breakthrough || breakthrough <= 0) return []
+
+  const slot = (item.slot || '').toLowerCase()
+  const category = (item.category || '').toLowerCase()
+  const bonuses: { name: string, value: number, percentage: number }[] = []
+
+  // 무기/가더 (MainHand, OffHand with 가더)
+  const isWeapon = slot.includes('주무기') || slot.includes('무기') || slot === 'mainhand'
+  const isGuard = slot.includes('보조') || slot.includes('가더') || category.includes('가더') || slot === 'offhand'
+
+  // 방어구 (투구, 견갑, 상의, 하의, 장갑, 신발)
+  const isArmor = slot.includes('투구') || slot.includes('견갑') || slot.includes('상의') ||
+                  slot.includes('하의') || slot.includes('장갑') || slot.includes('신발') ||
+                  slot === 'head' || slot === 'shoulder' || slot === 'chest' ||
+                  slot === 'pants' || slot === 'gloves' || slot === 'shoes'
+
+  // 장신구 (귀걸이, 목걸이, 반지, 벨트)
+  const isAccessory = slot.includes('귀걸이') || slot.includes('목걸이') ||
+                      slot.includes('반지') || slot.includes('벨트') ||
+                      slot === 'earring' || slot === 'necklace' || slot === 'ring' || slot === 'belt'
+
+  if (isWeapon || isGuard) {
+    // 무기/가더: 공격력 +30, 공격력 증가 +1%
+    bonuses.push({ name: '공격력', value: 30 * breakthrough, percentage: 0 })
+    bonuses.push({ name: '공격력 증가', value: 0, percentage: 1 * breakthrough })
+  } else if (isArmor) {
+    // 방어구: 방어력 +40, 생명력 +40, 방어력 증가 +1%
+    bonuses.push({ name: '방어력', value: 40 * breakthrough, percentage: 0 })
+    bonuses.push({ name: '생명력', value: 40 * breakthrough, percentage: 0 })
+    bonuses.push({ name: '방어력 증가', value: 0, percentage: 1 * breakthrough })
+  } else if (isAccessory) {
+    // 장신구: 공격력 +20, 방어력 +20, 공격력 증가 +1%
+    bonuses.push({ name: '공격력', value: 20 * breakthrough, percentage: 0 })
+    bonuses.push({ name: '방어력', value: 20 * breakthrough, percentage: 0 })
+    bonuses.push({ name: '공격력 증가', value: 0, percentage: 1 * breakthrough })
+  }
+
+  return bonuses
+}
+
+/**
+ * 장비에서 스탯 추출 - 같은 아이템의 같은 스탯은 합산
  */
 function extractEquipmentStats(equipment: any[]): Map<string, StatSource[]> {
   const statsMap = new Map<string, StatSource[]>()
@@ -254,85 +325,65 @@ function extractEquipmentStats(equipment: any[]): Map<string, StatSource[]> {
 
     const itemName = item.name || item.slot || '알 수 없음'
 
-    // 마석 (Manastones)
+    // 이 아이템에서 나오는 스탯을 임시로 모음 (같은 스탯명 합산용)
+    const itemStatsTemp = new Map<string, { value: number, percentage: number }>()
+
+    // 스탯 추가 헬퍼 함수
+    const addToItemStats = (statName: string, value: number, percentage: number) => {
+      if (!statName) return
+      if (!itemStatsTemp.has(statName)) {
+        itemStatsTemp.set(statName, { value: 0, percentage: 0 })
+      }
+      const current = itemStatsTemp.get(statName)!
+      current.value += value
+      current.percentage += percentage
+    }
+
+    // 1. 마석 (Manastones)
     if (item.manastones && Array.isArray(item.manastones)) {
       item.manastones.forEach((manastone: any) => {
         const parsed = parseStatString(manastone.type || manastone.name || '')
         if (parsed && parsed.name) {
-          if (!statsMap.has(parsed.name)) {
-            statsMap.set(parsed.name, [])
-          }
-          statsMap.get(parsed.name)!.push({
-            name: `${itemName} (마석)`,
-            value: parsed.value,
-            percentage: parsed.percentage
-          })
+          addToItemStats(parsed.name, parsed.value, parsed.percentage)
         }
       })
     }
 
-    // 장비 기본 옵션
+    // 2. 돌파(breakthrough) 보너스
+    const breakthroughBonuses = calculateBreakthroughBonus(item)
+    breakthroughBonuses.forEach(bonus => {
+      addToItemStats(bonus.name, bonus.value, bonus.percentage)
+    })
+
+    // 3. 장비 기본 옵션
     const detail = item.detail || item.raw?.detail
 
     if (detail) {
-      // transformDetailData가 _raw에 원본 데이터를 저장함
       const rawDetail = detail._raw || detail
 
-      // MainStats (기본 스탯 + 돌파 옵션)
+      // MainStats (기본 스탯 + 강화 보너스)
       if (rawDetail.mainStats && Array.isArray(rawDetail.mainStats)) {
         rawDetail.mainStats.forEach((stat: any) => {
           const statName = stat.name
           if (!statName) return
 
-          // 기본 값 (value)
           const baseValue = parseFloat(stat.value) || 0
-          if (baseValue > 0) {
-            if (!statsMap.has(statName)) {
-              statsMap.set(statName, [])
-            }
-            statsMap.get(statName)!.push({
-              name: `${itemName} (기본)`,
-              value: baseValue,
-              percentage: 0
-            })
-          }
-
-          // 돌파로 붙은 추가값 (extra)
           const extraValue = parseFloat(stat.extra) || 0
-          if (extraValue > 0) {
-            if (!statsMap.has(statName)) {
-              statsMap.set(statName, [])
-            }
-            statsMap.get(statName)!.push({
-              name: `${itemName} (돌파)`,
-              value: extraValue,
-              percentage: 0
-            })
-          }
+          addToItemStats(statName, baseValue + extraValue, 0)
         })
       }
 
-      // SubStats (부가 스탯 - 위력, 전투속도 등)
+      // SubStats (영혼각인 옵션)
       const hasSubStats = rawDetail.subStats && Array.isArray(rawDetail.subStats) && rawDetail.subStats.length > 0
       if (hasSubStats) {
         rawDetail.subStats.forEach((stat: any) => {
           const statName = stat.name
           const statValue = stat.value || ''
-
           if (!statName) return
 
-          // 퍼센트 값인지 확인
           const isPercent = String(statValue).includes('%')
           const numValue = parseFloat(String(statValue).replace('%', '')) || 0
-
-          if (!statsMap.has(statName)) {
-            statsMap.set(statName, [])
-          }
-          statsMap.get(statName)!.push({
-            name: `${itemName} (부옵)`,
-            value: isPercent ? 0 : numValue,
-            percentage: isPercent ? numValue : 0
-          })
+          addToItemStats(statName, isPercent ? 0 : numValue, isPercent ? numValue : 0)
         })
       }
 
@@ -344,16 +395,8 @@ function extractEquipmentStats(equipment: any[]): Map<string, StatSource[]> {
         detail.options.forEach((stat: any) => {
           const statText = stat.name + (stat.value ? ` ${stat.value}` : '')
           const parsed = parseStatString(statText)
-
           if (parsed && parsed.name) {
-            if (!statsMap.has(parsed.name)) {
-              statsMap.set(parsed.name, [])
-            }
-            statsMap.get(parsed.name)!.push({
-              name: itemName,
-              value: parsed.value,
-              percentage: parsed.percentage
-            })
+            addToItemStats(parsed.name, parsed.value, parsed.percentage)
           }
         })
       }
@@ -364,35 +407,35 @@ function extractEquipmentStats(equipment: any[]): Map<string, StatSource[]> {
           const statText = stat.name + (stat.value ? ` ${stat.value}` : '')
           const parsed = parseStatString(statText)
           if (parsed && parsed.name) {
-            if (!statsMap.has(parsed.name)) {
-              statsMap.set(parsed.name, [])
-            }
-            statsMap.get(parsed.name)!.push({
-              name: `${itemName} (옵션)`,
-              value: parsed.value,
-              percentage: parsed.percentage
-            })
+            addToItemStats(parsed.name, parsed.value, parsed.percentage)
           }
         })
       }
 
-      // Manastones (마석)
-      if (detail.manastones && Array.isArray(detail.manastones)) {
+      // Manastones from detail (마석) - 이미 위에서 item.manastones 처리했으므로 중복 체크
+      if (!item.manastones && detail.manastones && Array.isArray(detail.manastones)) {
         detail.manastones.forEach((stone: any) => {
           const parsed = parseStatString(stone.type || stone.name || '')
           if (parsed && parsed.name) {
-            if (!statsMap.has(parsed.name)) {
-              statsMap.set(parsed.name, [])
-            }
-            statsMap.get(parsed.name)!.push({
-              name: `${itemName} (마석)`,
-              value: parsed.value,
-              percentage: parsed.percentage
-            })
+            addToItemStats(parsed.name, parsed.value, parsed.percentage)
           }
         })
       }
     }
+
+    // 아이템별로 모은 스탯을 전역 statsMap에 추가 (같은 스탯은 합산된 상태)
+    itemStatsTemp.forEach((statData, statName) => {
+      if (statData.value > 0 || statData.percentage > 0) {
+        if (!statsMap.has(statName)) {
+          statsMap.set(statName, [])
+        }
+        statsMap.get(statName)!.push({
+          name: itemName,
+          value: statData.value,
+          percentage: statData.percentage
+        })
+      }
+    })
   })
 
   return statsMap
@@ -524,6 +567,20 @@ function extractBaseStats(stats: any): Map<string, StatSource[]> {
     return statsMap
   }
 
+  // 항상 퍼센트로 처리해야 하는 스탯들
+  const ALWAYS_PERCENTAGE_STATS = new Set([
+    '전투 속도',
+    '이동 속도',
+    '피해 증폭',
+    '피해 내성',
+    '치명타 피해 증폭',
+    '치명타 피해 내성',
+    '다단 히트 적중',
+    '다단 히트 저항',
+    '재사용 시간',
+    '재사용 시간 감소'
+  ])
+
   stats.statList.forEach((stat: any) => {
     const baseName = stat.name || '알 수 없음' // 위력, 민첩 등
 
@@ -536,10 +593,16 @@ function extractBaseStats(stats: any): Map<string, StatSource[]> {
           if (!statsMap.has(parsed.name)) {
             statsMap.set(parsed.name, [])
           }
+
+          // 항상 퍼센트인 스탯은 value를 percentage로 이동
+          const isAlwaysPercent = ALWAYS_PERCENTAGE_STATS.has(parsed.name)
+          const finalValue = isAlwaysPercent ? 0 : parsed.value
+          const finalPercentage = isAlwaysPercent ? (parsed.value || parsed.percentage) : parsed.percentage
+
           statsMap.get(parsed.name)!.push({
             name: `${baseName} (${stat.value})`,
-            value: parsed.value,
-            percentage: parsed.percentage,
+            value: finalValue,
+            percentage: finalPercentage,
             description: '기본 스탯'
           })
         }
@@ -594,9 +657,24 @@ export function aggregateStats(
   // StatDetail 배열 생성
   const statDetails: StatDetail[] = []
 
+  // 먼저 퍼센트 증가 스탯의 총 퍼센트를 미리 계산
+  const percentageIncreaseValues: Record<string, number> = {}
+  Object.values(PERCENTAGE_INCREASE_MAP).forEach(increaseStatName => {
+    const equipInc = (equipmentStats.get(increaseStatName) || []).reduce((sum, s) => sum + (s.percentage || 0), 0)
+    const titleInc = (titleStats.get(increaseStatName) || []).reduce((sum, s) => sum + (s.percentage || 0), 0)
+    const daevanionInc = (daevanionStats.get(increaseStatName) || []).reduce((sum, s) => sum + (s.percentage || 0), 0)
+    const baseInc = (baseStats.get(increaseStatName) || []).reduce((sum, s) => sum + (s.percentage || 0), 0)
+    percentageIncreaseValues[increaseStatName] = equipInc + titleInc + daevanionInc + baseInc
+  })
+
   allStatNames.forEach(statName => {
     // 서브 스탯은 메인 스탯에서 처리하므로 건너뛰기 (별도 표시 안 함)
     if (subStatToMain[statName]) {
+      return
+    }
+
+    // 숨김 스탯은 건너뛰기 (기본 스탯에 합산됨)
+    if (HIDDEN_STATS.has(statName)) {
       return
     }
 
@@ -631,18 +709,39 @@ export function aggregateStats(
       processedStats.add(subStatName)
     })
 
-    // 합계 계산
-    const totalValue =
+    // 기본 합계 계산
+    let totalValue =
       equipSources.reduce((sum, s) => sum + s.value, 0) +
       titleSources.reduce((sum, s) => sum + s.value, 0) +
       daevanionSources.reduce((sum, s) => sum + s.value, 0) +
       baseSources.reduce((sum, s) => sum + s.value, 0)
 
-    const totalPercentage =
+    let totalPercentage =
       equipSources.reduce((sum, s) => sum + (s.percentage || 0), 0) +
       titleSources.reduce((sum, s) => sum + (s.percentage || 0), 0) +
       daevanionSources.reduce((sum, s) => sum + (s.percentage || 0), 0) +
       baseSources.reduce((sum, s) => sum + (s.percentage || 0), 0)
+
+    // 퍼센트 증가 스탯 적용 (공격력, 방어력, 정신력)
+    const increaseStatName = PERCENTAGE_INCREASE_MAP[statName]
+    let appliedIncreasePercent = 0
+    let increaseValue = 0
+
+    if (increaseStatName && percentageIncreaseValues[increaseStatName]) {
+      appliedIncreasePercent = percentageIncreaseValues[increaseStatName]
+      increaseValue = Math.floor(totalValue * (appliedIncreasePercent / 100))
+      totalValue += increaseValue
+
+      // 툴팁에 증가 퍼센트 정보 추가
+      if (appliedIncreasePercent > 0) {
+        baseSources.push({
+          name: `${increaseStatName} (+${appliedIncreasePercent.toFixed(1)}%)`,
+          value: increaseValue,
+          percentage: 0,
+          description: `기본값의 ${appliedIncreasePercent.toFixed(1)}% 증가`
+        })
+      }
+    }
 
     statDetails.push({
       name: statName,
@@ -653,7 +752,7 @@ export function aggregateStats(
         titles: titleSources,
         daevanion: daevanionSources,
         baseValue: 0,
-        baseStats: baseSources // 기본 스탯에서 파생된 2차 능력치
+        baseStats: baseSources // 기본 스탯에서 파생된 2차 능력치 + 증가 퍼센트
       },
       color: getStatColor(statName, totalValue + totalPercentage),
       category: getStatCategory(statName),
