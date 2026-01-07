@@ -11,17 +11,17 @@ export default function EquipmentTooltip({ item }: EquipmentTooltipProps) {
     useEffect(() => {
         if (item && typeof window !== 'undefined' && (window as any).setDebugInfo) {
             const detail = item.detail || item.raw?.detail
-            const rawDetail = detail?._raw || detail
+            const rDetail = detail?._raw || detail
 
-            (window as any).setDebugInfo({
-                '아이템': item.name,
-                'slot': item.slot,
-                'slotPos': item.raw?.slotPos,
-                'breakthrough': item.breakthrough,
-                'enhancement': item.enhancement,
-                'subStats': rawDetail?.subStats || '없음',
-                'mainStats': rawDetail?.mainStats?.map((s: any) => `${s.name}: ${s.value}`) || '없음',
-            })
+                ; (window as any).setDebugInfo({
+                    '아이템': item.name,
+                    'slot': item.slot,
+                    'slotPos': item.raw?.slotPos,
+                    'breakthrough': item.breakthrough,
+                    'enhancement': item.enhancement,
+                    'subStats': rDetail?.subStats || '없음',
+                    'mainStats': rDetail?.mainStats?.map((s: any) => `${s.name}: ${s.value}`) || '없음',
+                })
         }
     }, [item])
 
@@ -49,11 +49,11 @@ export default function EquipmentTooltip({ item }: EquipmentTooltipProps) {
         const isWeapon = slot.includes('주무기') || slot.includes('무기') || slotPos === 1
         const isGuard = slot.includes('보조') || category.includes('가더') || slotPos === 2
         const isArmor = slot.includes('투구') || slot.includes('견갑') || slot.includes('흉갑') ||
-                        slot.includes('장갑') || slot.includes('각반') || slot.includes('장화') || slot.includes('망토') ||
-                        [3, 4, 5, 6, 7, 8, 9].includes(slotPos)
+            slot.includes('장갑') || slot.includes('각반') || slot.includes('장화') || slot.includes('망토') ||
+            [3, 4, 5, 6, 7, 8, 9].includes(slotPos)
         const isAccessory = slot.includes('귀걸이') || slot.includes('목걸이') ||
-                           slot.includes('반지') || slot.includes('벨트') || slot.includes('아뮬렛') || slot.includes('팔찌') ||
-                           [10, 11, 12, 13, 14, 15, 16, 17].includes(slotPos)
+            slot.includes('반지') || slot.includes('벨트') || slot.includes('아뮬렛') || slot.includes('팔찌') ||
+            [10, 11, 12, 13, 14, 15, 16, 17].includes(slotPos)
 
         const bonuses: { name: string, value: string }[] = []
 
