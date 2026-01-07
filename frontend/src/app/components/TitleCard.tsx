@@ -117,8 +117,8 @@ export default function TitleCard({ titles }: { titles: any }) {
 
     return (
         <div style={{
-            background: '#111318',
-            border: '1px solid #1F2433',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             padding: '1rem',
             boxSizing: 'border-box',
@@ -136,23 +136,23 @@ export default function TitleCard({ titles }: { titles: any }) {
                 <h3 style={{
                     fontSize: '0.9rem',
                     fontWeight: 'bold',
-                    color: '#E5E7EB',
+                    color: 'var(--text-main)',
                     margin: 0
                 }}>
                     타이틀
                 </h3>
                 <div style={{
                     padding: '0.2rem 0.5rem',
-                    background: '#0B0D12',
-                    border: '1px solid #1F2433',
+                    background: 'var(--bg-hover)',
+                    border: '1px solid var(--border)',
                     borderRadius: '12px',
                     fontSize: '0.75rem',
                     fontWeight: 'bold'
                 }}>
-                    <span style={{ color: isHighProgress ? '#FACC15' : '#E5E7EB' }}>
+                    <span style={{ color: isHighProgress ? '#FACC15' : 'var(--text-main)' }}>
                         {ownedCount}
                     </span>
-                    <span style={{ color: '#9CA3AF' }}>/{totalCount}</span>
+                    <span style={{ color: 'var(--text-secondary)' }}>/{totalCount}</span>
                 </div>
             </div>
 
@@ -166,8 +166,8 @@ export default function TitleCard({ titles }: { titles: any }) {
                     <div
                         key={idx}
                         style={{
-                            background: '#0B0D12',
-                            border: '1px solid #1F2433',
+                            background: 'var(--bg-hover)',
+                            border: '1px solid var(--border)',
                             borderRadius: '8px',
                             padding: '0.8rem',
                             transition: 'all 0.2s',
@@ -184,13 +184,13 @@ export default function TitleCard({ titles }: { titles: any }) {
                             gap: '0.3rem',
                             marginBottom: '0.4rem'
                         }}>
-                            <span style={{ color: '#9CA3AF', flexShrink: 0 }}>
+                            <span style={{ color: 'var(--text-secondary)', flexShrink: 0 }}>
                                 {category.icon}
                             </span>
                             <span style={{
                                 fontSize: '0.75rem',
                                 fontWeight: 'bold',
-                                color: '#E5E7EB'
+                                color: 'var(--text-main)'
                             }}>
                                 {category.name}
                             </span>
@@ -201,10 +201,10 @@ export default function TitleCard({ titles }: { titles: any }) {
                             fontSize: '0.75rem',
                             marginBottom: '0.4rem'
                         }}>
-                            <span style={{ color: '#E5E7EB', fontWeight: 'bold' }}>
+                            <span style={{ color: 'var(--text-main)', fontWeight: 'bold' }}>
                                 {category.owned}
                             </span>
-                            <span style={{ color: '#9CA3AF' }}>/{category.total}</span>
+                            <span style={{ color: 'var(--text-secondary)' }}>/{category.total}</span>
                         </div>
 
                         {/* Representative Title Name */}
@@ -245,7 +245,7 @@ export default function TitleCard({ titles }: { titles: any }) {
 
             <style jsx>{`
                 .category-card-hover:hover {
-                    border-color: #FACC15;
+                    border-color: var(--brand-primary);
                     transform: translateY(-2px);
                 }
             `}</style>

@@ -21,7 +21,10 @@ export interface RankingCharacter {
     guild_name?: string;
     combat_power?: number;
     profile_image?: string;
-    noa_score?: number;
+    hiton_score?: number;      // HITON 전투력 (기존 noa_score)
     ranking_ap?: number;
     ranking_gp?: number;
+    item_level?: number;       // 아이템 레벨
+    prev_rank?: number | null; // 이전 순위 (null = NEW)
+    prev_tier?: string;        // 이전 티어 (진급 하이라이트용)
 }

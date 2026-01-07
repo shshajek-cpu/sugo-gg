@@ -1,6 +1,5 @@
 'use client'
 
-
 interface RankingItem {
     name: string
     rank: number
@@ -79,8 +78,8 @@ export default function RankingCard({ rankings, isEmbedded = false }: RankingCar
 
     return (
         <div style={{
-            background: '#111318',
-            border: '1px solid #1F2433',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             padding: '1.25rem',
             width: '100%',
@@ -93,7 +92,7 @@ export default function RankingCard({ rankings, isEmbedded = false }: RankingCar
             <h3 style={{
                 fontSize: '0.95rem',
                 fontWeight: 'bold',
-                color: '#E5E7EB',
+                color: 'var(--text-main)',
                 margin: 0,
                 display: 'flex',
                 alignItems: 'center',
@@ -105,38 +104,27 @@ export default function RankingCard({ rankings, isEmbedded = false }: RankingCar
             {/* 1. 상단: 어비스 포인트 (강조) */}
             {abyssRanking && (
                 <div style={{
-                    background: 'linear-gradient(90deg, #1F2937 0%, #111827 100%)',
-                    border: '1px solid #374151',
+                    background: 'linear-gradient(180deg, var(--bg-hover) 0%, var(--bg-secondary) 100%)',
+                    border: '1px solid var(--border-light)',
                     borderRadius: '8px',
-                    padding: '1rem',
+                    padding: '0.75rem',
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    justifyContent: 'space-between'
+                    gap: '0.25rem'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        {/* 아이콘 */}
-                        <div style={{
-                            width: '48px',
-                            height: '48px',
-                            background: '#374151',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.5rem'
-                        }}>
-                            ⚔️
+                    {/* 이미지 상단 배치 - 더 크게 */}
+                    <img
+                        src="/메달/1.png"
+                        alt="어비스 포인트"
+                        style={{ width: 64, height: 64, objectFit: 'contain' }}
+                    />
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{abyssRanking.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.75rem' }}>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--brand-red-main)' }}>
+                            {abyssRanking.info?.value || '-'}
                         </div>
-                        <div>
-                            <div style={{ fontSize: '0.875rem', color: '#9CA3AF' }}>{abyssRanking.label}</div>
-                            <div style={{ fontSize: '1.25rem', fontWeight: 'bold', color: '#EF4444' }}>
-                                {abyssRanking.info?.value || '-'}
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#6B7280' }}>순위</div>
-                        <div style={{ fontSize: '1.125rem', fontWeight: 'bold', color: 'white' }}>
+                        <div style={{ fontSize: '0.95rem', fontWeight: 'bold', color: 'white' }}>
                             {abyssRanking.info?.rank && abyssRanking.info.rank > 0 ? `${abyssRanking.info.rank}위` : '-'}
                         </div>
                     </div>
@@ -147,28 +135,33 @@ export default function RankingCard({ rankings, isEmbedded = false }: RankingCar
             <div style={{
                 display: 'grid',
                 gridTemplateColumns: 'repeat(3, 1fr)',
-                gap: '0.75rem',
+                gap: '0.4rem',
                 flex: 1
             }}>
                 {otherRankings.map(item => (
                     <div key={item.key} style={{
-                        background: '#0B0D12',
-                        border: '1px solid #1F2433',
-                        borderRadius: '8px',
-                        padding: '0.75rem',
+                        background: 'var(--bg-hover)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '6px',
+                        padding: '0.35rem',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: '0.25rem',
+                        gap: '0.1rem',
                         textAlign: 'center'
                     }}>
-                        <div style={{ fontSize: '0.75rem', color: '#9CA3AF' }}>{item.label}</div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#E5E7EB' }}>
-                            {item.info?.rank && item.info.rank > 0 ? `${item.info.rank}위` : <span style={{ color: '#4B5563' }}>-</span>}
+                        <img
+                            src="/메달/2.png"
+                            alt={item.label}
+                            style={{ width: 28, height: 28, objectFit: 'contain' }}
+                        />
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>{item.label}</div>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
+                            {item.info?.rank && item.info.rank > 0 ? `${item.info.rank}위` : <span style={{ color: 'var(--text-disabled)' }}>-</span>}
                         </div>
                         {item.info?.extra && (
-                            <div style={{ fontSize: '0.7rem', color: item.iconColor }}>{item.info.extra}</div>
+                            <div style={{ fontSize: '0.65rem', color: item.iconColor }}>{item.info.extra}</div>
                         )}
                     </div>
                 ))}

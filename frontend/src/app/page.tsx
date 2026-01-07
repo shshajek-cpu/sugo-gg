@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import RecentCharacterCard from './components/RecentCharacterCard'
+import LiveStreamContainer from './components/live/LiveStreamContainer'
 import { RecentCharacter } from '../types/character'
 
 export default function Home() {
@@ -40,6 +41,9 @@ export default function Home() {
             margin: '0 auto',
             padding: '0 2rem'
         }}>
+            {/* Live Stream Section */}
+            <LiveStreamContainer />
+
             {/* Recent Characters Section */}
             {recentCharacters.length > 0 && (
                 <div>

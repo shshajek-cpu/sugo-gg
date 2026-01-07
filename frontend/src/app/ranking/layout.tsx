@@ -13,7 +13,7 @@ export default function RankingLayout({
     const pathname = usePathname()
 
     const tabs = [
-        { name: 'NOA 전투력', path: '/ranking/noa' },
+        { name: 'HITON 전투력', path: '/ranking/noa' },
         { name: '게임 내 전투력', path: '/ranking/cp' },
         { name: '콘텐츠 랭킹', path: '/ranking/content' },
     ]
@@ -21,12 +21,17 @@ export default function RankingLayout({
     return (
         <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
             <h1 style={{
-                fontSize: '1.8rem',
-                fontWeight: 'bold',
+                fontSize: '2rem',
+                fontWeight: '800',
                 marginBottom: '2rem',
-                borderLeft: '4px solid #3b82f6',
+                borderLeft: '4px solid var(--brand-red-main)',
                 paddingLeft: '1rem',
-                color: '#fff'
+                color: '#fff',
+                letterSpacing: '-0.02em',
+                background: 'linear-gradient(to right, #fff, #D1D5DB)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                width: 'fit-content'
             }}>
                 랭킹 현황
             </h1>

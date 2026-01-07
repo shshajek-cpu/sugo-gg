@@ -147,29 +147,29 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
             display: 'flex',
             gap: '1.5rem',
             height: '600px',
-            background: '#111318',
-            border: '1px solid #1F2433',
+            background: 'var(--bg-secondary)',
+            border: '1px solid var(--border)',
             borderRadius: '12px',
             overflow: 'hidden'
         }}>
             {/* LEFT: God Selection Sidebar */}
             <div style={{
                 width: '260px',
-                background: '#0B0D12',
-                borderRight: '1px solid #1F2433',
+                background: 'var(--bg-hover)',
+                borderRight: '1px solid var(--border)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflowY: 'auto'
             }}>
                 <div style={{
                     padding: '1.5rem',
-                    borderBottom: '1px solid #1F2433',
-                    background: '#111318'
+                    borderBottom: '1px solid var(--border)',
+                    background: 'var(--bg-secondary)'
                 }}>
-                    <h3 style={{ margin: 0, color: '#E5E7EB', fontSize: '1.1rem', fontWeight: 'bold' }}>
+                    <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1.1rem', fontWeight: 'bold' }}>
                         신성력 각인
                     </h3>
-                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#9CA3AF' }}>
+                    <div style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                         6명의 주신이 부여하는 권능
                     </div>
                 </div>
@@ -247,7 +247,7 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
                                         border: `1px solid ${activeGod.color}40`,
                                         borderRadius: '12px',
                                         fontSize: '0.8rem',
-                                        color: '#E5E7EB',
+                                        color: 'var(--text-main)',
                                         whiteSpace: 'nowrap'
                                     }}>
                                         {effect.desc}
@@ -259,10 +259,10 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
 
                     {/* Progress Stats */}
                     <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '0.9rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>진행도</div>
-                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#E5E7EB' }}>
+                        <div style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>진행도</div>
+                        <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>
                             <span style={{ color: activeGod.color }}>{activeNodes}</span> / {totalNodes}
-                            <span style={{ fontSize: '0.9rem', color: '#6B7280', marginLeft: '0.5rem' }}>({completionPercent}%)</span>
+                            <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginLeft: '0.5rem' }}>({completionPercent}%)</span>
                         </div>
                     </div>
                 </div>
@@ -274,9 +274,9 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
                     flex: 1,
                     minHeight: '500px',
                     position: 'relative',
-                    background: '#0B0D12',
+                    background: 'var(--bg-hover)',
                     borderRadius: '12px',
-                    border: '1px solid #2D3748',
+                    border: '1px solid var(--border)',
                     marginBottom: '1.5rem',
                     overflow: 'hidden',
                     display: 'flex',
@@ -456,10 +456,10 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
 
                 {/* Active Effects Panel */}
                 <div style={{
-                    background: '#1A1D29',
+                    background: 'rgba(26, 29, 41, 0.4)',
                     borderRadius: '8px',
                     padding: '1rem',
-                    border: '1px solid #2D3748',
+                    border: '1px solid var(--border)',
                     minHeight: '100px',
                     maxHeight: '200px',
                     overflowY: 'auto',
@@ -480,16 +480,16 @@ export default function DaevanionBoard({ characterId, serverId, race, characterC
                         </div>
                     ) : (
                         <>
-                            <h4 style={{ margin: '0 0 1rem 0', color: '#E5E7EB', fontSize: '1rem' }}>활성화된 효과</h4>
+                            <h4 style={{ margin: '0 0 1rem 0', color: 'var(--text-main)', fontSize: '1rem' }}>활성화된 효과</h4>
                             {boardData && (boardData.openStatEffectList.length > 0 || boardData.openSkillEffectList.length > 0) ? (
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
                                     {[...boardData.openStatEffectList, ...boardData.openSkillEffectList].map((effect, i) => (
                                         <div key={i} style={{
                                             padding: '0.75rem',
-                                            background: '#111318',
+                                            background: 'var(--bg-secondary)',
                                             borderRadius: '6px',
                                             borderLeft: `3px solid ${activeGod.color}`,
-                                            color: '#D1D5DB',
+                                            color: 'var(--text-secondary)',
                                             fontSize: '0.9rem'
                                         }}>
                                             {effect.desc}

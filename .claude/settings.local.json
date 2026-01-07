@@ -84,7 +84,13 @@
       "Bash(timeout:*)",
       "Bash(cmd //c \"taskkill /PID 52036 /F\")",
       "mcp__ide__getDiagnostics",
-      "Bash(cmd //c \"taskkill /PID 45596 /F\")"
+      "Bash(cmd //c \"taskkill /PID 45596 /F\")",
+      "Bash(tasklist:*)",
+      "Bash(cmd /c \"taskkill /F /IM node.exe\")",
+      "Bash(cd:*)",
+      "WebFetch(domain:developers.chzzk.naver.com)",
+      "Bash(python:*)",
+      "WebFetch(domain:localhost)"
     ]
   }
 }

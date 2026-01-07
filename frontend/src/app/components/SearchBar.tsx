@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 import { Search, ChevronDown, Check } from 'lucide-react'
 import SearchAutocomplete from './SearchAutocomplete'
 import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID } from '../../lib/supabaseApi'
-import styles from './ranking/Ranking.module.css'
 import { useSyncContext } from '../../context/SyncContext'
 
 // Define servers
@@ -247,8 +246,8 @@ export default function SearchBar() {
         setError('')
     }
 
-    // Determine Trigger Button Class
-    const triggerClass = `${styles.serverTriggerBtn} ${server ? (race === 'elyos' ? styles.elyos : styles.asmodian) : ''}`
+    // Determine Trigger Button Class - styling now handled inline
+    const triggerClass = ''
 
     // Display Text
     const triggerText = server
@@ -256,37 +255,208 @@ export default function SearchBar() {
         : '전체 서버'
 
     return (
-        <div className={styles.searchContainer} ref={wrapperRef}>
-            <form onSubmit={handleSearch} className={styles.searchBarGlass}>
-                {/* Integrated Selector Trigger */}
-                <button
-                    type="button"
-                    className={triggerClass}
-                    onClick={toggleDropdown}
+        <div
+            style={{ width: '100%', maxWidth: '800px', margin: '0 auto', position: 'relative' }}
+        >
+            <form
+                onSubmit={handleSearch}
+                style={{
+                    position: 'relative',
+                    zIndex: isDropdownOpen ? 50 : 1
+                }}
+            >
+                {/* Gradient Border Container (From DSSearchBar) */}
+                <div
+                    style={{
+                        padding: '2px',
+                        borderRadius: '50px',
+                        background: (name.length > 0) // Simplified focus check
+                            ? 'linear-gradient(90deg, var(--brand-red-main), #F59E0B, var(--brand-red-main))'
+                            : 'var(--border)',
+                        backgroundSize: '200% 100%',
+                        transition: 'all 0.3s ease',
+                        animation: (name.length > 0) ? 'gradientMove 3s linear infinite' : 'none'
+                    }}
                 >
-                    {triggerText}
-                    <ChevronDown size={16} style={{ opacity: 0.7 }} />
-                </button>
+                    {/* Inner Input Container */}
+                    <div style={{
+                        background: '#0B0D12',
+                        borderRadius: '48px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        padding: '0.2rem',
+                        position: 'relative',
+                        height: '50px'
+                    }}>
 
-                {/* Input Field */}
-                <input
-                    type="text"
-                    placeholder="캐릭터명을 입력하세요"
-                    value={name}
-                    onChange={(e) => {
-                        suppressResultsRef.current = false
-                        setName(e.target.value)
-                    }}
-                    onFocus={() => {
-                        if (!suppressResultsRef.current && name.length >= 1) setShowResults(true)
-                    }}
-                    className={styles.searchInputField}
-                />
+                        {/* Server Select Button */}
+                        <div style={{ position: 'relative' }} ref={dropdownRef}>
+                            <button
+                                type="button"
+                                onClick={toggleDropdown}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: 'var(--text-main)',
+                                    padding: '0 1rem 0 1.5rem',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    fontSize: '0.9rem',
+                                    fontWeight: 600,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.5rem',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                {triggerText}
+                                <ChevronDown size={14} style={{ opacity: 0.7, transform: isDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                            </button>
 
-                {/* Search Action Button */}
-                <button type="submit" disabled={loading} className={styles.searchActionBtn}>
-                    <Search size={20} strokeWidth={2.5} />
-                </button>
+                            {/* Dropdown Menu (Existing Logic Adapted) */}
+                            {isDropdownOpen && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '120%',
+                                    left: '0.5rem',
+                                    minWidth: '180px',
+                                    background: '#1F2937',
+                                    border: '1px solid var(--border-light)',
+                                    borderRadius: '8px',
+                                    padding: '0.5rem',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.5rem',
+                                    zIndex: 100
+                                }}>
+                                    {/* Race Toggle Actions */}
+                                    <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
+                                        <button
+                                            type="button"
+                                            onClick={() => selectRace('elyos')}
+                                            style={{
+                                                flex: 1,
+                                                padding: '6px',
+                                                fontSize: '0.75rem',
+                                                borderRadius: '4px',
+                                                border: race === 'elyos' ? '1px solid #10B981' : '1px solid var(--border)',
+                                                color: race === 'elyos' ? '#10B981' : 'var(--text-secondary)',
+                                                background: race === 'elyos' ? 'rgba(16,185,129,0.1)' : 'transparent',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            천족
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => selectRace('asmodian')}
+                                            style={{
+                                                flex: 1,
+                                                padding: '6px',
+                                                fontSize: '0.75rem',
+                                                borderRadius: '4px',
+                                                border: race === 'asmodian' ? '1px solid #EF4444' : '1px solid var(--border)',
+                                                color: race === 'asmodian' ? '#EF4444' : 'var(--text-secondary)',
+                                                background: race === 'asmodian' ? 'rgba(239,68,68,0.1)' : 'transparent',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            마족
+                                        </button>
+                                    </div>
+
+                                    {/* Server List */}
+                                    <div style={{ maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                        {currentServerList.map(srv => (
+                                            <button
+                                                key={srv}
+                                                type="button"
+                                                onClick={() => selectServer(srv)}
+                                                style={{
+                                                    padding: '6px 10px',
+                                                    textAlign: 'left',
+                                                    background: server === srv ? 'rgba(255,255,255,0.05)' : 'transparent',
+                                                    color: server === srv ? 'white' : 'var(--text-secondary)',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    borderRadius: '4px',
+                                                    fontSize: '0.85rem'
+                                                }}
+                                                onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                onMouseLeave={(e) => { if (server !== srv) e.currentTarget.style.background = 'transparent' }}
+                                            >
+                                                {srv}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Divider */}
+                        <div style={{ width: '1px', height: '24px', background: 'var(--border)', margin: '0 0.5rem' }}></div>
+
+                        {/* Input Field */}
+                        <input
+                            type="text"
+                            placeholder="캐릭터명을 입력하세요"
+                            value={name}
+                            onChange={(e) => {
+                                suppressResultsRef.current = false
+                                setName(e.target.value)
+                            }}
+                            onFocus={() => {
+                                if (!suppressResultsRef.current && name.length >= 1) setShowResults(true)
+                            }}
+                            style={{
+                                flex: 1,
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--text-main)',
+                                fontSize: '1rem',
+                                outline: 'none',
+                                padding: '0 0.5rem'
+                            }}
+                        />
+
+                        {/* Search Button (Icon Only) */}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            style={{
+                                background: 'var(--brand-red-main)',
+                                border: 'none',
+                                borderRadius: '50%',
+                                color: 'white',
+                                width: '42px',
+                                height: '42px',
+                                margin: '4px',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'transform 0.1s, background 0.2s',
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--brand-red-dark)'}
+                            onMouseLeave={(e) => e.currentTarget.style.background = 'var(--brand-red-main)'}
+                            onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.95)'}
+                            onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                        >
+                            <Search size={20} strokeWidth={2.5} />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Global Styles for Gradient Animation */}
+                <style jsx global>{`
+                    @keyframes gradientMove {
+                        0% { background-position: 0% 50%; }
+                        50% { background-position: 100% 50%; }
+                        100% { background-position: 0% 50%; }
+                    }
+                `}</style>
             </form>
 
             {/* Error Message */}
@@ -306,41 +476,7 @@ export default function SearchBar() {
                 </div>
             )}
 
-            {/* Integrated Dropdown Panel */}
-            {isDropdownOpen && (
-                <div className={styles.dropdownPanel} ref={dropdownRef}>
-                    {/* Race Toggles */}
-                    <div className={styles.raceToggleGroup}>
-                        <button
-                            type="button"
-                            className={`${styles.raceBtn} ${race === 'elyos' ? styles.activeElyos : ''}`}
-                            onClick={() => selectRace('elyos')}
-                        >
-                            천족 (Elyos)
-                        </button>
-                        <button
-                            type="button"
-                            className={`${styles.raceBtn} ${race === 'asmodian' ? styles.activeAsmodian : ''}`}
-                            onClick={() => selectRace('asmodian')}
-                        >
-                            마족 (Asmodian)
-                        </button>
-                    </div>
-
-                    {/* Server Grid */}
-                    <div className={styles.serverGrid}>
-                        {currentServerList.map(srv => (
-                            <div
-                                key={srv}
-                                className={`${styles.serverItem} ${server === srv ? styles.selected : ''}`}
-                                onClick={() => selectServer(srv)}
-                            >
-                                {srv}
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Integrated Dropdown Panel is now above inside the input container */}
 
             {/* Autocomplete Dropdown */}
             <SearchAutocomplete

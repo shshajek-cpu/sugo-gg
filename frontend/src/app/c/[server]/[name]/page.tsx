@@ -15,6 +15,7 @@ import SkillSection from '../../../components/SkillSection'
 import DetailedViewSection from '../../../components/DetailedViewSection'
 import StatsSummaryView from '../../../components/StatsSummaryView'
 import { RecentCharacter } from '../../../../types/character'
+import DSTabs from '@/app/components/design-system/DSTabs'
 
 // --- Types mapping to UI components ---
 type CharacterData = {
@@ -392,7 +393,6 @@ export default function CharacterDetailPage() {
   const [rawData, setRawData] = useState<CharacterDetail | null>(null) // Keep full DB response if needed
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState('equipment')
 
   // Mapped Data States
   const [mappedEquipment, setMappedEquipment] = useState<{
@@ -837,145 +837,77 @@ export default function CharacterDetailPage() {
 
           {/* CENTER COLUMN: Equipment & Skills */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, position: 'relative', zIndex: 1, height: '100%', padding: '0.25rem', boxSizing: 'border-box' }}>
-            {/* Tabs - Enhanced 3D Button Style */}
-            <div style={{
-              display: 'flex',
-              gap: '0.5rem',
-              background: '#0B0D12',
-              border: '1px solid #1F2433',
-              borderRadius: '8px',
-              padding: '0.5rem'
-            }}>
-              {['equipment', 'skills', 'stats'].map(tab => {
-                const isSkillsTab = tab === 'skills'
-                const isActive = activeTab === tab
-
-                return (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    style={{
-                      flex: 1,
-                      padding: '0.75rem 1rem',
-                      color: isActive ? '#0B0D12' : '#E5E7EB',
-                      fontWeight: isActive ? 'bold' : '600',
-                      background: isActive
-                        ? 'linear-gradient(180deg, #FBBF24 0%, #FACC15 100%)'
-                        : 'linear-gradient(180deg, #1F2433 0%, #111318 100%)',
-                      border: isActive
-                        ? '1px solid #FCD34D'
-                        : '1px solid #2D3748',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      transition: 'all 0.15s ease',
-                      fontSize: '0.875rem',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      // 3D Effect: Active = Pressed, Inactive = Raised
-                      boxShadow: isActive
-                        ? 'inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1)'
-                        : isSkillsTab && !isActive
-                          ? '0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05), 0 0 15px rgba(250, 204, 21, 0.15)'
-                          : '0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05)',
-                      transform: isActive ? 'translateY(2px)' : 'translateY(0)',
-                      animation: isSkillsTab && !isActive ? 'shimmer 3s ease-in-out infinite' : 'none'
-                    }}
-                    onMouseDown={(e) => {
-                      e.currentTarget.style.transform = 'translateY(3px)'
-                      e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.4)'
-                    }}
-                    onMouseUp={(e) => {
-                      if (isActive) {
-                        e.currentTarget.style.transform = 'translateY(2px)'
-                        e.currentTarget.style.boxShadow = 'inset 0 2px 4px rgba(0,0,0,0.3), inset 0 -1px 2px rgba(255,255,255,0.1)'
-                      } else {
-                        e.currentTarget.style.transform = 'translateY(0)'
-                        e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05)'
-                      }
-                    }}
-                    onMouseOver={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'linear-gradient(180deg, #2D3748 0%, #1F2433 100%)'
-                        e.currentTarget.style.borderColor = '#4B5563'
-                      }
-                    }}
-                    onMouseOut={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.background = 'linear-gradient(180deg, #1F2433 0%, #111318 100%)'
-                        e.currentTarget.style.borderColor = '#2D3748'
-                      }
-                    }}
-                  >
-                    {/* Sparkle overlay for skills tab */}
-                    {isSkillsTab && !isActive && (
-                      <div style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: '-100%',
-                        width: '100%',
-                        height: '100%',
-                        background: 'linear-gradient(90deg, transparent, rgba(250, 204, 21, 0.2), transparent)',
-                        animation: 'slide 3s ease-in-out infinite',
-                        pointerEvents: 'none'
-                      }} />
-                    )}
-
-                    {tab === 'equipment' ? '장비' : tab === 'skills' ? '✨ 스킬' : '능력치'}
-                  </button>
-                )
-              })}
-            </div>
-
-
-            {/* Sparkle Animation */}
-            <style dangerouslySetInnerHTML={{
-              __html: `
-              @keyframes shimmer {
-                0%, 100% {
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05), 0 0 15px rgba(250, 204, 21, 0.15);
-                }
-                50% {
-                  box-shadow: 0 2px 4px rgba(0,0,0,0.3), 0 1px 0 rgba(255,255,255,0.05), 0 0 25px rgba(250, 204, 21, 0.3);
-                }
-              }
-              
-              @keyframes slide {
-                0% {
-                  left: -100%;
-                }
-                100% {
-                  left: 200%;
-                }
-              }
-            `}} />
-
-            {/* Tab Content Wrapper with flex: 1 */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-              {activeTab === 'equipment' && (
-                <EquipmentGrid
-                  equipment={mappedEquipment.equipment}
-                  accessories={mappedEquipment.accessories}
-                  pets={mappedEquipment.pets}
-                  wings={mappedEquipment.wings}
-                  onItemClick={handleItemClick}
-                  appearance={mappedEquipment.appearance}
-                  debugInfo={mappedEquipment.debugInfo}
-                />
-              )}
-
-              {activeTab === 'skills' && (
-                <SkillSection skills={mappedSkills} />
-              )}
-
-              {activeTab === 'stats' && (
-                <StatsSummaryView
-                  stats={mappedStats}
-                  equipment={[...mappedEquipment.equipment, ...mappedEquipment.accessories]}
-                  daevanion={mappedDaevanion}
-                  titles={mappedTitles}
-                  equippedTitleId={data.title_id}
-                />
-              )}
+            <div style={{ flex: 1, height: '100%' }}>
+              <DSTabs
+                variant="pill"
+                fullWidth
+                defaultTab="equipment"
+                tabs={[
+                  {
+                    id: 'equipment',
+                    label: '장비',
+                    content: (
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <EquipmentGrid
+                          equipment={mappedEquipment.equipment}
+                          accessories={mappedEquipment.accessories}
+                          pets={mappedEquipment.pets}
+                          wings={mappedEquipment.wings}
+                          onItemClick={handleItemClick}
+                          appearance={mappedEquipment.appearance}
+                          debugInfo={mappedEquipment.debugInfo}
+                        />
+                      </div>
+                    )
+                  },
+                  {
+                    id: 'skills',
+                    label: (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                        ✨ 스킬
+                      </span>
+                    ),
+                    content: (
+                      <div style={{ marginTop: '1.5rem' }}>
+                        {(!mappedSkills || !mappedSkills.skillList || mappedSkills.skillList.length === 0) ? (
+                          <div style={{
+                            textAlign: 'center',
+                            padding: '4rem 2rem',
+                            color: '#6B7280',
+                            background: '#1F2937',
+                            borderRadius: '12px',
+                            border: '1px solid #374151',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: '1rem'
+                          }}>
+                            <div style={{ fontSize: '3rem', opacity: 0.5 }}>📚</div>
+                            <div style={{ fontSize: '1.125rem' }}>스킬 정보가 없습니다.</div>
+                          </div>
+                        ) : (
+                          <SkillSection skills={mappedSkills} />
+                        )}
+                      </div>
+                    )
+                  },
+                  {
+                    id: 'stats',
+                    label: '능력치',
+                    content: (
+                      <div style={{ marginTop: '1.5rem' }}>
+                        <StatsSummaryView
+                          stats={mappedStats}
+                          equipment={[...mappedEquipment.equipment, ...mappedEquipment.accessories]}
+                          daevanion={mappedDaevanion}
+                          titles={mappedTitles}
+                          equippedTitleId={data.title_id}
+                        />
+                      </div>
+                    )
+                  }
+                ]}
+              />
             </div>
           </div>
 

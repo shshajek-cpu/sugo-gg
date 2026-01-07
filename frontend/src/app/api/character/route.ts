@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { CLASSES } from '../../constants/game-data'
+import { calculateCombatPower } from '../../utils/combatPower'
 
 /**
  * Transform detail data from AION2 API to standardized format
@@ -253,8 +254,16 @@ export async function GET(request: NextRequest) {
             )
         }
 
-        // Calculate NOA Score
-        const noaScore = calculateNoaScore(infoData.stat, infoData.profile.className);
+        // Calculate NOA Score (HITON 전투력) - 캐릭터 상세 페이지와 동일한 방식
+        // 장비 데이터를 calculateCombatPower 형식으로 변환
+        const mappedEquipmentForCalc = enrichedEquipmentList.map((item: any) => ({
+            itemLevel: item.itemLevel || 0,
+            enhancement: item.enchantLevel > 0 ? `+${item.enchantLevel}` : '',
+            breakthrough: item.exceedLevel || 0,
+            soulEngraving: item.soulEngraving,
+            manastones: item.manastoneList || []
+        }))
+        const noaScore = calculateCombatPower(infoData.stat, mappedEquipmentForCalc);
 
         // 3. Construct Final Response
         const finalData = {
@@ -304,6 +313,14 @@ export async function GET(request: NextRequest) {
                 race_name: infoData.profile.raceName,
                 combat_power: combatPower, // Extract from statList
                 noa_score: noaScore,
+                item_level: (() => {
+                    // stats.statList에서 아이템레벨 찾기
+                    const statList = infoData.stat?.statList || []
+                    const itemLevelStat = statList.find((s: any) =>
+                        s.name === '아이템레벨' || s.type === 'ItemLevel'
+                    )
+                    return itemLevelStat?.value || 0
+                })(),
                 ranking_ap: 0, // Placeholder, need to map from infoData if available
                 ranking_gp: 0, // Placeholder
                 profile_image: infoData.profile.profileImage,

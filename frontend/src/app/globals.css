@@ -1,30 +1,34 @@
 :root {
-  /* DAK.GG-like Color System (Dark + Yellow) */
-  --bg-main: #0B0D12;
-  /* Deep Dark Background */
-  --bg-secondary: #111318;
-  /* Card/Section Background */
-  --bg-hover: #1f232d;
-  /* Interactive Item Hover */
+  /* Brand Constants */
+  --brand-red-main: #D92B4B;
+  --brand-red-dark: #A63348;
+  --brand-red-muted: #A65D6A;
+  --brand-black: #0C0C0D;
+  --brand-white: #F2F2F2;
 
-  --primary: #FACC15;
-  /* Soft Yellow Accent */
-  --primary-hover: #EAB308;
-  /* Darker Yellow for Hover */
-  --primary-text: #000000;
-  /* Black text on Yellow buttons */
+  /* Theme Mapping */
+  --bg-main: var(--brand-black);
+  --bg-secondary: #0F1116;
+  /* Slight variation for cards */
+  --bg-hover: #1A1D24;
 
-  --accent-highlight: #FBBF24;
-  /* Strong Highlight */
+  /* PRIMARY: Reverted to Yellow to preserve equipment/skill text colors */
+  --primary: #F59E0B;
+  --primary-hover: #D97706;
+  --primary-text: #FFFFFF;
 
+  /* BRAND PRIMARY: Use this for new Design System components */
+  --brand-primary: var(--brand-red-main);
+  --brand-primary-hover: var(--brand-red-dark);
+
+  --accent-highlight: var(--brand-red-main);
+
+  /* TEXT: Reverted to slightly softer white to match legacy */
   --text-main: #E5E7EB;
-  /* Primary Text (almost white) */
   --text-secondary: #9CA3AF;
-  /* Muted Text (gray) */
   --text-disabled: #4B5563;
 
   --border: #1F2937;
-  /* Subtle Border */
   --border-light: #374151;
 
   --success: #10B981;
