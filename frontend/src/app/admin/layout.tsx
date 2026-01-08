@@ -6,7 +6,8 @@ import { usePathname } from 'next/navigation'
 
 const menuItems = [
     { icon: '📊', label: '대시보드', path: '/admin', description: '통계 및 현황' },
-    { icon: '🔄', label: '크롤링', path: '/admin/crawl', description: '데이터 수집' },
+    { icon: '🔄', label: '크롤링', path: '/admin/crawl', description: '랭킹 데이터 수집' },
+    { icon: '🔍', label: '캐릭터 수집', path: '/admin/collector', description: '전체 캐릭터 수집' },
     { icon: '📁', label: '데이터', path: '/admin/data', description: '관리 및 편집' },
     { icon: '⚙️', label: '설정', path: '/admin/settings', description: '시스템 설정' },
 ]

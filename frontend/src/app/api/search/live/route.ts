@@ -15,6 +15,8 @@ export async function POST(request: Request) {
         if (serverId) url.searchParams.append('serverId', serverId.toString())
         if (race) url.searchParams.append('race', race.toString())
 
+        console.log('[Live Search] Fetching:', url.toString())
+
         const response = await fetch(url.toString(), {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -24,10 +26,13 @@ export async function POST(request: Request) {
         })
 
         if (!response.ok) {
+            const errorText = await response.text()
+            console.error('[Live Search] AION API error:', response.status, errorText)
             throw new Error(`AION API returned ${response.status}`)
         }
 
         const data = await response.json()
+        console.log('[Live Search] Results:', data.list?.length || 0, 'items, total:', data.pagination?.total)
         return NextResponse.json(data)
 
     } catch (error) {

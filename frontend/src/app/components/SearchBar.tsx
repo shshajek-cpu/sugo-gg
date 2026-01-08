@@ -2,10 +2,43 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Search, ChevronDown, Check } from 'lucide-react'
+import { Search, ChevronDown, X, Star } from 'lucide-react'
 import SearchAutocomplete from './SearchAutocomplete'
 import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID } from '../../lib/supabaseApi'
 import { useSyncContext } from '../../context/SyncContext'
+
+// 최근 검색 캐릭터 타입
+interface RecentSearch {
+    characterId: string
+    name: string
+    server: string
+    server_id?: number
+    race: string
+    noa_score?: number
+    item_level?: number
+    imageUrl?: string
+    timestamp: number
+}
+
+// 대표 캐릭터 타입
+export interface MainCharacter {
+    characterId: string
+    name: string
+    server: string
+    server_id?: number
+    race: string
+    className?: string
+    level?: number
+    hit_score?: number
+    item_level?: number
+    imageUrl?: string
+    setAt: number
+}
+
+// localStorage 키
+const RECENT_SEARCHES_KEY = 'aion2_recent_searches'
+export const MAIN_CHARACTER_KEY = 'aion2_main_character'
+const MAX_RECENT_SEARCHES = 5
 
 // Define servers
 const ELYOS_SERVERS = [
@@ -43,6 +76,111 @@ export default function SearchBar() {
     const dropdownRef = useRef<HTMLDivElement>(null)
 
     const suppressResultsRef = useRef(false)
+
+    // 최근 검색 State
+    const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([])
+
+    // 대표 캐릭터 State
+    const [mainCharacter, setMainCharacter] = useState<MainCharacter | null>(null)
+
+    // localStorage에서 최근 검색 + 대표캐릭터 불러오기 + 검색어 초기화
+    useEffect(() => {
+        // 홈페이지 진입 시 검색어 초기화
+        setName('')
+        setShowResults(false)
+        suppressResultsRef.current = false
+
+        try {
+            const saved = localStorage.getItem(RECENT_SEARCHES_KEY)
+            console.log('[Recent Search] Loading from localStorage:', saved)
+            if (saved) {
+                const parsed = JSON.parse(saved)
+                console.log('[Recent Search] Loaded:', parsed.length, 'items')
+                setRecentSearches(parsed)
+            }
+        } catch (e) {
+            console.error('Failed to load recent searches', e)
+        }
+
+        // 대표 캐릭터 불러오기
+        try {
+            const savedMain = localStorage.getItem(MAIN_CHARACTER_KEY)
+            if (savedMain) {
+                setMainCharacter(JSON.parse(savedMain))
+            }
+        } catch (e) {
+            console.error('Failed to load main character', e)
+        }
+    }, [])
+
+    // 최근 검색에 추가
+    const addRecentSearch = (char: CharacterSearchResult) => {
+        // characterId가 없으면 저장하지 않음
+        if (!char.characterId) {
+            console.warn('[Recent Search] Skipping - no characterId:', char.name)
+            return
+        }
+
+        const cleanName = char.name.replace(/<\/?[^>]+(>|$)/g, '')
+        const imageUrl = char.imageUrl || char.profileImage
+        console.log('[Recent Search] Adding:', cleanName, 'characterId:', char.characterId, 'imageUrl:', imageUrl)
+
+        const newRecent: RecentSearch = {
+            characterId: char.characterId,
+            name: cleanName,
+            server: char.server,
+            server_id: char.server_id,
+            race: char.race,
+            noa_score: char.noa_score,
+            item_level: char.item_level,
+            imageUrl: char.imageUrl || char.profileImage,
+            timestamp: Date.now()
+        }
+
+        setRecentSearches(prev => {
+            // 중복 제거
+            const filtered = prev.filter(r => r.characterId !== char.characterId)
+            // 맨 앞에 추가, 최대 5개
+            const updated = [newRecent, ...filtered].slice(0, MAX_RECENT_SEARCHES)
+            // localStorage 저장
+            try {
+                localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
+                console.log('[Recent Search] Saved to localStorage:', updated.length, 'items')
+            } catch (e) {
+                console.error('Failed to save recent searches', e)
+            }
+            return updated
+        })
+    }
+
+    // 최근 검색에서 삭제
+    const removeRecentSearch = (characterId: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        setRecentSearches(prev => {
+            const updated = prev.filter(r => r.characterId !== characterId)
+            try {
+                localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(updated))
+            } catch (e) {
+                console.error('Failed to save recent searches', e)
+            }
+            return updated
+        })
+    }
+
+    // 최근 검색 클릭
+    const handleRecentClick = (recent: RecentSearch) => {
+        let raceVal: 'elyos' | 'asmodian' = 'elyos'
+        if (recent.race === 'Asmodian' || recent.race === '마족') raceVal = 'asmodian'
+        const query = `?race=${raceVal}`
+        router.push(`/c/${recent.server}/${recent.name}${query}`)
+    }
+
+    // 검색 키워드가 없으면 자동으로 전체 서버로 설정
+    useEffect(() => {
+        if (name.trim().length === 0) {
+            setServer('')
+        }
+    }, [name])
 
     // Debounce Logic
     useEffect(() => {
@@ -89,6 +227,7 @@ export default function SearchBar() {
     const performHybridSearch = async (searchTerm: string) => {
         setIsSearching(true)
         setShowResults(true)
+        setIsDropdownOpen(false) // 검색 결과창 열면 서버 드롭다운 닫기
         setResults([])
 
         const serverId = server ? SERVER_NAME_TO_ID[server] : undefined
@@ -217,6 +356,9 @@ export default function SearchBar() {
         // Use global queue for syncing the selected character too
         enqueueSync([char])
 
+        // 최근 검색에 추가
+        addRecentSearch(char)
+
         setServer(char.server)
         let raceVal: 'elyos' | 'asmodian' = race
         if (char.race === 'Elyos' || char.race === '천족') raceVal = 'elyos'
@@ -229,7 +371,14 @@ export default function SearchBar() {
         router.push(`/c/${char.server}/${char.name}${query}`)
     }
 
-    const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen)
+    const toggleDropdown = () => {
+        const newState = !isDropdownOpen
+        setIsDropdownOpen(newState)
+        // 서버 드롭다운 열면 검색 결과창 닫기
+        if (newState) {
+            setShowResults(false)
+        }
+    }
 
     const selectRace = (selectedRace: 'elyos' | 'asmodian') => {
         setRace(selectedRace)
@@ -256,13 +405,20 @@ export default function SearchBar() {
 
     return (
         <div
-            style={{ width: '100%', maxWidth: '800px', margin: '0 auto', position: 'relative' }}
+            ref={wrapperRef}
+            style={{
+                width: '100%',
+                maxWidth: '800px',
+                margin: '0 auto',
+                position: 'relative',
+                zIndex: (isDropdownOpen || showResults) ? 9999 : 100
+            }}
         >
             <form
                 onSubmit={handleSearch}
                 style={{
                     position: 'relative',
-                    zIndex: isDropdownOpen ? 50 : 1
+                    zIndex: 10
                 }}
             >
                 {/* Gradient Border Container (From DSSearchBar) */}
@@ -324,11 +480,11 @@ export default function SearchBar() {
                                     border: '1px solid var(--border-light)',
                                     borderRadius: '8px',
                                     padding: '0.5rem',
-                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                                    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
                                     display: 'flex',
                                     flexDirection: 'column',
                                     gap: '0.5rem',
-                                    zIndex: 100
+                                    zIndex: 99999
                                 }}>
                                     {/* Race Toggle Actions */}
                                     <div style={{ display: 'flex', gap: '4px', marginBottom: '8px' }}>
@@ -407,6 +563,7 @@ export default function SearchBar() {
                                 setName(e.target.value)
                             }}
                             onFocus={() => {
+                                setIsDropdownOpen(false) // 입력창 포커스 시 서버 드롭다운 닫기
                                 if (!suppressResultsRef.current && name.length >= 1) setShowResults(true)
                             }}
                             style={{
@@ -485,6 +642,150 @@ export default function SearchBar() {
                 isLoading={isSearching}
                 onSelect={handleResultSelect}
             />
+
+            {/* 최근 검색 캐릭터 - 검색창이 비어있고 드롭다운이 닫혀있을 때만 표시 */}
+            {!showResults && !isDropdownOpen && recentSearches.length > 0 && name.trim().length === 0 && (
+                <div style={{
+                    marginTop: '0.5rem',
+                    display: 'grid',
+                    gridTemplateColumns: `repeat(${Math.min(recentSearches.length, 5)}, 1fr)`,
+                    gap: '0.4rem',
+                    width: '100%',
+                    maxWidth: '800px'
+                }}>
+                    {recentSearches.map((recent) => (
+                        <div
+                            key={recent.characterId}
+                            onClick={() => handleRecentClick(recent)}
+                            style={{
+                                position: 'relative',
+                                background: 'rgba(31, 41, 55, 0.9)',
+                                borderRadius: '8px',
+                                padding: '0.35rem 0.5rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s ease',
+                                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                                border: '1px solid rgba(255, 255, 255, 0.1)',
+                                display: 'flex',
+                                flexDirection: 'row',
+                                alignItems: 'center',
+                                gap: '0.4rem',
+                                transform: 'translateY(0)',
+                            }}
+                            onMouseEnter={(e) => {
+                                e.currentTarget.style.transform = 'translateY(-2px)'
+                                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)'
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.2)'
+                            }}
+                            onMouseLeave={(e) => {
+                                e.currentTarget.style.transform = 'translateY(0)'
+                                e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)'
+                                e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)'
+                            }}
+                        >
+                            {/* 프로필 이미지 */}
+                            <div style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '50%',
+                                overflow: 'hidden',
+                                flexShrink: 0,
+                                background: '#374151'
+                            }}>
+                                {recent.imageUrl ? (
+                                    <img
+                                        src={recent.imageUrl}
+                                        alt={recent.name}
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                ) : (
+                                    <div style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '0.7rem',
+                                        color: '#9ca3af'
+                                    }}>
+                                        {recent.name.charAt(0)}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 캐릭터 정보 */}
+                            <div style={{
+                                flex: 1,
+                                minWidth: 0,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '0'
+                            }}>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: 600,
+                                    color: '#f3f4f6',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    lineHeight: 1.2
+                                }}>
+                                    {recent.name}
+                                </span>
+                                <span style={{
+                                    fontSize: '0.55rem',
+                                    color: '#9ca3af',
+                                    lineHeight: 1.2
+                                }}>
+                                    {recent.server}
+                                    {(recent.noa_score || recent.item_level) && ' · '}
+                                    {recent.item_level ? `IL ${recent.item_level}` : ''}
+                                    {recent.item_level && recent.noa_score ? ' · ' : ''}
+                                    {recent.noa_score ? (
+                                        <span style={{ color: 'var(--brand-red-main, #D92B4B)', fontWeight: 600 }}>
+                                            {recent.noa_score.toLocaleString()}
+                                        </span>
+                                    ) : ''}
+                                </span>
+                            </div>
+
+                            {/* X 버튼 */}
+                            <button
+                                onClick={(e) => removeRecentSearch(recent.characterId, e)}
+                                style={{
+                                    width: '14px',
+                                    height: '14px',
+                                    borderRadius: '50%',
+                                    background: 'transparent',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    padding: 0,
+                                    transition: 'all 0.15s ease',
+                                    opacity: 0.4,
+                                    flexShrink: 0
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = 'rgba(239, 68, 68, 0.8)'
+                                    e.currentTarget.style.opacity = '1'
+                                    const svg = e.currentTarget.querySelector('svg')
+                                    if (svg) (svg as SVGElement).style.color = 'white'
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = 'transparent'
+                                    e.currentTarget.style.opacity = '0.4'
+                                    const svg = e.currentTarget.querySelector('svg')
+                                    if (svg) (svg as SVGElement).style.color = '#6b7280'
+                                }}
+                            >
+                                <X size={10} style={{ color: '#6b7280' }} />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }

@@ -90,7 +90,12 @@
       "Bash(cd:*)",
       "WebFetch(domain:developers.chzzk.naver.com)",
       "Bash(python:*)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "WebFetch(domain:developers.plaync.com)",
+      "WebFetch(domain:shugo.gg)",
+      "Bash(grep:*)",
+      "Bash(python3:*)",
+      "Bash(ping:*)"
     ]
   }
 }

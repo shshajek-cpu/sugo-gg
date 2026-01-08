@@ -83,7 +83,8 @@ export default function LivePreviewSection() {
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', background: '#0f1219', padding: '0.3rem', borderRadius: '8px' }}>
-                    {(['chzzk', 'soop', 'all'] as const).map((p) => (
+                    {/* SOOP 임시 비활성화 - 'soop' 제거 */}
+                    {(['chzzk', 'all'] as const).map((p) => (
                         <button
                             key={p}
                             onClick={() => handlePlatformChange(p)}
@@ -104,7 +105,6 @@ export default function LivePreviewSection() {
                             }}
                         >
                             {p === 'chzzk' && '치지직'}
-                            {p === 'soop' && 'SOOP'}
                             {p === 'all' && '전체'}
                         </button>
                     ))}

@@ -70,3 +70,6 @@ frontend/build/
 load_rankings.py
 
 .vercel
+
+nul
+frontend/nul

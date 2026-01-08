@@ -1,29 +1,105 @@
-📑 AION2 프로젝트 지침 (최종 요약본)
-1. 📐 검토가 편한 컴팩트 UI (핵심 추가)
-스크롤 최소화: 글자(폰트)나 카드, 버튼 크기를 불필요하게 키우지 않습니다.
+# CLAUDE.md
 
-한눈에 보기: 주요 정보들이 한 화면에 쏙 들어오도록 밀도 있게 배치하여, 사용자님이 스크롤을 많이 하지 않고도 전체 구조를 한 번에 검토할 수 있게 합니다.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-2. 📢 비개발자 맞춤형 쉬운 설명
-쉬운 비유: 기술 용어 대신 "창고 정리를 해서 물건 찾기 편하게 만들었다"는 식으로 아주 쉽게 설명합니다.
+## Project Overview
 
-작업 효과: 이 작업을 통해 사용자님이 얻는 이점이 무엇인지 명확히 짚어줍니다.
+AION 2 character search and ranking service. A web application providing character information, rankings, equipment data, and stats for the AION 2 game.
 
-3. 🐞 자동 디버깅 및 안전장치
-긴급 리포트: 데이터가 안 나오거나 오류가 생기면, 화면 하단에 [오류 내용 복사하기] 버튼을 자동으로 띄웁니다.
+**Tech Stack:**
+- Frontend: Next.js 14 (App Router), TypeScript, CSS Variables (Dark + Yellow theme)
+- Backend: Supabase Edge Functions (Deno)
+- Database: Supabase PostgreSQL
+- Deployment: Netlify (Frontend), Supabase (Backend)
 
-빈틈없는 보완: 인터넷 끊김이나 잘못된 입력 등 예외 상황을 미리 계산해서 코드를 짭니다.
+## Commands
 
-4. 🛠️ 전문성 및 무결성
-TypeScript 엄격 준수: 데이터가 엉키지 않게 규격을 철저히 맞춥니다.
+```bash
+# From project root
+cd frontend && npm run dev      # Dev server at http://localhost:3000
+cd frontend && npm run build    # Production build
+cd frontend && npm run lint     # ESLint check
+cd frontend && npm run test:e2e # E2E health check
 
-AION2 공식 적용: 게임 내 종족/직업별 보드 ID 규칙을 오차 없이 적용합니다.
+# Supabase Edge Functions (from supabase/)
+supabase functions serve        # Local function testing
+supabase functions deploy <fn>  # Deploy: get-character, search-character, etc.
+```
 
-✅ 최종 마감 체크리스트
-[ ] 디자인 요소(폰트, 카드 등)가 너무 커서 검토를 방해하지 않는가?
+## Architecture
 
-[ ] 한 화면에 주요 내용이 최대한 다 들어오는가?
+```
+hiton2/
+├── frontend/src/
+│   ├── app/                    # Next.js App Router pages
+│   │   ├── api/                # API routes (Next.js)
+│   │   ├── c/[server]/[name]/  # Character detail page
+│   │   ├── ranking/            # Ranking page
+│   │   ├── admin/              # Admin tools
+│   │   └── components/         # Page-specific components
+│   ├── components/             # Shared React components
+│   ├── lib/                    # Core utilities
+│   │   ├── supabaseApi.ts      # Supabase client wrapper
+│   │   ├── statsAggregator.ts  # Character stats calculation
+│   │   ├── chzzk.ts            # Live streaming integration
+│   │   └── theme.ts            # Theme configuration
+│   ├── types/                  # TypeScript type definitions
+│   ├── hooks/                  # Custom React hooks
+│   └── data/                   # Static data files
+│
+└── supabase/
+    ├── functions/              # Edge Functions (Deno)
+    │   ├── get-character/      # Character detail fetch
+    │   ├── search-character/   # External API search
+    │   ├── search-local-character/  # Local DB search
+    │   └── refresh-character/  # Force data refresh
+    └── migrations/             # Database schema
+```
 
-[ ] 비개발자인 사용자님이 이해하기 쉬운 설명인가?
+## Key Patterns
 
-[ ] 오류 발생 시 사용자가 대처할 수 있는 '복사 버튼'이 있는가?22
+**Hybrid Search:** Searches combine local DB (fast) + external API (fresh) in parallel:
+```typescript
+// Local search first, then live API
+supabaseApi.searchLocalCharacter(term).then(...)
+supabaseApi.searchCharacter(term, serverId, race, 1).then(...)
+```
+
+**API Routes:** Use Next.js route handlers with proper error handling:
+```typescript
+export async function GET(request: NextRequest) {
+    try {
+        const [data1, data2] = await Promise.all([fetch(url1), fetch(url2)])
+        return NextResponse.json(transformedData)
+    } catch (err) {
+        return NextResponse.json({ error: err.message }, { status: 500 })
+    }
+}
+```
+
+**Client Components:** Mark with `'use client'` at top when using hooks/interactivity.
+
+## Project Guidelines
+
+1. **Compact UI**: Keep fonts, cards, buttons reasonably sized to minimize scrolling
+2. **Korean Language**: All explanations and reports in Korean
+3. **Error Handling**: Display user-friendly error messages with copy button for debugging
+4. **TypeScript Strict**: Maintain type safety throughout
+5. **AION2 Data**: Apply game-specific race/class board ID rules accurately
+
+## Environment Variables
+
+Frontend `.env.local`:
+```
+NEXT_PUBLIC_SUPABASE_URL=<supabase-url>
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+```
+
+## CSS Theme
+
+Uses CSS Variables for Dark + Yellow accent theme:
+```css
+--bg-main: #0B0D12
+--primary: #FACC15
+--text-main: #E5E7EB
+```

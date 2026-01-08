@@ -7,17 +7,6 @@ export const getApiBaseUrl = () => {
     return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
 }
 
-export interface CharacterSearchResult {
-    characterId: string
-    name: string
-    server: string
-    server_id?: number // Added for detail fetch
-    job: string
-    level: number
-    race: string
-    imageUrl?: string
-}
-
 import { SERVER_MAP, SERVERS } from '../app/constants/servers'
 
 export interface CharacterSearchResult {
@@ -26,9 +15,13 @@ export interface CharacterSearchResult {
     server: string
     server_id?: number // Added for detail fetch
     job: string
+    className?: string // Alias for job
     level: number
     race: string
     imageUrl?: string
+    profileImage?: string // Alias for imageUrl
+    item_level?: number // 아이템 레벨
+    noa_score?: number // HITON 전투력
 }
 
 // Use centralized server constants
@@ -214,6 +207,40 @@ export const supabaseApi = {
                 })
         }
 
+        // 로컬 DB에서 추가 정보(item_level, noa_score) 조회하여 병합
+        if (allResults.length > 0) {
+            try {
+                const characterIds = allResults.map(r => r.characterId).filter(Boolean)
+                if (characterIds.length > 0) {
+                    const localRes = await fetch(`${SUPABASE_PROJECT_URL}/rest/v1/characters?character_id=in.(${characterIds.map(id => `"${id}"`).join(',')})&select=character_id,item_level,noa_score`, {
+                        method: 'GET',
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    if (localRes.ok) {
+                        const localData = await localRes.json()
+                        const localMap = new Map<string, any>(localData.map((item: any) => [item.character_id, item]))
+                        allResults = allResults.map(r => {
+                            const local = localMap.get(r.characterId)
+                            if (local) {
+                                return {
+                                    ...r,
+                                    item_level: local.item_level,
+                                    noa_score: local.noa_score
+                                }
+                            }
+                            return r
+                        })
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to fetch local data for live results', e)
+            }
+        }
+
         return allResults
     },
 
@@ -274,6 +301,8 @@ export const supabaseApi = {
                 level: item.level,
                 race: item.race_name,
                 imageUrl: item.profile_image ? (item.profile_image.startsWith('http') ? item.profile_image : `https://profileimg.plaync.com${item.profile_image}`) : undefined,
+                item_level: item.item_level,
+                noa_score: item.noa_score,
                 raw: item
             }))
         } catch (e) {

@@ -68,46 +68,40 @@ export default function TitleCard({ titles }: { titles: any }) {
         return []
     }
 
-    // 카테고리별 데이터 집계
-    const attackTitles = titleList.filter((t: any) => categorizeTitle(t) === 'attack')
-    const defenseTitles = titleList.filter((t: any) => categorizeTitle(t) === 'defense')
-    const otherTitles = titleList.filter((t: any) => categorizeTitle(t) === 'other')
-
-    // 대표 타이틀 선택 (첫 번째 또는 owned인 것)
-    const getRepresentative = (list: any[]) => {
-        const owned = list.find((t: any) => t.owned || t.isOwned)
-        return owned || list[0]
-    }
+    // 카테고리별 데이터 집계 (API는 각 titleList 항목에 카테고리별 totalCount/ownedCount 제공)
+    const attackTitle = titleList.find((t: any) => categorizeTitle(t) === 'attack')
+    const defenseTitle = titleList.find((t: any) => categorizeTitle(t) === 'defense')
+    const otherTitle = titleList.find((t: any) => categorizeTitle(t) === 'other')
 
     const categories: TitleCategory[] = [
         {
             name: '공격계열',
             icon: <AttackIcon />,
-            total: Math.round(totalCount * 0.34) || attackTitles.length,
-            owned: attackTitles.filter((t: any) => t.owned || t.isOwned).length,
-            representativeTitle: getRepresentative(attackTitles) ? {
-                name: getRepresentative(attackTitles)?.name,
-                effects: parseEffects(getRepresentative(attackTitles))
+            total: attackTitle?.totalCount || 0,
+            owned: attackTitle?.ownedCount || 0,
+            representativeTitle: attackTitle ? {
+                name: attackTitle.name,
+                effects: parseEffects(attackTitle)
             } : undefined
         },
         {
             name: '방어계열',
             icon: <DefenseIcon />,
-            total: Math.round(totalCount * 0.33) || defenseTitles.length,
-            owned: defenseTitles.filter((t: any) => t.owned || t.isOwned).length,
-            representativeTitle: getRepresentative(defenseTitles) ? {
-                name: getRepresentative(defenseTitles)?.name,
-                effects: parseEffects(getRepresentative(defenseTitles))
+            total: defenseTitle?.totalCount || 0,
+            owned: defenseTitle?.ownedCount || 0,
+            representativeTitle: defenseTitle ? {
+                name: defenseTitle.name,
+                effects: parseEffects(defenseTitle)
             } : undefined
         },
         {
             name: '기타계열',
             icon: <OtherIcon />,
-            total: Math.round(totalCount * 0.33) || otherTitles.length,
-            owned: otherTitles.filter((t: any) => t.owned || t.isOwned).length,
-            representativeTitle: getRepresentative(otherTitles) ? {
-                name: getRepresentative(otherTitles)?.name,
-                effects: parseEffects(getRepresentative(otherTitles))
+            total: otherTitle?.totalCount || 0,
+            owned: otherTitle?.ownedCount || 0,
+            representativeTitle: otherTitle ? {
+                name: otherTitle.name,
+                effects: parseEffects(otherTitle)
             } : undefined
         }
     ]

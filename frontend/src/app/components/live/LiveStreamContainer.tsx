@@ -5,7 +5,7 @@ import StreamingSlider from './StreamingSlider'
 export default function LiveStreamContainer() {
     return (
         <section style={{
-            marginTop: '1.5rem',
+            marginTop: '30px',
             marginBottom: '1.5rem',
             background: 'linear-gradient(180deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)',
             borderRadius: '12px',
@@ -31,7 +31,8 @@ export default function LiveStreamContainer() {
                 gap: '12px'
             }}>
                 <StreamingSlider platform="chzzk" />
-                <StreamingSlider platform="soop" />
+                {/* SOOP 임시 비활성화 */}
+                {/* <StreamingSlider platform="soop" /> */}
             </div>
         </section>
     )

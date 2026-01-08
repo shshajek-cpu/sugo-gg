@@ -42,15 +42,21 @@ export async function GET(request: NextRequest) {
         // Apply Sorting based on Type
         switch (type) {
             case 'cp':
-                query = query.order('combat_power', { ascending: false })
+            case 'hiton':
+                // HITON 전투력 (noa_score) 기준 정렬
+                query = query.order('noa_score', { ascending: false, nullsFirst: false })
                 break
-            case 'content':
-                // Defaulting to AP for content ranking for now
+            case 'ap':
+                // 어비스 포인트 기준 정렬
                 query = query.order('ranking_ap', { ascending: false })
+                break
+            case 'il':
+                // 아이템 레벨 기준 정렬
+                query = query.order('item_level', { ascending: false, nullsFirst: false })
                 break
             case 'noa':
             default:
-                query = query.order('noa_score', { ascending: false })
+                query = query.order('noa_score', { ascending: false, nullsFirst: false })
                 break
         }
 

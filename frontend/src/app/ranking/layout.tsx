@@ -20,19 +20,7 @@ export default function RankingLayout({
 
     return (
         <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-            <h1 style={{
-                fontSize: '2rem',
-                fontWeight: '800',
-                marginBottom: '2rem',
-                borderLeft: '4px solid var(--brand-red-main)',
-                paddingLeft: '1rem',
-                color: '#fff',
-                letterSpacing: '-0.02em',
-                background: 'linear-gradient(to right, #fff, #D1D5DB)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                width: 'fit-content'
-            }}>
+            <h1 className={styles.pageTitle}>
                 랭킹 현황
             </h1>
 
@@ -55,9 +43,11 @@ export default function RankingLayout({
             {/* Filter Bar */}
             <RankingFilterBar />
 
-            {/* Content (Table) */}
-            <div className="card" style={{ minHeight: '500px', padding: 0 }}>
-                {children}
+            {/* Content (Table) - Adaptive */}
+            <div className="card" style={{ minHeight: '400px', padding: 0, overflow: 'hidden' }}>
+                <div className={styles.tableScroll}>
+                    {children}
+                </div>
             </div>
         </div>
     )

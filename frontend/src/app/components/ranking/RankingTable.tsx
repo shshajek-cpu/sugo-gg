@@ -161,18 +161,18 @@ const TierBadge = ({ tierInfo, isPromoted }: { tierInfo: TierInfo, isPromoted: b
             gap: '6px',
             position: 'relative'
         }}>
-            {isPromoted && <Sparkles className={styles.promotionSparkle} size={14} />}
-            {/* 보석 아이콘 - 1.5배 크기 (24px) */}
+            {isPromoted && <Sparkles className={styles.promotionSparkle} size={16} />}
+            {/* 보석 아이콘 - 2배 크기 (32px) */}
             <Image
                 src={tierInfo.image}
                 alt={tierInfo.tier}
-                width={24}
-                height={24}
+                width={32}
+                height={32}
                 style={{ objectFit: 'contain' }}
             />
             {/* 티어명 + 숫자 */}
             <span style={{
-                fontSize: '0.85rem',
+                fontSize: '1rem',
                 fontWeight: 600,
                 color: tierInfo.color,
                 whiteSpace: 'nowrap'
@@ -346,8 +346,8 @@ export default function RankingTable({ type }: RankingTableProps) {
                                                     <Image
                                                         src={char.profile_image}
                                                         alt={char.name}
-                                                        width={36}
-                                                        height={36}
+                                                        width={48}
+                                                        height={48}
                                                         className={styles.charImage}
                                                     />
                                                 ) : (

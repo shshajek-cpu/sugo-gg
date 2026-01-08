@@ -16,6 +16,7 @@ import DetailedViewSection from '../../../components/DetailedViewSection'
 import StatsSummaryView from '../../../components/StatsSummaryView'
 import { RecentCharacter } from '../../../../types/character'
 import DSTabs from '@/app/components/design-system/DSTabs'
+import { MAIN_CHARACTER_KEY, MainCharacter } from '../../../components/SearchBar'
 
 // --- Types mapping to UI components ---
 type CharacterData = {
@@ -653,9 +654,68 @@ export default function CharacterDetailPage() {
     }
   }
 
+  // 대표 캐릭터 설정
+  const handleSetMainCharacter = async () => {
+    if (!data) return
+
+    const currentServerId = SERVER_NAME_TO_ID[data.server] || parseInt(apiServerId || '0')
+
+    // 로컬 DB에서 hit_score(noa_score) 가져오기
+    let hitScore: number | undefined = undefined
+    let itemLevel: number | undefined = data.item_level
+
+    if (apiCharacterId) {
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/characters?character_id=eq.${encodeURIComponent(apiCharacterId)}&select=noa_score,item_level`,
+          {
+            headers: {
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+        if (res.ok) {
+          const dbData = await res.json()
+          if (dbData && dbData.length > 0) {
+            hitScore = dbData[0].noa_score // DB 필드명은 noa_score
+            if (!itemLevel && dbData[0].item_level) {
+              itemLevel = dbData[0].item_level
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to fetch hit_score from DB', e)
+      }
+    }
+
+    const mainChar: MainCharacter = {
+      characterId: apiCharacterId || '',
+      name: data.name,
+      server: data.server,
+      server_id: currentServerId,
+      race: data.race || '',
+      className: data.class,
+      level: data.level,
+      hit_score: hitScore,
+      item_level: itemLevel,
+      imageUrl: data.character_image_url,
+      setAt: Date.now()
+    }
+
+    try {
+      localStorage.setItem(MAIN_CHARACTER_KEY, JSON.stringify(mainChar))
+      window.dispatchEvent(new Event('mainCharacterChanged'))
+      alert(`${data.name} 캐릭터가 대표 캐릭터로 설정되었습니다.`)
+    } catch (e) {
+      console.error('Failed to set main character', e)
+      alert('대표 캐릭터 설정에 실패했습니다.')
+    }
+  }
+
   if (loading) {
     return (
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 1rem', textAlign: 'center', color: '#9CA3AF' }}>
+      <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center', color: '#9CA3AF' }}>
         <div style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>캐릭터 정보를 불러오는 중...</div>
         <div style={{ fontSize: '0.875rem' }}>AION2 서버와 통신하고 있습니다.</div>
       </div>
@@ -664,17 +724,18 @@ export default function CharacterDetailPage() {
 
   if (error) {
     return (
-      <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '4rem 1rem', textAlign: 'center' }}>
+      <div className="container" style={{ padding: '4rem 1rem', textAlign: 'center' }}>
         <div style={{
           padding: '2rem',
           background: '#111318',
           border: '1px solid #ef4444',
           borderRadius: '12px',
           color: '#E5E7EB',
-          display: 'inline-block'
+          display: 'inline-block',
+          maxWidth: '100%'
         }}>
           <h3 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginBottom: '0.5rem', color: '#ef4444' }}>오류 발생</h3>
-          <p style={{ color: '#9CA3AF' }}>{error}</p>
+          <p style={{ color: '#9CA3AF', wordBreak: 'break-word' }}>{error}</p>
           <button
             onClick={() => window.location.reload()}
             style={{
@@ -704,31 +765,152 @@ export default function CharacterDetailPage() {
   }
 
   return (
-    <div style={{
-      width: '100%',
-      maxWidth: '1600px',
-      margin: '0 auto',
-      padding: '2rem 1.5rem',
-      minHeight: '100vh',
-      position: 'relative',
-      boxSizing: 'border-box'
-    }}>
-      {/* 왼쪽 고정 디버그 패널 */}
-      <div style={{
-        position: 'fixed',
-        top: '100px',
-        left: '10px',
-        width: '220px',
-        maxHeight: 'calc(100vh - 120px)',
-        overflowY: 'auto',
-        padding: '12px',
-        background: 'rgba(15, 17, 23, 0.95)',
-        border: '1px solid #374151',
-        borderRadius: '8px',
-        fontSize: '0.75rem',
-        color: '#9CA3AF',
-        zIndex: 9999,
-      }}>
+    <div className="char-detail-page">
+      {/* Adaptive Styles */}
+      <style jsx>{`
+        .char-detail-page {
+          width: 100%;
+          margin: 0 auto;
+          padding: 2rem 1.5rem;
+          min-height: 100vh;
+          position: relative;
+          box-sizing: border-box;
+        }
+        .debug-panel {
+          display: none;
+        }
+        .fab-container {
+          position: fixed;
+          bottom: 20px;
+          right: 20px;
+          z-index: 50;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .refresh-fab, .main-char-fab {
+          border: none;
+          border-radius: 50%;
+          width: 50px;
+          height: 50px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: transform 0.2s;
+        }
+        .refresh-fab {
+          background: #facc15;
+          color: #0f172a;
+          box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
+        }
+        .main-char-fab {
+          background: #1f2937;
+          border: 2px solid #facc15;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        .refresh-fab:hover, .main-char-fab:hover {
+          transform: scale(1.1);
+        }
+        .grid-container {
+          display: flex;
+          flex-direction: column;
+          gap: 1rem;
+          width: 100%;
+        }
+        .left-column, .center-column, .right-column {
+          width: 100%;
+        }
+
+        /* Desktop: 1200px fixed - 3 columns */
+        @media (min-width: 1025px) {
+          .char-detail-page {
+            width: 1200px;
+            padding: 2rem;
+          }
+          .debug-panel {
+            display: block;
+            position: fixed;
+            top: 100px;
+            left: 10px;
+            width: 200px;
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+            padding: 12px;
+            background: rgba(15, 17, 23, 0.95);
+            border: 1px solid #374151;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #9CA3AF;
+            z-index: 9999;
+          }
+          .fab-container {
+            bottom: 30px;
+            right: 30px;
+          }
+          .refresh-fab, .main-char-fab {
+            width: 60px;
+            height: 60px;
+          }
+          .grid-container {
+            display: grid !important;
+            grid-template-columns: 260px 420px 1fr !important;
+            gap: 1rem !important;
+            align-items: start !important;
+          }
+          .detail-section {
+            grid-column: 1 / -1;
+          }
+        }
+
+        /* Tablet: 768px fixed - 2 columns */
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .char-detail-page {
+            width: 768px;
+            padding: 1.5rem;
+          }
+          .grid-container {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1rem !important;
+          }
+          .left-column {
+            grid-column: 1 / 2;
+          }
+          .center-column {
+            grid-column: 2 / 3;
+          }
+          .right-column {
+            grid-column: 1 / -1;
+          }
+          .detail-section {
+            grid-column: 1 / -1;
+          }
+        }
+
+        /* Mobile: 100% - 1 column */
+        @media (max-width: 768px) {
+          .char-detail-page {
+            width: 100%;
+            padding: 1rem;
+          }
+          .grid-container {
+            gap: 0.75rem;
+          }
+          .fab-container {
+            bottom: 16px;
+            right: 16px;
+            gap: 8px;
+          }
+          .refresh-fab, .main-char-fab {
+            width: 48px;
+            height: 48px;
+          }
+        }
+      `}</style>
+
+      {/* Debug Panel - Desktop Only */}
+      <div className="debug-panel">
         <div style={{ fontWeight: 'bold', marginBottom: '8px', fontSize: '0.85rem', color: '#FACC15', display: 'flex', alignItems: 'center', gap: '6px' }}>
           🔧 디버그 패널
         </div>
@@ -744,87 +926,43 @@ export default function CharacterDetailPage() {
         )}
       </div>
 
-      {/* Refresh FAB */}
-      <button
-        onClick={handleRefresh}
-        disabled={loading}
-        title="데이터 강제 갱신"
-        style={{
-          position: 'fixed',
-          bottom: '30px',
-          right: '30px',
-          zIndex: 50,
-          background: '#facc15',
-          color: '#0f172a',
-          border: 'none',
-          borderRadius: '50%',
-          width: '60px',
-          height: '60px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(250, 204, 21, 0.4)',
-          cursor: loading ? 'wait' : 'pointer',
-          transition: 'transform 0.2s',
-        }}
-        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
-        onMouseOut={e => e.currentTarget.style.transform = 'scale(1.0)'}
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-      </button>
+      {/* FAB Buttons Container */}
+      <div className="fab-container">
+        {/* Set Main Character FAB */}
+        <button
+          onClick={handleSetMainCharacter}
+          disabled={loading}
+          title="대표 캐릭터로 설정"
+          className="main-char-fab"
+          style={{ cursor: loading ? 'wait' : 'pointer' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="#FACC15" stroke="#FACC15" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+          </svg>
+        </button>
 
-      {/* 3-Column Grid Layout - Centered */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        flexDirection: 'column',
-        width: '100%',
-        gap: '3rem'
-      }}>
-        {/* Desktop: 3 columns with balanced widths */}
-        <style jsx>{`
-          .grid-container {
-            display: flex;
-            flex-direction: column;
-            gap: 1.5rem;
-          }
-          @media (min-width: 1280px) {
-            .grid-container {
-              display: grid !important;
-              grid-template-columns: 280px 450px 1fr !important;
-              gap: 0.75rem !important;
-              align-items: start !important;
-            }
-          }
-        `}</style>
-        <div className="grid-container" style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '1.5rem',
-          position: 'relative'
-        }}>
-          {/* Extended Background Layer */}
-          <div style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: '#111318',
-            border: '1px solid #1F2433',
-            borderRadius: '12px',
-            zIndex: 0,
-            pointerEvents: 'none'
-          }} />
+        {/* Refresh FAB */}
+        <button
+          onClick={handleRefresh}
+          disabled={loading}
+          title="데이터 강제 갱신"
+          className="refresh-fab"
+          style={{ cursor: loading ? 'wait' : 'pointer' }}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+        </button>
+      </div>
 
+      {/* Grid Layout - Adaptive */}
+      <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+        <div className="grid-container">
           {/* LEFT COLUMN: Profile Section */}
-          <div style={{ minWidth: '280px', position: 'relative', zIndex: 1 }}>
+          <div className="left-column">
             <ProfileSection
               character={data}
               arcana={mappedEquipment.arcana}
@@ -834,10 +972,9 @@ export default function CharacterDetailPage() {
             />
           </div>
 
-
           {/* CENTER COLUMN: Equipment & Skills */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', flex: 1, position: 'relative', zIndex: 1, height: '100%', padding: '0.25rem', boxSizing: 'border-box' }}>
-            <div style={{ flex: 1, height: '100%' }}>
+          <div className="center-column" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ flex: 1 }}>
               <DSTabs
                 variant="pill"
                 fullWidth
@@ -912,7 +1049,7 @@ export default function CharacterDetailPage() {
           </div>
 
           {/* RIGHT COLUMN: Stats Only */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '100%', position: 'relative', zIndex: 1, height: '100%', padding: '0.25rem', boxSizing: 'border-box' }}>
+          <div className="right-column" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {/* 1. Title Card (Always Visible) */}
             <TitleCard titles={mappedTitles} />
 
@@ -933,14 +1070,12 @@ export default function CharacterDetailPage() {
             />
           )}
 
-
           {/* DETAILED VIEW SECTION */}
-          <div style={{ width: '100%', position: 'relative', zIndex: 1, gridColumn: '1 / -1' }}>
+          <div className="detail-section">
             <DetailedViewSection daevanion={mappedDaevanion} characterId={apiCharacterId} serverId={apiServerId} race={data?.race} characterClass={data?.class} boardList={mappedDaevanion?.boardList} />
           </div>
         </div>
-
       </div>
-    </div >
+    </div>
   )
 }
