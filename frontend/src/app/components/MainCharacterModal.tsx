@@ -95,7 +95,7 @@ export default function MainCharacterModal({ isOpen, onClose }: MainCharacterMod
                 const localResults = await supabaseApi.searchLocalCharacter(name.trim())
 
                 // 라이브 API 검색
-                const liveResults = await supabaseApi.searchCharacter(name.trim(), serverId, raceId, 1)
+                const liveResults = await supabaseApi.searchCharacter(name.trim(), serverId, race, 1)
 
                 // 병합 및 중복 제거
                 const allResults = [...localResults]
@@ -182,33 +182,34 @@ export default function MainCharacterModal({ isOpen, onClose }: MainCharacterMod
     if (!isOpen) return null
 
     return (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0, 0, 0, 0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 99999
-        }}>
-            <div
-                ref={modalRef}
-                style={{
-                    background: 'var(--bg-secondary, #1f2937)',
-                    borderRadius: '16px',
-                    padding: '1.5rem',
-                    width: '90%',
-                    maxWidth: '420px',
-                    maxHeight: '80vh',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    border: '1px solid var(--border, #374151)'
-                }}
-            >
+        <div
+            ref={modalRef}
+            style={{
+                position: 'absolute',
+                top: 'calc(100% + 10px)',
+                right: 0,
+                width: '300px',
+                background: 'var(--bg-secondary, #1f2937)',
+                borderRadius: '12px',
+                padding: '1rem',
+                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.5)',
+                border: '1px solid var(--border, #374151)',
+                zIndex: 99999
+            }}
+        >
+            {/* 말풍선 화살표 */}
+            <div style={{
+                position: 'absolute',
+                top: '-8px',
+                right: '24px',
+                width: '14px',
+                height: '14px',
+                background: 'var(--bg-secondary, #1f2937)',
+                border: '1px solid var(--border, #374151)',
+                borderRight: 'none',
+                borderBottom: 'none',
+                transform: 'rotate(45deg)'
+            }} />
                 {/* 헤더 */}
                 <div style={{
                     display: 'flex',

@@ -74,7 +74,7 @@ export default function MainCharacterBadge() {
     // 대표 캐릭터가 없을 때 - 추가 버튼 표시
     if (!mainCharacter) {
         return (
-            <>
+            <div style={{ position: 'relative', marginLeft: 'auto' }}>
                 <button
                     onClick={handleAddClick}
                     style={{
@@ -87,7 +87,6 @@ export default function MainCharacterBadge() {
                         borderRadius: '20px',
                         cursor: 'pointer',
                         transition: 'all 0.2s ease',
-                        marginLeft: 'auto',
                         color: 'rgba(250, 204, 21, 0.7)'
                     }}
                     onMouseEnter={(e) => {
@@ -111,7 +110,7 @@ export default function MainCharacterBadge() {
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
                 />
-            </>
+            </div>
         )
     }
 
