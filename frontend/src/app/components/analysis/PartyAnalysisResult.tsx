@@ -1,22 +1,29 @@
 import React, { useRef } from 'react';
 import PartyCard from './PartyCard';
-import { Share2, BarChart3, TrendingUp, Sparkles, Upload, Loader2, ScanLine } from 'lucide-react';
+import { Share2, BarChart3, TrendingUp, Sparkles, Upload, Loader2, ScanLine, AlertCircle, RotateCcw, Server, CheckCircle2 } from 'lucide-react';
+import { PendingServerSelection, PartyMember } from '@/hooks/usePartyScanner';
 
 interface PartyAnalysisResultProps {
     data: {
         totalCp: number;
         grade: string;
         members: any[];
+        recognizedCount?: number;
+        foundCount?: number;
     } | null;
     isScanning?: boolean;
     onReset?: () => void;
     onManualUpload?: (file: File) => void;
+    pendingSelections?: PendingServerSelection[];
+    onSelectServer?: (slotIndex: number, selectedServer: string, characterData: PartyMember) => void;
 }
 
-export default function PartyAnalysisResult({ data, isScanning, onReset, onManualUpload }: PartyAnalysisResultProps) {
+export default function PartyAnalysisResult({ data, isScanning, onReset, onManualUpload, pendingSelections, onSelectServer }: PartyAnalysisResultProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const { totalCp, grade, members } = data || { totalCp: 0, grade: '-', members: [] };
+    const { totalCp, grade, members, recognizedCount = 0, foundCount = 0 } = data || { totalCp: 0, grade: '-', members: [], recognizedCount: 0, foundCount: 0 };
     const isEmpty = !data || (data.members.length === 0);
+    const hasPartialMatch = recognizedCount > 0 && foundCount < recognizedCount;
+    const hasPendingSelections = pendingSelections && pendingSelections.length > 0;
 
     const handleManualClick = () => {
         fileInputRef.current?.click();
@@ -121,10 +128,20 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                         이미지 업로드
                     </button>
                     {!isEmpty && (
-                        <button className="hover-btn" style={btnStyle}>
-                            <Share2 size={16} />
-                            결과 공유
-                        </button>
+                        <>
+                            <button
+                                onClick={onReset}
+                                className="hover-btn"
+                                style={btnStyle}
+                            >
+                                <RotateCcw size={16} />
+                                초기화
+                            </button>
+                            <button className="hover-btn" style={btnStyle}>
+                                <Share2 size={16} />
+                                결과 공유
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
@@ -222,7 +239,7 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                         <TrendingUp size={16} color={!isEmpty ? "#4ADE80" : "var(--text-disabled)"} />
                         <span style={{ color: 'var(--text-main)', fontSize: '0.95rem' }}>
                             {!isEmpty ? (
-                                <>상위 <strong style={{ color: '#4ADE80' }}>5%</strong> 수준의 강력한 파티입니다.</>
+                                <>DB에서 <strong style={{ color: '#4ADE80' }}>{foundCount}명</strong>의 캐릭터 정보를 조회했습니다.</>
                             ) : (
                                 "파티 정보를 분석하여 순위를 확인하세요."
                             )}
@@ -230,6 +247,145 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                     </div>
                 </div>
             </div>
+
+            {/* Partial Match Warning */}
+            {hasPartialMatch && (
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    padding: '1rem 1.2rem',
+                    background: 'rgba(251, 191, 36, 0.1)',
+                    border: '1px solid rgba(251, 191, 36, 0.3)',
+                    borderRadius: '12px',
+                    marginBottom: '1.5rem'
+                }}>
+                    <AlertCircle size={20} color="#FBBF24" />
+                    <div>
+                        <div style={{ color: '#FBBF24', fontWeight: 600, fontSize: '0.9rem' }}>
+                            일부 캐릭터를 찾지 못했습니다
+                        </div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>
+                            OCR 인식: {recognizedCount}명 → DB 조회: {foundCount}명 (OCR 정확도 또는 미등록 캐릭터)
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Server Selection Panel */}
+            {hasPendingSelections && (
+                <div style={{
+                    padding: '1.5rem',
+                    background: 'rgba(96, 165, 250, 0.08)',
+                    border: '1px solid rgba(96, 165, 250, 0.3)',
+                    borderRadius: '16px',
+                    marginBottom: '1.5rem'
+                }}>
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.8rem',
+                        marginBottom: '1rem'
+                    }}>
+                        <Server size={20} color="#60A5FA" />
+                        <div>
+                            <div style={{ color: '#60A5FA', fontWeight: 600, fontSize: '1rem' }}>
+                                서버 선택이 필요합니다
+                            </div>
+                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '2px' }}>
+                                동일한 캐릭터명이 여러 서버에서 발견되었습니다. 해당 캐릭터의 서버를 선택해주세요.
+                            </div>
+                        </div>
+                    </div>
+
+                    {pendingSelections!.map((pending, idx) => (
+                        <div key={`pending-${idx}`} style={{
+                            background: 'rgba(0, 0, 0, 0.2)',
+                            borderRadius: '12px',
+                            padding: '1rem',
+                            marginTop: idx > 0 ? '0.8rem' : 0
+                        }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                marginBottom: '0.8rem'
+                            }}>
+                                <span style={{ color: 'var(--brand-white)', fontWeight: 600 }}>
+                                    {pending.name}
+                                </span>
+                                <span style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-secondary)',
+                                    background: 'rgba(255,255,255,0.1)',
+                                    padding: '2px 8px',
+                                    borderRadius: '4px'
+                                }}>
+                                    OCR: [{pending.abbreviation}]
+                                </span>
+                            </div>
+
+                            <div style={{
+                                display: 'flex',
+                                gap: '0.6rem',
+                                flexWrap: 'wrap'
+                            }}>
+                                {pending.candidates.map((candidate, cIdx) => (
+                                    <button
+                                        key={`candidate-${cIdx}`}
+                                        onClick={() => {
+                                            if (candidate.characterData && onSelectServer) {
+                                                onSelectServer(pending.slotIndex, candidate.server, candidate.characterData);
+                                            }
+                                        }}
+                                        style={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            alignItems: 'flex-start',
+                                            padding: '0.8rem 1rem',
+                                            background: 'rgba(255, 255, 255, 0.05)',
+                                            border: '1px solid rgba(255, 255, 255, 0.15)',
+                                            borderRadius: '10px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s',
+                                            minWidth: '140px'
+                                        }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.background = 'rgba(96, 165, 250, 0.15)';
+                                            e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.5)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
+                                        }}
+                                    >
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '0.4rem',
+                                            marginBottom: '0.3rem'
+                                        }}>
+                                            <CheckCircle2 size={14} color="#60A5FA" />
+                                            <span style={{ color: 'var(--brand-white)', fontWeight: 600, fontSize: '0.9rem' }}>
+                                                {candidate.server}
+                                            </span>
+                                        </div>
+                                        {candidate.characterData && (
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                                <span>{candidate.characterData.class}</span>
+                                                <span style={{ margin: '0 4px' }}>·</span>
+                                                <span style={{ color: '#FACC15' }}>
+                                                    {candidate.characterData.cp.toLocaleString()} CP
+                                                </span>
+                                            </div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {/* Grid */}
             <div>

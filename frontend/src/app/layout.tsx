@@ -45,7 +45,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                     { name: '랭킹', path: '/ranking' },
                                     { name: '아이템', path: '/item' },
                                     { name: '캐릭터비교', path: '/compare' },
-                                    { name: '파티분석', path: '/analysis' }
+                                    { name: '파티분석', path: '/analysis' },
+                                    { name: '가계부', path: '/ledger' }
                                 ].map(item => {
                                     const isActive = item.path === '/'
                                         ? pathname === '/'

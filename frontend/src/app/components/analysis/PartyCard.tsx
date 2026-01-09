@@ -11,6 +11,9 @@ interface Member {
     isMvp: boolean;
     level?: number;
     isMainCharacter?: boolean;
+    profileImage?: string;
+    characterId?: string;
+    isFromDb?: boolean;
 }
 
 interface PartyCardProps {
@@ -25,8 +28,51 @@ export default function PartyCard({ member, index }: PartyCardProps) {
     const glowColor = isMain ? 'rgba(250, 204, 21, 0.4)' : isMvp ? 'rgba(245, 158, 11, 0.4)' : 'rgba(255, 255, 255, 0.05)';
     const borderColor = isMain ? '#FACC15' : isMvp ? '#F59E0B' : 'rgba(255, 255, 255, 0.1)';
 
-    // Class Icon Mock (Replace with real icons later if needed)
-    const renderClassIcon = () => {
+    // 프로필 이미지 또는 아이콘 렌더링
+    const renderProfileIcon = () => {
+        const hasProfileImage = member.profileImage;
+
+        if (hasProfileImage) {
+            return (
+                <div style={{
+                    position: 'relative',
+                    width: '40px', height: '40px',
+                    borderRadius: '50%',
+                    overflow: 'hidden',
+                    border: isMain ? '2px solid #FACC15' : isMvp ? '2px solid #F59E0B' : '1px solid #374151',
+                    boxShadow: isMain || isMvp ? '0 4px 6px rgba(0,0,0,0.2)' : 'none'
+                }}>
+                    <img
+                        src={member.profileImage}
+                        alt={member.name}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover'
+                        }}
+                        onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                        }}
+                    />
+                    {(isMain || isMvp) && (
+                        <div style={{
+                            position: 'absolute',
+                            bottom: -2, right: -2,
+                            background: isMain ? '#FACC15' : '#F59E0B',
+                            borderRadius: '50%',
+                            padding: '2px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                        }}>
+                            {isMain ? <Star size={10} color="white" /> : <Crown size={10} color="white" />}
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // 이미지 없을 때 기본 아이콘
         return (
             <div style={{
                 width: '40px', height: '40px',
@@ -92,7 +138,7 @@ export default function PartyCard({ member, index }: PartyCardProps) {
 
                 {/* Icon */}
                 <div style={{ position: 'relative' }}>
-                    {renderClassIcon()}
+                    {renderProfileIcon()}
                     {member.level && (
                         <span style={{
                             position: 'absolute', bottom: -2, right: -2,
