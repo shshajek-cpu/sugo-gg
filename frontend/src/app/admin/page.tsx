@@ -7,6 +7,7 @@ import DSButton from '../components/design-system/DSButton'
 import DSBadge from '../components/design-system/DSBadge'
 import AutoUpdatePanel from '../components/admin/AutoUpdatePanel'
 import CombatPowerRecalcPanel from '../components/admin/CombatPowerRecalcPanel'
+import AutoRecalcSettings from '../components/admin/AutoRecalcSettings'
 
 interface Stats {
     totalCharacters: number
@@ -323,6 +324,9 @@ export default function AdminDashboard() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                     {/* Combat Power Recalculation Panel */}
                     <CombatPowerRecalcPanel />
+
+                    {/* Auto Recalc Settings */}
+                    <AutoRecalcSettings />
 
                     {/* System Status */}
                     <DSCard title="시스템 상태" hoverEffect={false} style={{ padding: '1rem' }}>
