@@ -329,8 +329,29 @@ export const usePartyScanner = () => {
                 continue;
             }
 
-            // 가능한 서버 목록 가져오기
-            const possibleServers = getPossibleServers(rawServer);
+            // "서버명" 또는 유효하지 않은 서버명인 경우 대표 캐릭터 서버로 대체
+            let possibleServers: string[];
+            const isPlaceholder = rawServer === '서버명' || rawServer === '서버' || rawServer === 'server';
+            const correctedServer = correctServerName(rawServer);
+            const isValidServer = SERVER_NAME_TO_ID[correctedServer] !== undefined;
+
+            if (isPlaceholder || !isValidServer) {
+                // 대표 캐릭터 서버로 대체
+                if (mainChar) {
+                    possibleServers = [mainChar.server];
+                    addLog(`[패턴 매칭] ${name}[${rawServer}] → 대표 서버(${mainChar.server})로 대체`);
+                } else {
+                    addLog(`[패턴 스킵] ${name}[${rawServer}] - 유효하지 않은 서버명, 대표캐릭터 없음`);
+                    continue;
+                }
+            } else {
+                possibleServers = getPossibleServers(rawServer);
+                if (possibleServers.length > 1) {
+                    addLog(`[패턴 매칭] ${name}[${rawServer}] → 서버 후보 ${possibleServers.length}개: ${possibleServers.join(', ')}`);
+                } else {
+                    addLog(`[패턴 매칭] ${name}[${rawServer}] → ${possibleServers[0]}`);
+                }
+            }
 
             // 대표 캐릭터와 같은 이름이면 스킵 (이미 추가됨)
             if (mainChar && name === mainChar.name) {
@@ -338,11 +359,6 @@ export const usePartyScanner = () => {
                 continue;
             }
 
-            if (possibleServers.length > 1) {
-                addLog(`[패턴 매칭] ${name}[${rawServer}] → 서버 후보 ${possibleServers.length}개: ${possibleServers.join(', ')}`);
-            } else {
-                addLog(`[패턴 매칭] ${name}[${rawServer}] → ${possibleServers[0]}`);
-            }
             addMember(name, rawServer, possibleServers, false);
             serverMatchCount++;
         }
