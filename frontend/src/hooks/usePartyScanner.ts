@@ -463,8 +463,8 @@ export const usePartyScanner = () => {
         return alternatives;
     };
 
-    // OCR 쌍자음 혼동 보정 - 단자음↔쌍자음 변환
-    // ㄷ(3) ↔ ㄸ(4), ㄱ(0) ↔ ㄲ(1), ㅂ(7) ↔ ㅃ(8), ㅅ(9) ↔ ㅆ(10), ㅈ(12) ↔ ㅉ(13)
+    // OCR 자음 혼동 보정 - 한 글자씩 개별 교체
+    // ㅂ(7) ↔ ㅎ(18), ㄷ(3) ↔ ㄸ(4) 등
     const generateDoubleConsonantAlternatives = (name: string): string[] => {
         console.log(`[generateDoubleConsonantAlternatives] 입력: "${name}"`);
         const alternatives: string[] = [];
@@ -472,51 +472,68 @@ export const usePartyScanner = () => {
         const HANGUL_START = 0xAC00;
         const HANGUL_END = 0xD7A3;
 
-        // 초성 쌍자음 쌍 + 혼동되는 자음 쌍 (인덱스 기반)
+        // 초성 혼동 쌍 (인덱스 기반)
         const consonantSwaps: [number, number][] = [
+            [7, 18],  // ㅂ(7) ↔ ㅎ(18) - OCR 혼동 (가장 중요!)
             [3, 4],   // ㄷ(3) ↔ ㄸ(4)
             [0, 1],   // ㄱ(0) ↔ ㄲ(1)
             [7, 8],   // ㅂ(7) ↔ ㅃ(8)
             [9, 10],  // ㅅ(9) ↔ ㅆ(10)
             [12, 13], // ㅈ(12) ↔ ㅉ(13)
-            [7, 18],  // ㅂ(7) ↔ ㅎ(18) - OCR 혼동
             [6, 2],   // ㅁ(6) ↔ ㄴ(2) - OCR 혼동
         ];
 
-        // 각 자음 쌍에 대해 대체 이름 생성
-        for (const [c1, c2] of consonantSwaps) {
-            let altName = '';
-            let hasChange = false;
+        // 이름을 글자 배열로 분해
+        const chars = [...name];
+        const charInfos: { char: string; choIdx: number; jungIdx: number; jongIdx: number; isHangul: boolean }[] = [];
 
-            for (const char of name) {
-                const code = char.charCodeAt(0);
+        for (const char of chars) {
+            const code = char.charCodeAt(0);
+            if (code >= HANGUL_START && code <= HANGUL_END) {
+                const offset = code - HANGUL_START;
+                charInfos.push({
+                    char,
+                    choIdx: Math.floor(offset / (21 * 28)),
+                    jungIdx: Math.floor((offset % (21 * 28)) / 28),
+                    jongIdx: offset % 28,
+                    isHangul: true
+                });
+            } else {
+                charInfos.push({ char, choIdx: -1, jungIdx: -1, jongIdx: -1, isHangul: false });
+            }
+        }
 
-                if (code >= HANGUL_START && code <= HANGUL_END) {
-                    const offset = code - HANGUL_START;
-                    const choIdx = Math.floor(offset / (21 * 28));
-                    const jungIdx = Math.floor((offset % (21 * 28)) / 28);
-                    const jongIdx = offset % 28;
+        // 각 글자 위치에서 개별적으로 초성 교체
+        for (let pos = 0; pos < charInfos.length; pos++) {
+            const info = charInfos[pos];
+            if (!info.isHangul) continue;
 
-                    // 초성 교체 (단자음 → 쌍자음)
-                    let newChoIdx = choIdx;
-                    if (choIdx === c1) {
-                        newChoIdx = c2;
-                        hasChange = true;
-                    } else if (choIdx === c2) {
-                        newChoIdx = c1;
-                        hasChange = true;
+            for (const [c1, c2] of consonantSwaps) {
+                let newChoIdx = -1;
+
+                if (info.choIdx === c1) {
+                    newChoIdx = c2;
+                } else if (info.choIdx === c2) {
+                    newChoIdx = c1;
+                }
+
+                if (newChoIdx !== -1) {
+                    // 해당 위치의 글자만 교체한 새 이름 생성
+                    let altName = '';
+                    for (let i = 0; i < charInfos.length; i++) {
+                        if (i === pos) {
+                            const newCode = HANGUL_START + (newChoIdx * 21 * 28) + (info.jungIdx * 28) + info.jongIdx;
+                            altName += String.fromCharCode(newCode);
+                        } else {
+                            altName += charInfos[i].char;
+                        }
                     }
 
-                    const newCode = HANGUL_START + (newChoIdx * 21 * 28) + (jungIdx * 28) + jongIdx;
-                    altName += String.fromCharCode(newCode);
-                } else {
-                    altName += char;
+                    if (altName !== name && !alternatives.includes(altName)) {
+                        console.log(`[generateDoubleConsonantAlternatives] 변환: "${name}" [${pos}번째] → "${altName}"`);
+                        alternatives.push(altName);
+                    }
                 }
-            }
-
-            if (hasChange && altName !== name && !alternatives.includes(altName)) {
-                console.log(`[generateDoubleConsonantAlternatives] 변환: "${name}" → "${altName}"`);
-                alternatives.push(altName);
             }
         }
 
