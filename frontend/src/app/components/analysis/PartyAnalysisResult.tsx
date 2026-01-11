@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import PartyCard, { DetailedSpec } from './PartyCard';
-import { Share2, BarChart3, TrendingUp, Sparkles, Upload, Loader2, ScanLine, AlertCircle, RotateCcw, Server, CheckCircle2 } from 'lucide-react';
+import { Share2, BarChart3, TrendingUp, Sparkles, Upload, Loader2, ScanLine, AlertCircle, RotateCcw } from 'lucide-react';
 import { PendingServerSelection, PartyMember } from '@/hooks/usePartyScanner';
 import type { CharacterSpec } from './PartySpecCard';
 
@@ -284,235 +284,27 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                 </div>
             )}
 
-            {/* Selection Panel - Server or Name Selection */}
+            {/* 선택이 필요한 경우 안내 메시지 */}
             {hasPendingSelections && (
                 <div style={{
-                    padding: '1.5rem',
-                    background: 'rgba(96, 165, 250, 0.08)',
-                    border: '1px solid rgba(96, 165, 250, 0.3)',
-                    borderRadius: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.8rem',
+                    padding: '1rem 1.2rem',
+                    background: 'rgba(250, 204, 21, 0.08)',
+                    border: '1px solid rgba(250, 204, 21, 0.3)',
+                    borderRadius: '12px',
                     marginBottom: '1.5rem'
                 }}>
-                    {/* 이름 선택이 필요한 경우 */}
-                    {pendingSelections!.some(p => p.type === 'name') && (
-                        <div style={{ marginBottom: pendingSelections!.some(p => p.type !== 'name') ? '1.5rem' : 0 }}>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.8rem',
-                                marginBottom: '1rem'
-                            }}>
-                                <AlertCircle size={20} color="#FACC15" />
-                                <div>
-                                    <div style={{ color: '#FACC15', fontWeight: 600, fontSize: '1rem' }}>
-                                        캐릭터 이름 선택이 필요합니다
-                                    </div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '2px' }}>
-                                        OCR 인식이 불확실합니다. 올바른 캐릭터명을 선택해주세요.
-                                    </div>
-                                </div>
-                            </div>
-
-                            {pendingSelections!.filter(p => p.type === 'name').map((pending, idx) => (
-                                <div key={`name-pending-${idx}`} style={{
-                                    background: 'rgba(0, 0, 0, 0.2)',
-                                    borderRadius: '12px',
-                                    padding: '1rem',
-                                    marginTop: idx > 0 ? '0.8rem' : 0
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        marginBottom: '0.8rem'
-                                    }}>
-                                        <span style={{
-                                            fontSize: '0.75rem',
-                                            color: 'var(--text-secondary)',
-                                            background: 'rgba(250, 204, 21, 0.1)',
-                                            padding: '2px 8px',
-                                            borderRadius: '4px',
-                                            border: '1px solid rgba(250, 204, 21, 0.3)'
-                                        }}>
-                                            OCR 인식: {pending.name}
-                                        </span>
-                                        <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                                            → 다음 중 선택하세요
-                                        </span>
-                                    </div>
-
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: '0.6rem',
-                                        flexWrap: 'wrap'
-                                    }}>
-                                        {pending.candidates.map((candidate, cIdx) => (
-                                            <button
-                                                key={`name-candidate-${cIdx}`}
-                                                onClick={() => {
-                                                    if (candidate.characterData && onSelectServer) {
-                                                        onSelectServer(pending.slotIndex, candidate.server, candidate.characterData);
-                                                    }
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'flex-start',
-                                                    padding: '0.8rem 1rem',
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                                                    borderRadius: '10px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s',
-                                                    minWidth: '160px'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(250, 204, 21, 0.15)';
-                                                    e.currentTarget.style.borderColor = 'rgba(250, 204, 21, 0.5)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                                                }}
-                                            >
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.4rem',
-                                                    marginBottom: '0.3rem'
-                                                }}>
-                                                    <CheckCircle2 size={14} color="#FACC15" />
-                                                    <span style={{ color: 'var(--brand-white)', fontWeight: 600, fontSize: '0.95rem' }}>
-                                                        {candidate.alternativeName || candidate.characterData?.name}
-                                                    </span>
-                                                </div>
-                                                {candidate.characterData && (
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                                        <span>{candidate.server}</span>
-                                                        <span style={{ margin: '0 4px' }}>·</span>
-                                                        <span>{candidate.characterData.class}</span>
-                                                        <span style={{ margin: '0 4px' }}>·</span>
-                                                        <span style={{ color: '#FACC15' }}>
-                                                            {candidate.characterData.cp.toLocaleString()} CP
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+                    <AlertCircle size={20} color="#FACC15" />
+                    <div>
+                        <div style={{ color: '#FACC15', fontWeight: 600, fontSize: '0.9rem' }}>
+                            선택이 필요한 캐릭터가 있습니다
                         </div>
-                    )}
-
-                    {/* 서버 선택이 필요한 경우 */}
-                    {pendingSelections!.some(p => p.type !== 'name') && (
-                        <div>
-                            <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '0.8rem',
-                                marginBottom: '1rem'
-                            }}>
-                                <Server size={20} color="#60A5FA" />
-                                <div>
-                                    <div style={{ color: '#60A5FA', fontWeight: 600, fontSize: '1rem' }}>
-                                        서버 선택이 필요합니다
-                                    </div>
-                                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginTop: '2px' }}>
-                                        동일한 캐릭터명이 여러 서버에서 발견되었습니다. 해당 캐릭터의 서버를 선택해주세요.
-                                    </div>
-                                </div>
-                            </div>
-
-                            {pendingSelections!.filter(p => p.type !== 'name').map((pending, idx) => (
-                                <div key={`server-pending-${idx}`} style={{
-                                    background: 'rgba(0, 0, 0, 0.2)',
-                                    borderRadius: '12px',
-                                    padding: '1rem',
-                                    marginTop: idx > 0 ? '0.8rem' : 0
-                                }}>
-                                    <div style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: '0.5rem',
-                                        marginBottom: '0.8rem'
-                                    }}>
-                                        <span style={{ color: 'var(--brand-white)', fontWeight: 600 }}>
-                                            {pending.name}
-                                        </span>
-                                        <span style={{
-                                            fontSize: '0.75rem',
-                                            color: 'var(--text-secondary)',
-                                            background: 'rgba(255,255,255,0.1)',
-                                            padding: '2px 8px',
-                                            borderRadius: '4px'
-                                        }}>
-                                            OCR: [{pending.abbreviation}]
-                                        </span>
-                                    </div>
-
-                                    <div style={{
-                                        display: 'flex',
-                                        gap: '0.6rem',
-                                        flexWrap: 'wrap'
-                                    }}>
-                                        {pending.candidates.map((candidate, cIdx) => (
-                                            <button
-                                                key={`server-candidate-${cIdx}`}
-                                                onClick={() => {
-                                                    if (candidate.characterData && onSelectServer) {
-                                                        onSelectServer(pending.slotIndex, candidate.server, candidate.characterData);
-                                                    }
-                                                }}
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    alignItems: 'flex-start',
-                                                    padding: '0.8rem 1rem',
-                                                    background: 'rgba(255, 255, 255, 0.05)',
-                                                    border: '1px solid rgba(255, 255, 255, 0.15)',
-                                                    borderRadius: '10px',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s',
-                                                    minWidth: '140px'
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(96, 165, 250, 0.15)';
-                                                    e.currentTarget.style.borderColor = 'rgba(96, 165, 250, 0.5)';
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
-                                                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.15)';
-                                                }}
-                                            >
-                                                <div style={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '0.4rem',
-                                                    marginBottom: '0.3rem'
-                                                }}>
-                                                    <CheckCircle2 size={14} color="#60A5FA" />
-                                                    <span style={{ color: 'var(--brand-white)', fontWeight: 600, fontSize: '0.9rem' }}>
-                                                        {candidate.server}
-                                                    </span>
-                                                </div>
-                                                {candidate.characterData && (
-                                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                                                        <span>{candidate.characterData.class}</span>
-                                                        <span style={{ margin: '0 4px' }}>·</span>
-                                                        <span style={{ color: '#FACC15' }}>
-                                                            {candidate.characterData.cp.toLocaleString()} CP
-                                                        </span>
-                                                    </div>
-                                                )}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-                            ))}
+                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '2px' }}>
+                            아래 카드에서 올바른 {pendingSelections!.some(p => p.type === 'name') ? '캐릭터명' : '서버'}을 선택해주세요.
                         </div>
-                    )}
+                    </div>
                 </div>
             )}
 
@@ -535,8 +327,9 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                 <div style={gridStyle}>
                     {members.length > 0 ? (
                         members.map((member, idx) => {
-                            // detailedSpecs에서 해당 멤버의 스펙 찾기
-                            const memberSpec = detailedSpecs?.find(s => s.name === member.name);
+                            // detailedSpecs에서 해당 멤버의 스펙 찾기 (이름에서 "(선택 필요)" 제거 후 비교)
+                            const cleanName = member.name.replace(' (선택 필요)', '');
+                            const memberSpec = detailedSpecs?.find(s => s.name === cleanName || s.name === member.name);
                             const spec: DetailedSpec | undefined = memberSpec ? {
                                 hitonCP: memberSpec.hitonCP,
                                 itemLevel: memberSpec.itemLevel,
@@ -544,13 +337,34 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
                                 stats: memberSpec.stats
                             } : undefined;
 
+                            // 해당 슬롯의 선택 정보 찾기
+                            const pending = pendingSelections?.find(p => p.slotIndex === idx);
+                            const selectionInfo = pending ? {
+                                type: pending.type || 'server' as const,
+                                ocrName: pending.name,
+                                candidates: pending.candidates
+                            } : undefined;
+
+                            // 멤버 이름에서 "(선택 필요)" 제거
+                            const displayMember = {
+                                ...member,
+                                name: cleanName,
+                                server: member.server.replace(' (선택 필요)', '')
+                            };
+
                             return (
                                 <PartyCard
                                     key={idx}
-                                    member={member}
+                                    member={displayMember}
                                     index={idx}
                                     spec={spec}
                                     isLoadingSpec={isLoadingSpecs && !spec}
+                                    selectionInfo={selectionInfo}
+                                    onSelect={(selectedServer, characterData) => {
+                                        if (onSelectServer) {
+                                            onSelectServer(idx, selectedServer, characterData);
+                                        }
+                                    }}
                                 />
                             );
                         })

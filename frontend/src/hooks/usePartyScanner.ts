@@ -1306,11 +1306,15 @@ export const usePartyScanner = () => {
             }
         }
 
-        // 대표 캐릭터가 첫 번째에 오도록 다시 정렬
+        // 대표 캐릭터 첫 번째, 나머지는 레벨순(내림차순) 정렬
         members.sort((a, b) => {
+            // 대표 캐릭터는 항상 첫 번째
             if (a.isMainCharacter && !b.isMainCharacter) return -1;
             if (!a.isMainCharacter && b.isMainCharacter) return 1;
-            return 0;
+            // 나머지는 레벨순 내림차순 (높은 레벨이 앞으로)
+            const levelA = a.level || 0;
+            const levelB = b.level || 0;
+            return levelB - levelA;
         });
 
         // MVP 결정 (가장 높은 CP)

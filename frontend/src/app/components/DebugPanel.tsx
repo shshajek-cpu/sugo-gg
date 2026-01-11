@@ -14,7 +14,7 @@ export default function DebugPanel() {
         const unsubscribe = debugLogger.subscribe((newLogs) => {
             setLogs(newLogs)
         })
-        return unsubscribe
+        return () => { unsubscribe() }
     }, [])
 
     const handleCopy = () => {

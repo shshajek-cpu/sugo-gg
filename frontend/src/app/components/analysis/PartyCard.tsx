@@ -1,5 +1,6 @@
 import React from 'react';
-import { User, Star } from 'lucide-react';
+import { User, Star, ChevronDown } from 'lucide-react';
+import type { ServerCandidate, PartyMember } from '@/hooks/usePartyScanner';
 
 // 상세 스펙 정보
 export interface DetailedSpec {
@@ -31,11 +32,21 @@ interface Member {
     isFromDb?: boolean;
 }
 
+// 선택 정보
+interface SelectionInfo {
+    type: 'server' | 'name';
+    ocrName: string; // OCR로 인식된 이름
+    candidates: ServerCandidate[];
+}
+
 interface PartyCardProps {
     member: Member;
     index: number;
     spec?: DetailedSpec;
     isLoadingSpec?: boolean;
+    // 선택 관련 props
+    selectionInfo?: SelectionInfo;
+    onSelect?: (selectedServer: string, characterData: PartyMember) => void;
 }
 
 // 돌파 아이콘 컴포넌트 (메달/3.png 사용)
@@ -80,10 +91,11 @@ const BreakthroughIcon = ({ value, size = 'medium' }: { value: number; size?: 's
     );
 };
 
-export default function PartyCard({ member, index, spec, isLoadingSpec }: PartyCardProps) {
+export default function PartyCard({ member, index, spec, isLoadingSpec, selectionInfo, onSelect }: PartyCardProps) {
     // MVP & Main Character Styling
     const isMvp = member.isMvp;
     const isMain = member.isMainCharacter;
+    const hasSelection = selectionInfo && selectionInfo.candidates.length > 0;
 
     // 프로필 이미지 또는 아이콘 렌더링
     const renderProfileIcon = () => {
@@ -442,6 +454,110 @@ export default function PartyCard({ member, index, spec, isLoadingSpec }: PartyC
                         color: 'var(--text-secondary)',
                     }}>
                         스펙 로딩 중...
+                    </div>
+                )}
+
+                {/* 선택 필요 시 버튼 목록 */}
+                {hasSelection && (
+                    <div style={{
+                        padding: '8px 10px',
+                        background: selectionInfo.type === 'name'
+                            ? 'rgba(250, 204, 21, 0.08)'
+                            : 'rgba(96, 165, 250, 0.08)',
+                        borderTop: `1px solid ${selectionInfo.type === 'name'
+                            ? 'rgba(250, 204, 21, 0.3)'
+                            : 'rgba(96, 165, 250, 0.3)'}`,
+                    }}>
+                        {/* 헤더 */}
+                        <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            marginBottom: '6px',
+                            fontSize: '0.65rem',
+                        }}>
+                            <ChevronDown size={12} color={selectionInfo.type === 'name' ? '#FACC15' : '#60A5FA'} />
+                            <span style={{
+                                color: selectionInfo.type === 'name' ? '#FACC15' : '#60A5FA',
+                                fontWeight: 600
+                            }}>
+                                {selectionInfo.type === 'name' ? '이름 선택' : '서버 선택'}
+                            </span>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.6rem' }}>
+                                (OCR: {selectionInfo.ocrName})
+                            </span>
+                        </div>
+
+                        {/* 버튼 목록 */}
+                        <div style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '4px',
+                        }}>
+                            {selectionInfo.candidates.map((candidate, cIdx) => (
+                                <button
+                                    key={`select-${cIdx}`}
+                                    onClick={() => {
+                                        if (candidate.characterData && onSelect) {
+                                            onSelect(candidate.server, candidate.characterData);
+                                        }
+                                    }}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                        padding: '6px 10px',
+                                        background: 'rgba(255, 255, 255, 0.05)',
+                                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                                        borderRadius: '6px',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s',
+                                        width: '100%',
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        const color = selectionInfo.type === 'name' ? '250, 204, 21' : '96, 165, 250';
+                                        e.currentTarget.style.background = `rgba(${color}, 0.15)`;
+                                        e.currentTarget.style.borderColor = `rgba(${color}, 0.4)`;
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+                                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                    }}
+                                >
+                                    {/* 왼쪽: 이름 또는 서버 */}
+                                    <span style={{
+                                        color: 'var(--brand-white)',
+                                        fontWeight: 600,
+                                        fontSize: '0.75rem'
+                                    }}>
+                                        {selectionInfo.type === 'name'
+                                            ? (candidate.alternativeName || candidate.characterData?.name)
+                                            : candidate.server
+                                        }
+                                    </span>
+
+                                    {/* 오른쪽: 아이템레벨 + 직업 */}
+                                    {candidate.characterData && (
+                                        <div style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            fontSize: '0.65rem',
+                                        }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>
+                                                {candidate.characterData.class}
+                                            </span>
+                                            <span style={{
+                                                color: '#60A5FA',
+                                                fontWeight: 600
+                                            }}>
+                                                iLv.{candidate.characterData.gearScore || 0}
+                                            </span>
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 )}
             </div>
