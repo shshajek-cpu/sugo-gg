@@ -134,8 +134,8 @@ export const usePartyScanner = () => {
                 // 크롭된 영역을 확대해서 그리기
                 ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
-                // 전처리 적용 (대비/밝기 강화)
-                preprocessImage(ctx, canvas.width, canvas.height);
+                // 전처리 제거 - 원본 이미지로 OCR 테스트
+                // preprocessImage(ctx, canvas.width, canvas.height);
 
                 resolve(canvas.toDataURL('image/png'));
             };
