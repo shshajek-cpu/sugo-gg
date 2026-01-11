@@ -10,6 +10,18 @@ import {
     DEFAULT_COLLECTOR_CONFIG
 } from '@/types/collector'
 
+// Admin API 인증 헤더
+const getAuthHeaders = (): HeadersInit => {
+    const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+    }
+    const apiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY
+    if (apiKey) {
+        headers['Authorization'] = `Bearer ${apiKey}`
+    }
+    return headers
+}
+
 // 상태 색상 매핑
 const STATUS_COLORS: Record<string, { bg: string, border: string, text: string }> = {
     idle: { bg: 'rgba(107, 114, 128, 0.1)', border: '#6B7280', text: '#9CA3AF' },
@@ -37,7 +49,9 @@ export default function CollectorPage() {
     // 상태 조회
     const fetchStatus = useCallback(async () => {
         try {
-            const res = await fetch('/api/admin/collector?type=status')
+            const res = await fetch('/api/admin/collector?type=status', {
+                headers: getAuthHeaders()
+            })
             const data = await res.json()
             if (data.state) {
                 setState(data.state)
@@ -50,7 +64,9 @@ export default function CollectorPage() {
     // 설정 조회
     const fetchConfig = useCallback(async () => {
         try {
-            const res = await fetch('/api/admin/collector?type=config')
+            const res = await fetch('/api/admin/collector?type=config', {
+                headers: getAuthHeaders()
+            })
             const data = await res.json()
             if (data && data.delayMs !== undefined) {
                 setConfig(data)
@@ -63,7 +79,9 @@ export default function CollectorPage() {
     // 로그 조회
     const fetchLogs = useCallback(async () => {
         try {
-            const res = await fetch('/api/admin/collector?type=logs')
+            const res = await fetch('/api/admin/collector?type=logs', {
+                headers: getAuthHeaders()
+            })
             const data = await res.json()
             if (Array.isArray(data)) {
                 setLogs(data)
@@ -94,7 +112,7 @@ export default function CollectorPage() {
         try {
             const res = await fetch('/api/admin/collector', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify({ action, ...extraData })
             })
             const data = await res.json()
