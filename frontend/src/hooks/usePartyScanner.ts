@@ -296,7 +296,7 @@ export const usePartyScanner = () => {
         // 전체 텍스트에서 한글 이름 추출
         const fullText = rawText.replace(/\n/g, ' ');
 
-        // 2. OCR에서 서버명 패턴 찾기 (이름[서버] 형식만 - 서버명 없는건 무시)
+        // 2. OCR에서 서버명 패턴 찾기 (이름[서버] 형식)
         addLog(`[패턴 검색] "이름[서버]" 형식 찾는 중...`);
         const serverMatches = Array.from(fullText.matchAll(new RegExp(serverRegex, 'g')));
         let serverMatchCount = 0;
@@ -346,7 +346,43 @@ export const usePartyScanner = () => {
             addMember(name, rawServer, possibleServers, false);
             serverMatchCount++;
         }
-        addLog(`[패턴 결과] ${serverMatchCount}개 매칭됨 (서버명 있는 캐릭터만)`);
+        addLog(`[패턴 결과] ${serverMatchCount}개 매칭됨 (서버명 있는 캐릭터)`);
+
+        // 3. 서버명 없는 캐릭터도 찾기 (대표 캐릭터 서버로 검색)
+        if (mainChar && matches.length < 4) {
+            addLog(`[패턴 검색] 서버명 없는 캐릭터 찾는 중 (대표 서버: ${mainChar.server})...`);
+
+            // 한글 이름 패턴 (2~6글자)
+            const nameOnlyRegex = /([가-힣]{2,6})/g;
+            const allNames = Array.from(fullText.matchAll(nameOnlyRegex));
+
+            for (const match of allNames) {
+                if (matches.length >= 4) break;
+
+                const name = match[1];
+
+                // 이미 추가된 이름이면 스킵
+                if (seenNames.has(name)) continue;
+
+                // 대표 캐릭터와 같은 이름이면 스킵
+                if (name === mainChar.name) continue;
+
+                // 서버명으로 보이는 단어는 스킵 (서버명 목록에 있는 경우)
+                const correctedServer = correctServerName(name);
+                if (correctedServer !== name && SERVER_NAME_TO_ID[correctedServer]) continue;
+
+                // "준비", "완료", "중" 등 상태 텍스트 스킵
+                if (['준비', '완료', '중', '준비중', '대기'].includes(name)) continue;
+
+                // 이미 서버명과 함께 파싱된 이름인지 확인 (fullText에서 name[서버] 패턴 존재 여부)
+                const hasServerPattern = new RegExp(`${name}\\s*\\[[가-힣a-zA-Z0-9]+\\]`).test(fullText);
+                if (hasServerPattern) continue;
+
+                // 대표 캐릭터 서버로 추가
+                addLog(`[서버없음] ${name} → 대표 서버(${mainChar.server})로 검색`);
+                addMember(name, mainChar.server, [mainChar.server], false);
+            }
+        }
 
         console.log('[smartParse] Final matches:', matches);
         addLog(`[최종] 대표캐릭터 1명 + OCR ${matches.length - 1}명 = 총 ${matches.length}명`);
