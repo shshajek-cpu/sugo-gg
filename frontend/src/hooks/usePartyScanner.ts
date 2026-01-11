@@ -113,9 +113,9 @@ export const usePartyScanner = () => {
                 const cropHeight = Math.max(100, Math.round(img.height * 0.10));
                 const startY = img.height - cropHeight - Math.round(img.height * 0.02); // 약간 위로
 
-                // 너비: 파티원 4명만 정확히 캡처 (왼쪽 8%부터 60%)
-                const startX = Math.round(img.width * 0.08);
-                const cropWidth = Math.round(img.width * 0.60);
+                // 너비: 파티원 4명만 정확히 캡처 (왼쪽 12%부터 55%)
+                const startX = Math.round(img.width * 0.12);
+                const cropWidth = Math.round(img.width * 0.55);
 
                 // 3배 확대하여 OCR 정확도 향상 (2배 → 3배)
                 const scale = 3;
