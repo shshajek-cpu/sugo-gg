@@ -107,7 +107,6 @@ export const usePartyScanner = () => {
         ctx.putImageData(imageData, 0, 0);
     };
 
-    // 기존 전체 크롭 (미리보기용으로 유지)
     const cropBottomPart = (base64Image: string): Promise<string> => {
         return new Promise((resolve) => {
             const img = new Image();
@@ -116,62 +115,31 @@ export const usePartyScanner = () => {
                 const ctx = canvas.getContext('2d');
                 if (!ctx) { resolve(base64Image); return; }
 
-                // 파티바 영역 (기존 설정 유지)
+                // 파티바 영역: 더 정밀하게 파티원 이름만 캡처
+                // 높이: 화면 하단 10% (이름+서버만)
                 const cropHeight = Math.max(100, Math.round(img.height * 0.10));
-                const startY = img.height - cropHeight - Math.round(img.height * 0.02);
+                const startY = img.height - cropHeight - Math.round(img.height * 0.02); // 약간 위로
+
+                // 너비: 파티원 4명만 정확히 캡처 (왼쪽 12%부터 62%)
                 const startX = Math.round(img.width * 0.12);
                 const cropWidth = Math.round(img.width * 0.62);
-                const scale = 2;
 
+                // 2배 확대 (OCR 정확도 향상)
+                const scale = 2;
                 canvas.width = cropWidth * scale;
                 canvas.height = cropHeight * scale;
+
+                console.log(`[cropBottomPart] Image: ${img.width}x${img.height}, Crop: X=${startX}, Y=${startY}, W=${cropWidth}, H=${cropHeight}, Scale: ${scale}x`);
+
+                // 크롭된 영역을 확대해서 그리기
                 ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+
+                // 전처리 적용 (대비/밝기 강화)
                 preprocessImage(ctx, canvas.width, canvas.height);
+
                 resolve(canvas.toDataURL('image/png'));
             };
             img.onerror = () => resolve(base64Image);
-            img.src = base64Image;
-        });
-    };
-
-    // 개별 파티원 슬롯 크롭 (4개 영역 분리)
-    const cropPartySlots = (base64Image: string): Promise<string[]> => {
-        return new Promise((resolve) => {
-            const img = new Image();
-            img.onload = () => {
-                // 기존 전체 영역 설정
-                const cropHeight = Math.max(100, Math.round(img.height * 0.10));
-                const startY = img.height - cropHeight - Math.round(img.height * 0.02);
-                const startX = Math.round(img.width * 0.12);
-                const totalWidth = Math.round(img.width * 0.62);
-
-                // 각 슬롯 너비 (4등분) + 약간의 여유
-                const slotWidth = Math.round(totalWidth / 4);
-                const scale = 3; // 개별 영역은 3배 확대 (더 선명하게)
-
-                const slots: string[] = [];
-
-                // 슬롯 1은 본인 캐릭터 (서버명 없음) - 스킵
-                // 슬롯 2, 3, 4만 크롭 (인덱스 1, 2, 3)
-                for (let i = 1; i < 4; i++) {
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    if (!ctx) continue;
-
-                    const slotStartX = startX + (slotWidth * i);
-                    canvas.width = slotWidth * scale;
-                    canvas.height = cropHeight * scale;
-
-                    console.log(`[cropPartySlots] Slot ${i + 1}: X=${slotStartX}, Y=${startY}, W=${slotWidth}, H=${cropHeight}, Scale=${scale}x`);
-
-                    ctx.drawImage(img, slotStartX, startY, slotWidth, cropHeight, 0, 0, canvas.width, canvas.height);
-                    preprocessImage(ctx, canvas.width, canvas.height);
-                    slots.push(canvas.toDataURL('image/png'));
-                }
-
-                resolve(slots);
-            };
-            img.onerror = () => resolve([]);
             img.src = base64Image;
         });
     };
@@ -1092,94 +1060,51 @@ export const usePartyScanner = () => {
                 try {
                     console.log('[usePartyScanner] File loaded, starting OCR...');
                     const originalImage = e.target?.result as string;
-                    const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
+                    let imageToScan = originalImage;
 
-                    // 이미지 크롭 (전체 미리보기용 + 개별 슬롯)
+                    // 이미지 크롭
                     const cropStartTime = Date.now();
-                    setLogs(prev => [...prev, '이미지 크롭 중 (개별 슬롯)...']);
-
-                    // 미리보기용 전체 크롭
-                    const previewImage = await cropBottomPart(originalImage);
-                    setCroppedPreview(previewImage);
-
-                    // 개별 슬롯 크롭 (3개: 슬롯 2, 3, 4)
-                    const slotImages = await cropPartySlots(originalImage);
+                    if (scanBottomOnly) {
+                        setLogs(prev => [...prev, '이미지 크롭 중...']);
+                        imageToScan = await cropBottomPart(originalImage);
+                        setCroppedPreview(imageToScan);
+                        console.log('[usePartyScanner] Image cropped');
+                    } else {
+                        setCroppedPreview(originalImage);
+                    }
                     const cropTime = Date.now() - cropStartTime;
-                    setLogs(prev => [...prev, `⏱ 이미지 전처리: ${cropTime}ms (${slotImages.length}개 슬롯)`]);
+                    setLogs(prev => [...prev, `⏱ 이미지 전처리: ${cropTime}ms`]);
 
-                    // 병렬 OCR API 호출 (3개 슬롯 동시)
+                    // OCR API 호출
                     const ocrStartTime = Date.now();
-                    console.log('[usePartyScanner] Calling OCR API for', slotImages.length, 'slots...');
-                    setLogs(prev => [...prev, `OCR API 호출 중 (${slotImages.length}개 병렬)...`]);
+                    console.log('[usePartyScanner] Calling OCR API...');
+                    setLogs(prev => [...prev, 'OCR API 호출 중...']);
 
-                    const ocrPromises = slotImages.map(async (slotImage, idx) => {
-                        try {
-                            const response = await fetch('/api/ocr', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ image: slotImage })
-                            });
-                            if (!response.ok) {
-                                console.error(`[OCR] Slot ${idx + 2} failed:`, response.status);
-                                return null;
-                            }
-                            const result = await response.json();
-                            console.log(`[OCR] Slot ${idx + 2} result:`, result.text);
-                            return { slotIndex: idx + 2, text: result.text || '' };
-                        } catch (err) {
-                            console.error(`[OCR] Slot ${idx + 2} error:`, err);
-                            return null;
-                        }
+                    const ocrResponse = await fetch('/api/ocr', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ image: imageToScan })
                     });
 
-                    const ocrResults = await Promise.all(ocrPromises);
+                    if (!ocrResponse.ok) {
+                        const errorData = await ocrResponse.json();
+                        throw new Error(errorData.error || 'OCR failed');
+                    }
+
+                    const ocrResult = await ocrResponse.json();
+                    const text = ocrResult.text || '';
                     const ocrTime = Date.now() - ocrStartTime;
-                    setLogs(prev => [...prev, `⏱ OCR API 응답: ${ocrTime}ms (병렬)`]);
+                    console.log('[usePartyScanner] OCR result:', text);
+                    setLogs(prev => [...prev, `⏱ OCR API 응답: ${ocrTime}ms`]);
 
-                    // 각 슬롯 OCR 결과 파싱
-                    const parsedMembers: ParsedMember[] = [];
-                    const mainChar = getMainCharacter();
-
-                    // 대표 캐릭터 먼저 추가
-                    if (mainChar) {
-                        addLog(`[대표캐릭터] ${mainChar.name} [${mainChar.server}] - 슬롯 1 고정`);
-                        parsedMembers.push({
-                            name: mainChar.name,
-                            rawServer: mainChar.server,
-                            possibleServers: [mainChar.server],
-                            isMainCharacter: true
-                        });
-                    }
-
-                    // 각 슬롯 결과 파싱
-                    const serverRegex = /([가-힣a-zA-Z0-9]+)\s*\[([가-힣a-zA-Z0-9]+)\]/;
-                    for (const result of ocrResults) {
-                        if (!result) continue;
-
-                        addLog(`[슬롯 ${result.slotIndex}] OCR: ${result.text.substring(0, 50)}...`);
-
-                        // 서버명 패턴 찾기
-                        const match = result.text.match(serverRegex);
-                        if (match) {
-                            const name = match[1].replace(/[^a-zA-Z0-9가-힣]/g, '');
-                            const rawServer = match[2];
-
-                            if (name.length >= 2 && rawServer.length >= 2) {
-                                const possibleServers = getPossibleServers(rawServer);
-                                addLog(`[슬롯 ${result.slotIndex}] 파싱: ${name} [${rawServer}] → ${possibleServers.join(', ')}`);
-                                parsedMembers.push({ name, rawServer, possibleServers, isMainCharacter: false });
-                            }
-                        } else {
-                            addLog(`[슬롯 ${result.slotIndex}] 서버명 패턴 없음 (스킵)`);
-                        }
-                    }
-
+                    const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
+                    const parsedMembers = smartParse(text, addLog);
                     console.log('[usePartyScanner] Parsed members:', parsedMembers);
-                    addLog(`파싱 완료: ${parsedMembers.length}명 인식됨 (대표 1 + OCR ${parsedMembers.length - 1})`);
+                    addLog(`파싱 완료: ${parsedMembers.length}명 인식됨`);
 
                     if (parsedMembers.length === 0) {
                         console.log('[usePartyScanner] No members found from OCR');
-                        setLogs(prev => [...prev, '❌ 인식된 파티원 없음']);
+                        setLogs(prev => [...prev, '❌ 인식된 파티원 없음 (OCR: ' + text.substring(0, 100) + '...)']);
                         setIsScanning(false);
                         resolve({
                             totalCp: 0,

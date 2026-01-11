@@ -1,107 +1,157 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { Clock, Gem, UserPlus } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { Clock, Gem, Sparkles, Sword, Coins } from 'lucide-react'
 import styles from './LedgerPage.module.css'
 import RevenueInputForm from '../components/ledger/RevenueInputForm'
 import ItemSalesSection from '../components/ledger/ItemSalesSection'
-import { IncomeSection } from '@/types/ledger'
-import { useLedger } from '@/hooks/useLedger'
-import DebugPanel from '../components/DebugPanel'
+import { IncomeSection, ItemSale } from '@/types/ledger'
 
-const WEEKLY_TOTAL = 0 // Placeholder
+type CharacterSummary = {
+    id: string
+    name: string
+    job: string
+    income: number
+}
+
+const DAILY_TOTAL = 8450000
+const WEEKLY_TOTAL = 56200000
+
+const CHARACTERS: CharacterSummary[] = [
+    { id: 'elyon', name: '엘리온', job: '수호성', income: 1500000 },
+    { id: 'serin', name: '세린', job: '살성', income: 0 },
+    { id: 'kairo', name: '카이로', job: '마도성', income: 970000 },
+    { id: 'hena', name: '헤나', job: '치유성', income: 2200000 },
+]
+
+const INITIAL_INCOME_SECTIONS: IncomeSection[] = [
+    {
+        id: 'expedition',
+        title: '원정대 수입',
+        total: 1500000,
+        records: [
+            { id: 'exp-1', label: '1회차', amount: 500000, timeAgo: '10분 전' },
+            { id: 'exp-2', label: '2회차', amount: 350000, timeAgo: '32분 전' },
+            { id: 'exp-3', label: '3회차', amount: 650000, timeAgo: '1시간 전' },
+        ]
+    },
+    {
+        id: 'transcend',
+        title: '초월 콘텐츠',
+        total: 920000,
+        records: [
+            { id: 'tr-1', label: '균열 수호', amount: 420000, timeAgo: '25분 전' },
+            { id: 'tr-2', label: '보스 보상', amount: 500000, timeAgo: '2시간 전' },
+        ]
+    },
+    {
+        id: 'etc',
+        title: '기타 수입',
+        total: 310000,
+        records: [
+            { id: 'etc-1', label: '길드 정산', amount: 180000, timeAgo: '3시간 전' },
+            { id: 'etc-2', label: '일일 미션', amount: 130000, timeAgo: '4시간 전' },
+        ]
+    },
+]
+
+const INITIAL_ITEM_SALES: ItemSale[] = [
+    { id: 'item-1', name: '전설의 수정검', price: 1200000, timeAgo: '5분 전', date: '2026-01-11T05:00:00', icon: <Gem size={30} /> },
+    { id: 'item-2', name: '폭풍의 목걸이', price: 840000, timeAgo: '12분 전', date: '2026-01-11T04:50:00', icon: <Gem size={30} /> },
+    { id: 'item-3', name: '심연의 반지', price: 650000, timeAgo: '18분 전', date: '2026-01-11T04:40:00', icon: <Gem size={30} /> },
+    { id: 'item-4', name: '수호자의 방패', price: 1100000, timeAgo: '26분 전', date: '2026-01-11T04:30:00', icon: <Gem size={30} /> },
+    { id: 'item-5', name: '현자의 망토', price: 720000, timeAgo: '41분 전', date: '2026-01-11T04:15:00', icon: <Gem size={30} /> },
+    { id: 'item-6', name: '루미엘의 귀걸이', price: 930000, timeAgo: '1시간 전', date: '2026-01-11T04:00:00', icon: <Gem size={30} /> },
+    { id: 'item-7', name: '재앙의 단검', price: 1500000, timeAgo: '1시간 전', date: '2026-01-11T03:55:00', icon: <Gem size={30} /> },
+    { id: 'item-8', name: '황혼의 투구', price: 560000, timeAgo: '2시간 전', date: '2026-01-11T03:30:00', icon: <Gem size={30} /> },
+    { id: 'item-9', name: '태고의 장갑', price: 470000, timeAgo: '2시간 전', date: '2026-01-11T03:10:00', icon: <Gem size={30} /> },
+    { id: 'item-10', name: '용언의 팔찌', price: 990000, timeAgo: '3시간 전', date: '2026-01-11T02:00:00', icon: <Gem size={30} /> },
+]
 
 const formatKina = (value: number) => value.toLocaleString('ko-KR')
 
 const formatMan = (value: number) => `${Math.floor(value / 10000).toLocaleString('ko-KR')}만`
 
 export default function LedgerPage() {
-    const { 
-        characters, 
-        activeCharacterId, 
-        setActiveCharacterId, 
-        dailyRecords, 
-        isLoading, 
-        addCharacter, 
-        addEntry, 
-        deleteEntry 
-    } = useLedger()
-    
+    const [activeCharacterId, setActiveCharacterId] = useState(CHARACTERS[0].id)
+    const [incomeSections, setIncomeSections] = useState<IncomeSection[]>(INITIAL_INCOME_SECTIONS)
+    const [itemSales, setItemSales] = useState<ItemSale[]>(INITIAL_ITEM_SALES)
     const [displayedTotal, setDisplayedTotal] = useState(0)
-
-    // Calculate totals
-    const dailyTotal = useMemo(() => {
-        return characters.reduce((sum, c) => sum + (c.income || 0), 0)
-    }, [characters])
+    const [isLoading, setIsLoading] = useState(true)
+    const previousTotalRef = useRef(0)
 
     useEffect(() => {
-        setDisplayedTotal(dailyTotal)
-    }, [dailyTotal])
+        const timer = setTimeout(() => setIsLoading(false), 550)
+        return () => clearTimeout(timer)
+    }, [])
 
-    // Map dailyRecords to IncomeSection[]
-    const incomeSections = useMemo(() => {
-        const sections: IncomeSection[] = [
-            { id: 'expedition', title: '원정대 수입', total: 0, records: [] },
-            { id: 'transcend', title: '초월 콘텐츠', total: 0, records: [] },
-            { id: 'etc', title: '기타 수입', total: 0, records: [] },
-        ]
-        
-        dailyRecords.forEach(r => {
-            if (r.category === 'item_sale') return
-            const section = sections.find(s => s.id === r.category)
-            if (section) {
-                const amount = r.price * r.count
-                section.total += amount
-                section.records.push({
-                    id: r.id,
-                    label: r.item_name,
-                    amount: amount,
-                    timeAgo: '오늘'
-                })
+    useEffect(() => {
+        const startValue = previousTotalRef.current
+        const endValue = DAILY_TOTAL
+        previousTotalRef.current = endValue
+        const duration = 900
+        const startTime = performance.now()
+        let frameId = 0
+
+        const animate = (now: number) => {
+            const progress = Math.min((now - startTime) / duration, 1)
+            const eased = 1 - Math.pow(1 - progress, 3)
+            const currentValue = Math.floor(startValue + (endValue - startValue) * eased)
+            setDisplayedTotal(currentValue)
+            if (progress < 1) {
+                frameId = requestAnimationFrame(animate)
             }
-        })
-        return sections
-    }, [dailyRecords])
+        }
 
-    // Map dailyRecords to ItemSale[]
-    const itemSales = useMemo(() => {
-        return dailyRecords
-            .filter(r => r.category === 'item_sale')
-            .map(r => ({
-                id: r.id,
-                name: r.item_name,
-                price: r.price * r.count,
-                timeAgo: '오늘',
-                date: r.created_at,
-                icon: <Gem size={30} />
-            }))
-    }, [dailyRecords])
-    
-    const [filterQuery, setFilterQuery] = useState('')
-    const filteredItemSales = useMemo(() => {
-        if (!filterQuery) return itemSales
-        return itemSales.filter(i => i.name.toLowerCase().includes(filterQuery.toLowerCase()))
-    }, [itemSales, filterQuery])
+        frameId = requestAnimationFrame(animate)
+        return () => cancelAnimationFrame(frameId)
+    }, [])
 
     const handleAddRecord = (sectionId: string, amount: number, label: string) => {
-        addEntry(sectionId, label, amount, 1)
+        setIncomeSections(prev => prev.map(section => {
+            if (section.id === sectionId) {
+                return {
+                    ...section,
+                    total: section.total + amount,
+                    records: [
+                        { id: `rec-${Date.now()}`, label, amount, timeAgo: '방금' },
+                        ...section.records
+                    ]
+                }
+            }
+            return section
+        }))
+        // Update total (mock only)
+        setDisplayedTotal(prev => prev + amount)
     }
 
     const handleDeleteRecord = (sectionId: string, recordId: string) => {
-        const rec = dailyRecords.find(r => r.id === recordId)
-        if (rec) deleteEntry(recordId, rec.price * rec.count)
+        setIncomeSections(prev => prev.map(section => {
+            if (section.id === sectionId) {
+                const record = section.records.find(r => r.id === recordId)
+                if (!record) return section
+                return {
+                    ...section,
+                    total: section.total - record.amount,
+                    records: section.records.filter(r => r.id !== recordId)
+                }
+            }
+            return section
+        }))
     }
 
-    const handleAddItem = (name: string, price: number) => {
-        addEntry('item_sale', name, price, 1)
-    }
-
-    const handleAddCharacter = () => {
-        const name = prompt('추가할 캐릭터 이름을 입력하세요:')
-        if (name) {
-             const job = prompt('직업을 입력하세요 (예: 수호성, 살성):') || 'Unknown'
-             addCharacter(name, job)
+    const handleSearchItem = (query: string) => {
+        // Implement local filter for mock data
+        if (!query.trim()) {
+            setItemSales(INITIAL_ITEM_SALES)
+            return
         }
+        const lowerQuery = query.toLowerCase()
+        const filtered = INITIAL_ITEM_SALES.filter(item =>
+            item.name.toLowerCase().includes(lowerQuery) ||
+            item.price.toString().includes(lowerQuery)
+        )
+        setItemSales(filtered)
     }
 
     return (
@@ -126,7 +176,7 @@ export default function LedgerPage() {
                         </div>
                         <div className={styles.headerStatus}>
                             <Clock size={16} />
-                            {isLoading ? '동기화 중...' : '동기화 완료'}
+                            {isLoading ? '실시간 동기화 중...' : '동기화 완료'}
                         </div>
                     </div>
                 </header>
@@ -135,7 +185,7 @@ export default function LedgerPage() {
                     <aside className={styles.sidebar}>
                         <div className={styles.sidebarTitle}>내 캐릭터 수입</div>
                         <div className={styles.sidebarList}>
-                            {characters.map((character) => {
+                            {CHARACTERS.map((character) => {
                                 const isActive = activeCharacterId === character.id
                                 return (
                                     <button
@@ -157,42 +207,23 @@ export default function LedgerPage() {
                                     </button>
                                 )
                             })}
-                            
-                            <button 
-                                className={`${styles.sidebarItem}`} 
-                                onClick={handleAddCharacter}
-                                style={{ justifyContent: 'center', color: 'var(--text-secondary)' }}
-                            >
-                                <UserPlus size={18} />
-                                <span>캐릭터 추가</span>
-                            </button>
                         </div>
                     </aside>
 
                     <main className={styles.mainContent}>
-                        {activeCharacterId ? (
-                            <>
-                                <RevenueInputForm
-                                    sections={incomeSections}
-                                    onAddRecord={handleAddRecord}
-                                    onDeleteRecord={handleDeleteRecord}
-                                />
+                        <RevenueInputForm
+                            sections={incomeSections}
+                            onAddRecord={handleAddRecord}
+                            onDeleteRecord={handleDeleteRecord}
+                        />
 
-                                <ItemSalesSection
-                                    items={filteredItemSales}
-                                    onSearchItem={setFilterQuery}
-                                    onAddItem={handleAddItem}
-                                />
-                            </>
-                        ) : (
-                            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-secondary)' }}>
-                                <p>왼쪽 사이드바에서 캐릭터를 추가하여 가계부를 시작하세요.</p>
-                            </div>
-                        )}
+                        <ItemSalesSection
+                            items={itemSales}
+                            onSearchItem={handleSearchItem}
+                        />
                     </main>
                 </div>
             </div>
-            <DebugPanel />
         </div>
     )
 }

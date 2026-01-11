@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-// Gemini OCR API (단일 슬롯 / 전체 모드 지원)
+// Gemini 1.5 Flash OCR API
 export async function POST(request: NextRequest) {
     try {
-        const { image, mode = 'single' } = await request.json(); // mode: 'single' (개별 슬롯) | 'multi' (전체)
+        const { image } = await request.json();
 
         if (!image) {
             return NextResponse.json({ error: 'Image is required' }, { status: 400 });
@@ -28,46 +28,51 @@ export async function POST(request: NextRequest) {
             base64Data = image.replace(/^data:image\/\w+;base64,/, '');
         }
 
-        // 단일 슬롯 모드용 프롬프트 (간결하고 집중적)
-        const singleSlotPrompt = `이 이미지에서 캐릭터 이름과 서버명을 추출하세요.
-
-형식: 캐릭터명[서버명]
-예시: 로캐[무닌]
-
-## 한글 구분 (매우 중요!)
-- ㅐ vs ㅣ: 캐≠키, 배≠비, 래≠리 (ㅐ는 세로선+짧은가로선, ㅣ는 세로선만)
-- ㄲ vs ㄱ: 꼰≠곤, 까≠가
-- ㄸ vs ㄷ: 똘≠돌, 따≠다
-- ㅂ vs ㅎ: 밥≠합, 반≠한
-
-출력: 캐릭터명[서버명] (이 형식만, 설명 없이)`;
-
-        // 전체 모드용 프롬프트 (기존)
-        const multiSlotPrompt = `이 게임 스크린샷에서 파티원 정보를 정확히 추출하세요.
-
-## 형식
-- 각 파티원은 "캐릭터명[서버명]" 형태로 표시됩니다
-
-## 출력 형식
-캐릭터명1[서버명1]
-캐릭터명2[서버명2]
-캐릭터명3[서버명3]
-캐릭터명4[서버명4]
-
-## 한글 구분 (중요!)
-- ㅐ vs ㅣ: 캐≠키, 배≠비 (ㅐ는 세로선+가로선)
-- ㄲ vs ㄱ: 꼰≠곤
-- ㄸ vs ㄷ: 똘≠돌
-- ㅂ vs ㅎ: 밥≠합
-
-설명 없이 형식만 출력하세요.`;
-
         const requestBody = {
             contents: [
                 {
                     parts: [
                         {
-                            text: mode === 'single' ? singleSlotPrompt : multiSlotPrompt
+                            text: `이 게임 스크린샷에서 파티원 정보를 정확히 추출하세요.
+
+## 형식
+- 각 파티원은 "캐릭터명[서버명]" 형태로 표시됩니다
+- 레벨 정보(LV XX)가 함께 표시될 수 있습니다
+
+## 출력 형식 (이 형식만 출력하세요)
+캐릭터명1[서버명1]
+캐릭터명2[서버명2]
+캐릭터명3[서버명3]
+캐릭터명4[서버명4]
+
+## 중요 - 한글 글자 구분
+반드시 정확히 구분하세요:
+
+### 모음 구분 (가장 중요! 반드시 주의!)
+- ㅐ vs ㅣ: 캐/키, 배/비, 래/리, 매/미, 새/시
+  - "로캐"와 "로키"는 완전히 다른 글자입니다!
+  - ㅐ는 세로선 왼쪽에 짧은 가로선이 있습니다
+  - ㅣ는 세로선만 있습니다
+- ㅔ vs ㅣ: 게/기, 세/시, 베/비, 메/미
+- ㅐ vs ㅔ: 개/게, 배/베, 새/세
+
+### 쌍자음 구분
+- ㄲ vs ㄱ: 까/가, 꺼/거, 꼬/고, 꼰/곤
+- ㄸ vs ㄷ: 따/다, 떠/더, 또/도, 똘/돌
+- ㅃ vs ㅂ: 빠/바, 뻐/버, 뽀/보
+- ㅆ vs ㅅ: 싸/사, 쏘/소, 쑤/수
+- ㅉ vs ㅈ: 짜/자, 쩌/저, 쪼/조
+
+### 비슷한 초성 구분 (매우 중요!)
+- ㅂ vs ㅎ: 밥/합, 반/한, 별/혈, 봄/홈
+- ㅁ vs ㅂ: 맘/밤, 물/불, 말/발
+- ㄴ vs ㄹ: 나/라, 눈/룬, 님/림
+- ㅇ vs ㅎ: 아/하, 오/호, 은/흔
+
+## 규칙
+- 대괄호 [ ] 안의 서버명을 정확히 읽으세요
+- 설명이나 부가 텍스트 없이 위 형식만 출력하세요
+- 이미지에서 보이는 그대로 정확히 읽으세요`
                         },
                         {
                             inline_data: {
