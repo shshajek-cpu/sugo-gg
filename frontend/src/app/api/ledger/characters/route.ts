@@ -1,21 +1,79 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabaseClient'
 import { createClient } from '@supabase/supabase-js'
 
-// Create a Supabase client with the service role key to bypass RLS
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  serviceKey
-)
+// Service Role 키를 사용하여 RLS 우회 (런타임에 생성)
+const SUPABASE_URL = 'https://mnbngmdjiszyowfvnzhk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uYm5nbWRqaXN6eW93ZnZuemhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5OTY0ODAsImV4cCI6MjA4MjU3MjQ4MH0.AIvvGxd_iQKpQDbmOBoe4yAmii1IpB92Pp7Scs8Lz7U'
+
+function getSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY
+  return createClient(supabaseUrl, supabaseKey)
+}
+
+// 유저 조회 또는 자동 생성 (device_id용)
+async function getOrCreateUserByDeviceId(device_id: string) {
+  const supabase = getSupabase()
+  // 기존 유저 조회
+  const { data: existingUser } = await supabase
+    .from('ledger_users')
+    .select('id')
+    .eq('device_id', device_id)
+    .single()
+
+  if (existingUser) return existingUser
+
+  // 유저가 없으면 자동 생성
+  const { data: newUser, error } = await supabase
+    .from('ledger_users')
+    .insert({ device_id })
+    .select('id')
+    .single()
+
+  if (error) {
+    console.error('[API] Failed to create user:', error)
+    return null
+  }
+
+  return newUser
+}
+
+// 인증된 유저 또는 device_id 유저 조회
+async function getUserFromRequest(request: Request) {
+  const supabase = getSupabase()
+
+  // 1. Bearer 토큰으로 인증 확인
+  const authHeader = request.headers.get('Authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice(7)
+    const { data: { user }, error } = await supabase.auth.getUser(token)
+
+    if (user && !error) {
+      // auth_user_id로 ledger_users 조회
+      const { data: ledgerUser } = await supabase
+        .from('ledger_users')
+        .select('id')
+        .eq('auth_user_id', user.id)
+        .single()
+
+      if (ledgerUser) return ledgerUser
+    }
+  }
+
+  // 2. device_id로 조회 (폴백)
+  const device_id = request.headers.get('x-device-id')
+  if (device_id) {
+    return getOrCreateUserByDeviceId(device_id)
+  }
+
+  return null
+}
 
 export async function GET(request: Request) {
-  const device_id = request.headers.get('x-device-id')
-  if (!device_id) return NextResponse.json({ error: 'Missing Device ID' }, { status: 401 })
+  const user = await getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: user } = await supabase.from('ledger_users').select('id').eq('device_id', device_id).single()
-  if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
+  const supabase = getSupabase()
   const { data: characters, error } = await supabase
     .from('ledger_characters')
     .select('*')
@@ -26,7 +84,7 @@ export async function GET(request: Request) {
 
   // Calculate today's income
   const today = new Date().toISOString().split('T')[0]
-  
+
   const characterIds = characters.map(c => c.id)
   if (characterIds.length > 0) {
       const { data: records } = await supabase
@@ -37,7 +95,7 @@ export async function GET(request: Request) {
         `)
         .in('character_id', characterIds)
         .eq('date', today)
-      
+
       const incomeMap = new Map<string, number>()
       if (records) {
         records.forEach((rec: any) => {
@@ -57,29 +115,28 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  console.log('[API] POST characters - Checking Service Role Key:', !!process.env.SUPABASE_SERVICE_ROLE_KEY)
-  
-  const device_id = request.headers.get('x-device-id')
-  if (!device_id) return NextResponse.json({ error: 'Missing Device ID' }, { status: 401 })
-  
   try {
+    const user = await getUserFromRequest(request)
+    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
     const body = await request.json()
-    const { name, class_name, server_name, is_main } = body
+    const { name, class_name, server_name, is_main, profile_image, character_id, race, item_level } = body
 
     if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
-    const { data: user } = await supabase.from('ledger_users').select('id').eq('device_id', device_id).single()
-    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
-    // Use supabaseAdmin to bypass RLS during insert
-    const { data, error } = await supabaseAdmin
+    const supabase = getSupabase()
+    const { data, error } = await supabase
         .from('ledger_characters')
         .insert({
             user_id: user.id,
             name,
             class_name: class_name || 'Unknown',
-            server_name: server_name || 'Unknown', // Default to Unknown if not provided
-            is_main: is_main || false
+            server_name: server_name || 'Unknown',
+            is_main: is_main || false,
+            profile_image: profile_image || null,
+            character_id: character_id || null,
+            race: race || null,
+            item_level: item_level || null
         })
         .select()
         .single()

@@ -21,22 +21,28 @@ export async function POST(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseKey)
 
+        // race를 숫자로 정규화
+        let numericRace: number | undefined = undefined
+        if (race === 1 || race === '1' || race === 'elyos' || race === 'ELYOS') {
+            numericRace = 1
+        } else if (race === 2 || race === '2' || race === 'asmodian' || race === 'ASMODIANS' || race === 'asmodians') {
+            numericRace = 2
+        }
+
         // 1. Supabase DB에서 검색 (저장된 캐릭터는 항상 나옴)
         let dbQuery = supabase
             .from('characters')
-            .select('character_id, name, server_id, class_name, race_name, level, combat_power, noa_score, item_level, profile_image, scraped_at')
+            .select('character_id, name, server_id, class_name, race_name, level, combat_power, item_level, profile_image, scraped_at')
             .ilike('name', `%${name}%`)
-            .order('noa_score', { ascending: false, nullsFirst: false })
+            .order('level', { ascending: false })
             .limit(50)  // DB에서 더 많이 가져옴
 
         if (serverId) {
             dbQuery = dbQuery.eq('server_id', serverId)
         }
-        if (race) {
-            const raceName = race === 1 || race === 'elyos' ? '천족' : race === 2 || race === 'asmodian' ? '마족' : null
-            if (raceName) {
-                dbQuery = dbQuery.eq('race_name', raceName)
-            }
+        if (numericRace) {
+            const raceName = numericRace === 1 ? '천족' : '마족'
+            dbQuery = dbQuery.eq('race_name', raceName)
         }
 
         const { data: dbResults, error: dbError } = await dbQuery
@@ -66,7 +72,7 @@ export async function POST(request: NextRequest) {
             url.searchParams.append('page', (page || 1).toString())
             url.searchParams.append('size', '30')
             if (serverId) url.searchParams.append('serverId', serverId.toString())
-            if (race) url.searchParams.append('race', race.toString())
+            if (numericRace) url.searchParams.append('race', numericRace.toString())
 
             console.log('[Live Search] Fetching API:', url.toString())
 
@@ -101,27 +107,36 @@ export async function POST(request: NextRequest) {
         // 3. DB 결과와 API 결과 병합 (중복 제거)
         const mergedMap = new Map<string, any>()
 
+        // 키 정규화 함수 (URL 인코딩 차이 해결)
+        const normalizeKey = (key: string) => {
+            try {
+                return decodeURIComponent(key)
+            } catch {
+                return key
+            }
+        }
+
         // DB 결과 먼저 추가 (우선순위 높음 - 더 상세한 데이터)
         if (dbResults) {
             dbResults.forEach(item => {
-                const key = item.character_id
+                const key = normalizeKey(item.character_id)
                 mergedMap.set(key, transformCachedToApiFormat(item))
             })
         }
 
         // API 결과 추가 (DB에 없는 것만)
         apiResults.forEach(item => {
-            const key = item.characterId
+            const key = normalizeKey(item.characterId)
             if (!mergedMap.has(key)) {
                 mergedMap.set(key, item)
             }
         })
 
-        // Map을 배열로 변환하고 noa_score/combatPower 기준 정렬
+        // Map을 배열로 변환하고 레벨/combatPower 기준 정렬
         const mergedList = Array.from(mergedMap.values())
             .sort((a, b) => {
-                const scoreA = a.noaScore || a.combatPower || 0
-                const scoreB = b.noaScore || b.combatPower || 0
+                const scoreA = a.combatPower || a.level || 0
+                const scoreB = b.combatPower || b.level || 0
                 return scoreB - scoreA
             })
             .slice(0, 50)  // 최대 50개
@@ -165,7 +180,6 @@ function transformCachedToApiFormat(cached: any) {
         profileImageUrl: cached.profile_image,
         // 추가 정보
         combatPower: cached.combat_power,
-        noaScore: cached.noa_score,  // HITON 전투력 추가
         itemLevel: cached.item_level,
         // DB에서 온 데이터 표시
         fromDb: true

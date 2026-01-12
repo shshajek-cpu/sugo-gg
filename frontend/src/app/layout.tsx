@@ -6,7 +6,9 @@ import { usePathname } from 'next/navigation'
 import HeroSection from './components/home/HeroSection'
 import SearchBar from './components/SearchBar'
 import MainCharacterBadge from './components/MainCharacterBadge'
+import LoginButton from '@/components/LoginButton'
 import { SyncProvider } from '../context/SyncContext'
+import { AuthProvider } from '../context/AuthContext'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
@@ -30,6 +32,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
             </head>
             <body>
+                <AuthProvider>
                 <SyncProvider>
                     {/* Header - Adaptive */}
                     <header className="header-adaptive" style={{ marginBottom: '0' }}>
@@ -45,7 +48,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                     { name: '아이템', path: '/item' },
                                     { name: '캐릭터비교', path: '/compare' },
                                     { name: '파티분석', path: '/analysis' },
-                                    { name: '미니게임', path: '/minigame' }
+                                    { name: '미니게임', path: '/minigame' },
+                                    { name: '가계부', path: '/ledger' }
                                 ].map(item => {
                                     const isActive = item.path === '/'
                                         ? pathname === '/'
@@ -66,8 +70,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                 })}
                             </nav>
 
-                            {/* 대표 캐릭터 배지 */}
-                            <MainCharacterBadge />
+                            {/* 로그인 버튼 & 대표 캐릭터 배지 */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                <LoginButton />
+                                <MainCharacterBadge />
+                            </div>
                         </div>
                     </header>
 
@@ -79,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         {children}
                     </div>
                 </SyncProvider>
+                </AuthProvider>
             </body>
         </html>
     )
