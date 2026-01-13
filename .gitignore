@@ -55,6 +55,8 @@ db_data/
 *.tmp
 *.temp
 메뉴/
+tmpclaude-*-cwd
+ralph-claude-code/
 
 # Backend specific
 backend/*.log
