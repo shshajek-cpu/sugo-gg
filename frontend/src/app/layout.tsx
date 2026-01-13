@@ -2,6 +2,7 @@
 
 import './globals.css'
 import Link from 'next/link'
+import Script from 'next/script'
 import { usePathname } from 'next/navigation'
 import HeroSection from './components/home/HeroSection'
 import SearchBar from './components/SearchBar'
@@ -30,6 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <html lang="ko">
             <head>
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <Script
+                    async
+                    src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2302283411324365"
+                    crossOrigin="anonymous"
+                    strategy="afterInteractive"
+                />
             </head>
             <body>
                 <AuthProvider>
