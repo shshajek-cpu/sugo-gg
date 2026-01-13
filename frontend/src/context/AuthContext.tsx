@@ -20,6 +20,7 @@ interface AuthContextType {
   user: User | null
   session: Session | null
   isLoading: boolean
+  isAuthenticated: boolean
   nickname: string | null
   isNicknameLoading: boolean
   mainCharacter: MainCharacter | null
@@ -33,6 +34,9 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const NICKNAME_KEY = 'ledger_nickname'
+const MAIN_CHARACTER_KEY = 'ledger_main_character'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -95,6 +99,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.access_token, fetchMainCharacter])
 
   useEffect(() => {
+    // Load nickname and main character from localStorage
+    if (typeof window !== 'undefined') {
+      const savedNickname = localStorage.getItem(NICKNAME_KEY)
+      const savedMainCharacter = localStorage.getItem(MAIN_CHARACTER_KEY)
+      if (savedNickname) setNicknameState(savedNickname)
+      if (savedMainCharacter) {
+        try {
+          setMainCharacterState(JSON.parse(savedMainCharacter))
+        } catch (e) {
+          console.error('Failed to parse main character:', e)
+        }
+      }
+    }
+
     // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -238,11 +256,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMainCharacterState(data.mainCharacter)
   }
 
+  const isAuthenticated = !!user && !!session
+
   return (
     <AuthContext.Provider value={{
       user,
       session,
       isLoading,
+      isAuthenticated,
       nickname,
       isNicknameLoading,
       mainCharacter,
