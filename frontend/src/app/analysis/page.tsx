@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import PartyAnalysisResult from '@/app/components/analysis/PartyAnalysisResult';
-import { usePartyScanner, CropRegion } from '@/hooks/usePartyScanner';
+import { usePartyScanner, CropRegion, OcrMode } from '@/hooks/usePartyScanner';
 
 export default function AnalysisPage() {
     const {
@@ -22,7 +22,12 @@ export default function AnalysisPage() {
         setCropRegions,
         useSingleRegion,
         setUseSingleRegion,
-        generatePreviewWithRegions
+        generatePreviewWithRegions,
+        // OCR 모드
+        ocrMode,
+        setOcrMode,
+        browserOcrReady,
+        initBrowserOcr
     } = usePartyScanner();
     const [error, setError] = useState<string | null>(null);
     const [showDebug, setShowDebug] = useState(false);
@@ -136,6 +141,10 @@ export default function AnalysisPage() {
                     background-image: radial-gradient(circle at 50% 0%, rgba(217, 43, 75, 0.1) 0%, var(--bg-main) 70%);
                     color: var(--text-main);
                 }
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                }
             `}</style>
 
             {/* 크롭된 이미지 보기 버튼 */}
@@ -199,8 +208,60 @@ export default function AnalysisPage() {
                 right: '20px',
                 zIndex: 9999,
                 display: 'flex',
-                gap: '8px'
+                gap: '8px',
+                alignItems: 'center'
             }}>
+                {/* OCR 모드 표시 */}
+                <div style={{
+                    padding: '8px 12px',
+                    background: 'rgba(0, 0, 0, 0.8)',
+                    border: `1px solid ${ocrMode === 'browser' ? '#22C55E' : '#3B82F6'}`,
+                    borderRadius: '8px',
+                    fontSize: '11px',
+                    color: ocrMode === 'browser' ? '#22C55E' : '#3B82F6',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                }}>
+                    <span style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: ocrMode === 'browser'
+                            ? (browserOcrReady ? '#22C55E' : '#EF4444')
+                            : '#3B82F6',
+                        animation: ocrMode === 'browser' && !browserOcrReady ? 'pulse 1s infinite' : 'none'
+                    }} />
+                    {ocrMode === 'gemini' ? 'Gemini Vision' : (browserOcrReady ? 'Tesseract 준비됨' : 'Tesseract 로딩 중...')}
+                </div>
+
+                {/* OCR 모드 전환 버튼 */}
+                <button
+                    onClick={() => {
+                        if (ocrMode === 'gemini') {
+                            setOcrMode('browser');
+                            if (!browserOcrReady) {
+                                initBrowserOcr();
+                            }
+                        } else {
+                            setOcrMode('gemini');
+                        }
+                    }}
+                    style={{
+                        padding: '10px 14px',
+                        background: ocrMode === 'browser' ? '#22C55E' : '#3B82F6',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        fontSize: '11px',
+                    }}
+                    title={ocrMode === 'gemini' ? '브라우저 OCR로 전환 (무료, 빠름)' : 'Gemini Vision으로 전환 (더 정확함)'}
+                >
+                    {ocrMode === 'gemini' ? '브라우저 OCR' : 'Gemini OCR'}
+                </button>
+
                 {/* OCR 설정 버튼 */}
                 <button
                     onClick={() => setShowCropSettings(!showCropSettings)}

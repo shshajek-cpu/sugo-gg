@@ -1,54 +1,22 @@
-'use client'
+import { Metadata } from 'next'
+import RankingLayoutClient from '../components/ranking/RankingLayoutClient'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import RankingFilterBar from '../components/ranking/RankingFilterBar'
-import styles from '../components/ranking/Ranking.module.css'
+export const metadata: Metadata = {
+    title: '랭킹 - AION 2 서버별 캐릭터 순위 | HitOn',
+    description: 'AION 2 전 서버 캐릭터 랭킹을 확인하세요. 전투력, 레벨, 직업별 순위와 실시간 랭킹 변동을 제공합니다.',
+    keywords: 'AION 2 랭킹, 아이온2 순위, 전투력 랭킹, 서버별 랭킹, 직업별 순위',
+    openGraph: {
+        title: '랭킹 - AION 2 서버별 캐릭터 순위 | HitOn',
+        description: 'AION 2 전 서버 캐릭터 랭킹을 확인하세요.',
+        type: 'website',
+        url: 'https://hiton.vercel.app/ranking',
+    },
+}
 
 export default function RankingLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const pathname = usePathname()
-
-    const tabs = [
-        { name: 'HITON 전투력', path: '/ranking/noa' },
-        { name: '게임 내 전투력', path: '/ranking/cp' },
-        { name: '콘텐츠 랭킹', path: '/ranking/content' },
-    ]
-
-    return (
-        <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-            <h1 className={styles.pageTitle}>
-                랭킹 현황
-            </h1>
-
-            {/* Ranking Type Tags */}
-            <div className={styles.tabNav}>
-                {tabs.map((tab) => {
-                    const isActive = pathname === tab.path || (tab.path === '/ranking/noa' && pathname === '/ranking')
-                    return (
-                        <Link
-                            key={tab.path}
-                            href={tab.path}
-                            className={`${styles.tabLink} ${isActive ? styles.tabLinkActive : ''}`}
-                        >
-                            {tab.name}
-                        </Link>
-                    )
-                })}
-            </div>
-
-            {/* Filter Bar */}
-            <RankingFilterBar />
-
-            {/* Content (Table) - Adaptive */}
-            <div className="card" style={{ minHeight: '400px', padding: 0, overflow: 'hidden' }}>
-                <div className={styles.tableScroll}>
-                    {children}
-                </div>
-            </div>
-        </div>
-    )
+    return <RankingLayoutClient>{children}</RankingLayoutClient>
 }

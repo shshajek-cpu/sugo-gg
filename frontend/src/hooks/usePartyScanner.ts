@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { supabaseApi, SERVER_NAME_TO_ID, SERVER_ID_TO_NAME } from '../lib/supabaseApi';
 import { MainCharacter, MAIN_CHARACTER_KEY } from './useMainCharacter';
 import { aggregateStats } from '../lib/statsAggregator';
@@ -65,6 +65,9 @@ export interface CropRegion {
     enabled: boolean;
 }
 
+// OCR 모드 타입
+export type OcrMode = 'gemini' | 'browser';
+
 export const usePartyScanner = () => {
     const [isScanning, setIsScanning] = useState(false);
     const [logs, setLogs] = useState<string[]>([]);
@@ -73,6 +76,12 @@ export const usePartyScanner = () => {
     const [pendingSelections, setPendingSelections] = useState<PendingServerSelection[]>([]); // 서버 선택 대기중
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null); // 분석 결과 저장
     const [debugData, setDebugData] = useState<any[]>([]); // 디버그용 API 응답 데이터
+
+    // OCR 모드 ('gemini' = Gemini Vision API, 'browser' = 브라우저 PP-OCR)
+    const [ocrMode, setOcrMode] = useState<OcrMode>('gemini');
+    const [browserOcrReady, setBrowserOcrReady] = useState(false);
+    const browserOcrIframeRef = useRef<HTMLIFrameElement | null>(null);
+    const browserOcrResolveRef = useRef<((text: string) => void) | null>(null);
 
     // OCR 크롭 설정 - 다중 영역 지원 (1920x1080 기준 픽셀값)
     const [cropRegions, setCropRegions] = useState<CropRegion[]>([
@@ -91,26 +100,152 @@ export const usePartyScanner = () => {
         height: 24
     });
 
-    // 이미지 전처리: 약한 이진화 (텍스트 강조)
-    const preprocessImage = (ctx: CanvasRenderingContext2D, width: number, height: number) => {
+    // 브라우저 OCR 메시지 핸들러
+    useEffect(() => {
+        const handleMessage = (event: MessageEvent) => {
+            const { type, ...data } = event.data || {};
+
+            switch (type) {
+                case 'ready':
+                    setBrowserOcrReady(true);
+                    console.log('[Browser OCR] Ready');
+                    break;
+                case 'result':
+                    // 브라우저 OCR 결과를 텍스트로 변환
+                    if (browserOcrResolveRef.current && data.texts) {
+                        const text = data.texts.map((t: any) => t.text).join('\n');
+                        browserOcrResolveRef.current(text);
+                        browserOcrResolveRef.current = null;
+                    }
+                    break;
+                case 'error':
+                    console.error('[Browser OCR] Error:', data.message);
+                    if (browserOcrResolveRef.current) {
+                        browserOcrResolveRef.current('');
+                        browserOcrResolveRef.current = null;
+                    }
+                    break;
+            }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
+    // 브라우저 OCR 초기화
+    const initBrowserOcr = useCallback(() => {
+        if (browserOcrIframeRef.current) return;
+
+        const iframe = document.createElement('iframe');
+        iframe.src = '/ocr-worker/index.html';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        browserOcrIframeRef.current = iframe;
+        console.log('[Browser OCR] Iframe created');
+    }, []);
+
+    // 브라우저 OCR 실행
+    const runBrowserOcr = useCallback(async (imageBase64: string): Promise<string> => {
+        if (!browserOcrIframeRef.current || !browserOcrReady) {
+            console.warn('[Browser OCR] Not ready');
+            return '';
+        }
+
+        return new Promise((resolve) => {
+            browserOcrResolveRef.current = resolve;
+
+            browserOcrIframeRef.current?.contentWindow?.postMessage({
+                type: 'process',
+                data: imageBase64
+            }, '*');
+
+            // 타임아웃 30초
+            setTimeout(() => {
+                if (browserOcrResolveRef.current === resolve) {
+                    console.warn('[Browser OCR] Timeout');
+                    resolve('');
+                    browserOcrResolveRef.current = null;
+                }
+            }, 30000);
+        });
+    }, [browserOcrReady]);
+
+    // 이미지 전처리 옵션
+    interface PreprocessOptions {
+        grayscale: boolean;      // 흑백 변환
+        threshold: number;       // 이진화 임계값 (0-255)
+        invert: boolean;         // 색상 반전 (어두운 배경 → 흰 배경)
+        contrast: number;        // 대비 강화 (1.0 = 기본)
+        denoise: boolean;        // 노이즈 제거 (3x3 중간값 필터)
+    }
+
+    // 기본 전처리 설정 (AION2 파티창 최적화)
+    const defaultPreprocessOptions: PreprocessOptions = {
+        grayscale: true,
+        threshold: 100,
+        invert: true,           // 어두운 배경 → 흰 배경
+        contrast: 1.4,          // 40% 대비 강화
+        denoise: true
+    };
+
+    // 이미지 전처리 함수 (노이즈 제거 + 흑백 + 대비 강화 + 이진화 + 반전)
+    const preprocessImage = (ctx: CanvasRenderingContext2D, width: number, height: number, options: PreprocessOptions = defaultPreprocessOptions) => {
         const imageData = ctx.getImageData(0, 0, width, height);
         const data = imageData.data;
 
-        // 약한 이진화: 임계값 기준으로 밝은 부분은 더 밝게, 어두운 부분은 더 어둡게
-        const threshold = 100; // 낮은 임계값 (약한 이진화)
-        const softness = 0.5; // 0 = 완전 이진화, 1 = 원본 유지
+        // 1. 노이즈 제거 (3x3 중간값 필터) - 먼저 적용
+        if (options.denoise) {
+            const tempData = new Uint8ClampedArray(data);
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = (y * width + x) * 4;
+                    // 3x3 이웃 픽셀의 밝기값 수집
+                    const neighbors: number[] = [];
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const nIdx = ((y + dy) * width + (x + dx)) * 4;
+                            const brightness = tempData[nIdx] * 0.299 + tempData[nIdx + 1] * 0.587 + tempData[nIdx + 2] * 0.114;
+                            neighbors.push(brightness);
+                        }
+                    }
+                    // 중간값으로 교체
+                    neighbors.sort((a, b) => a - b);
+                    const median = neighbors[4]; // 9개 중 5번째 (중간값)
+                    const currentBrightness = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
+                    const ratio = currentBrightness > 0 ? median / currentBrightness : 1;
+                    data[idx] = Math.min(255, data[idx] * ratio);
+                    data[idx + 1] = Math.min(255, data[idx + 1] * ratio);
+                    data[idx + 2] = Math.min(255, data[idx + 2] * ratio);
+                }
+            }
+        }
 
+        // 2. 그레이스케일 + 대비 강화 + 이진화 + 반전
         for (let i = 0; i < data.length; i += 4) {
             // 밝기 계산 (그레이스케일)
-            const brightness = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            let brightness = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114;
 
-            // 약한 이진화 적용
-            const target = brightness > threshold ? 255 : 0;
-
-            for (let c = 0; c < 3; c++) {
-                // softness로 원본과 이진화 결과를 블렌딩
-                data[i + c] = Math.round(data[i + c] * softness + target * (1 - softness));
+            // 대비 강화
+            if (options.contrast !== 1.0) {
+                brightness = ((brightness - 128) * options.contrast) + 128;
+                brightness = Math.max(0, Math.min(255, brightness));
             }
+
+            // 이진화 (임계값 기준)
+            let finalValue = brightness > options.threshold ? 255 : 0;
+
+            // 반전 (어두운 배경 → 흰 배경, 밝은 글자 → 검은 글자)
+            if (options.invert) {
+                finalValue = 255 - finalValue;
+            }
+
+            // 그레이스케일 적용
+            if (options.grayscale) {
+                data[i] = finalValue;     // R
+                data[i + 1] = finalValue; // G
+                data[i + 2] = finalValue; // B
+            }
+            // Alpha 유지 (data[i + 3])
         }
 
         ctx.putImageData(imageData, 0, 0);
@@ -148,8 +283,9 @@ export const usePartyScanner = () => {
                 // 크롭된 영역을 확대해서 그리기
                 ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
 
-                // 약한 이진화 전처리 적용
+                // 전처리 적용 (노이즈 제거 + 흑백 + 대비 강화 + 이진화 + 반전)
                 preprocessImage(ctx, canvas.width, canvas.height);
+                console.log('[cropBottomPart] 전처리 완료: 흰배경/검은글자');
 
                 resolve(canvas.toDataURL('image/png'));
             };
@@ -189,6 +325,8 @@ export const usePartyScanner = () => {
                     console.log(`[cropMultipleRegions] ${region.name}: X=${startX}, Y=${startY}, W=${cropWidth}, H=${cropHeight}`);
 
                     ctx.drawImage(img, startX, startY, cropWidth, cropHeight, 0, 0, canvas.width, canvas.height);
+
+                    // 전처리 적용 (노이즈 제거 + 흑백 + 대비 강화 + 이진화 + 반전)
                     preprocessImage(ctx, canvas.width, canvas.height);
 
                     results.push({
@@ -1466,27 +1604,41 @@ export const usePartyScanner = () => {
                     const cropTime = Date.now() - cropStartTime;
                     setLogs(prev => [...prev, `⏱ 이미지 전처리: ${cropTime}ms`]);
 
-                    // OCR API 호출
+                    // OCR 실행 (모드에 따라 분기)
                     const ocrStartTime = Date.now();
-                    console.log('[usePartyScanner] Calling OCR API...');
-                    setLogs(prev => [...prev, 'OCR API 호출 중...']);
+                    let text = '';
 
-                    const ocrResponse = await fetch('/api/ocr', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ image: imageToScan })
-                    });
+                    console.log('[usePartyScanner] OCR Mode:', ocrMode, 'Browser Ready:', browserOcrReady);
+                    setLogs(prev => [...prev, `🔍 OCR 모드: ${ocrMode}, 브라우저 준비: ${browserOcrReady}`]);
 
-                    if (!ocrResponse.ok) {
-                        const errorData = await ocrResponse.json();
-                        throw new Error(errorData.error || 'OCR failed');
+                    if (ocrMode === 'browser' && browserOcrReady) {
+                        // 브라우저 OCR (PP-OCRv5)
+                        console.log('[usePartyScanner] Using Browser OCR...');
+                        setLogs(prev => [...prev, '브라우저 OCR 실행 중... (PP-OCRv5)']);
+                        text = await runBrowserOcr(imageToScan);
+                    } else {
+                        // Gemini Vision API (기본)
+                        console.log('[usePartyScanner] Using Gemini OCR...');
+                        setLogs(prev => [...prev, 'Gemini OCR 호출 중...']);
+
+                        const ocrResponse = await fetch('/api/ocr', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ image: imageToScan })
+                        });
+
+                        if (!ocrResponse.ok) {
+                            const errorData = await ocrResponse.json();
+                            throw new Error(errorData.error || 'OCR failed');
+                        }
+
+                        const ocrResult = await ocrResponse.json();
+                        text = ocrResult.text || '';
                     }
 
-                    const ocrResult = await ocrResponse.json();
-                    const text = ocrResult.text || '';
                     const ocrTime = Date.now() - ocrStartTime;
                     console.log('[usePartyScanner] OCR result:', text);
-                    setLogs(prev => [...prev, `⏱ OCR API 응답: ${ocrTime}ms`]);
+                    setLogs(prev => [...prev, `⏱ OCR 응답 (${ocrMode}): ${ocrTime}ms`]);
 
                     const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
                     const parsedMembers = smartParse(text, addLog);
@@ -1543,7 +1695,7 @@ export const usePartyScanner = () => {
             };
             reader.readAsDataURL(file);
         });
-    }, [scanBottomOnly]);
+    }, [scanBottomOnly, ocrMode, browserOcrReady, runBrowserOcr]);
 
     // 서버 선택 처리 함수
     const selectServer = useCallback((slotIndex: number, selectedServer: string, characterData: PartyMember) => {
@@ -1825,5 +1977,10 @@ export const usePartyScanner = () => {
         setUseSingleRegion,
         // 미리보기 생성 함수
         generatePreviewWithRegions,
+        // OCR 모드 설정
+        ocrMode,
+        setOcrMode,
+        browserOcrReady,
+        initBrowserOcr,
     };
 };

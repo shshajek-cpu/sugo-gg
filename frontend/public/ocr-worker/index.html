@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Worker</title>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+</head>
+<body style="margin: 0; padding: 20px; font-family: sans-serif; background: #1a1a1a; color: #fff;">
+    <div id="status">OCR 모델 로딩 중...</div>
+    <script>
+        let worker = null;
+        let isReady = false;
+
+        // 부모 창에 메시지 전송
+        function sendToParent(type, data) {
+            if (window.parent !== window) {
+                window.parent.postMessage({ type, ...data }, '*');
+            }
+        }
+
+        // OCR 초기화
+        async function initOcr() {
+            try {
+                sendToParent('status', { message: 'Tesseract 로딩 중...' });
+                document.getElementById('status').textContent = 'Tesseract 로딩 중...';
+
+                worker = await Tesseract.createWorker('kor+eng', 1, {
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            sendToParent('status', { message: `인식 중... ${progress}%` });
+                        }
+                    }
+                });
+
+                isReady = true;
+                sendToParent('ready', { success: true });
+                document.getElementById('status').textContent = 'OCR 준비 완료';
+                console.log('[OCR Worker] Tesseract 로드 완료');
+            } catch (err) {
+                console.error('[OCR Worker] 초기화 실패:', err);
+                document.getElementById('status').textContent = '초기화 실패: ' + err.message;
+                sendToParent('error', { message: err.message });
+            }
+        }
+
+        // 이미지 OCR 수행
+        async function processImage(imageData) {
+            if (!worker || !isReady) {
+                sendToParent('error', { message: 'OCR이 준비되지 않았습니다' });
+                return;
+            }
+
+            try {
+                sendToParent('status', { message: '텍스트 인식 중...' });
+                const startTime = performance.now();
+
+                const result = await worker.recognize(imageData);
+                const endTime = performance.now();
+
+                // Tesseract 결과를 표준 형식으로 변환
+                const texts = result.data.lines.map(line => ({
+                    text: line.text.trim(),
+                    confidence: line.confidence / 100,
+                    box: [[line.bbox.x0, line.bbox.y0], [line.bbox.x1, line.bbox.y0],
+                          [line.bbox.x1, line.bbox.y1], [line.bbox.x0, line.bbox.y1]]
+                })).filter(t => t.text.length > 0);
+
+                sendToParent('result', {
+                    texts: texts,
+                    processingTime: endTime - startTime
+                });
+
+            } catch (err) {
+                console.error('[OCR Worker] 처리 실패:', err);
+                sendToParent('error', { message: err.message });
+            }
+        }
+
+        // 부모 창에서 메시지 수신
+        window.addEventListener('message', async (event) => {
+            const { type, data } = event.data || {};
+
+            switch (type) {
+                case 'init':
+                    if (!isReady) {
+                        await initOcr();
+                    } else {
+                        sendToParent('ready', { success: true });
+                    }
+                    break;
+                case 'process':
+                    await processImage(data);
+                    break;
+            }
+        });
+
+        // 자동 초기화
+        initOcr();
+    </script>
+</body>
+</html>

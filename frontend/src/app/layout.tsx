@@ -8,6 +8,7 @@ import HeroSection from './components/home/HeroSection'
 import SearchBar from './components/SearchBar'
 import MainCharacterBadge from './components/MainCharacterBadge'
 import LoginButton from '@/components/LoginButton'
+import Footer from '@/components/Footer'
 import { SyncProvider } from '../context/SyncContext'
 import { AuthProvider } from '../context/AuthContext'
 
@@ -30,8 +31,26 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="ko">
             <head>
+                <title>HitOn - AION 2 캐릭터 검색 및 랭킹</title>
+                <meta name="description" content="AION 2 캐릭터 검색, 랭킹, 장비 정보, 스탯 비교 서비스. 실시간 캐릭터 정보와 서버별 랭킹을 확인하세요." />
+                <meta name="keywords" content="AION 2, 아이온2, 캐릭터 검색, 랭킹, 장비, 스탯, HitOn" />
                 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
                 <meta name="google-adsense-account" content="ca-pub-2302283411324365" />
+
+                {/* Open Graph */}
+                <meta property="og:title" content="HitOn - AION 2 캐릭터 검색 및 랭킹" />
+                <meta property="og:description" content="AION 2 캐릭터 검색, 랭킹, 장비 정보, 스탯 비교 서비스" />
+                <meta property="og:type" content="website" />
+                <meta property="og:url" content="https://hiton.vercel.app" />
+                <meta property="og:site_name" content="HitOn" />
+
+                {/* Twitter Card */}
+                <meta name="twitter:card" content="summary" />
+                <meta name="twitter:title" content="HitOn - AION 2 캐릭터 검색 및 랭킹" />
+                <meta name="twitter:description" content="AION 2 캐릭터 검색, 랭킹, 장비 정보, 스탯 비교 서비스" />
+
+                <link rel="canonical" href="https://hiton.vercel.app" />
+
                 <Script
                     src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2302283411324365"
                     crossOrigin="anonymous"
@@ -92,6 +111,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     <div className="container">
                         {children}
                     </div>
+
+                    {/* Footer */}
+                    <Footer />
                 </SyncProvider>
                 </AuthProvider>
             </body>

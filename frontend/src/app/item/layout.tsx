@@ -1,66 +1,22 @@
-'use client'
+import { Metadata } from 'next'
+import ItemLayoutClient from '../components/item/ItemLayoutClient'
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import styles from '../components/item/ItemTier.module.css'
+export const metadata: Metadata = {
+    title: '아이템 정보 - AION 2 장비 & 아이템 검색 | HitOn',
+    description: 'AION 2 아이템 정보를 검색하세요. 장비 티어, 옵션, 마석, 각인 정보와 아이템 비교 기능을 제공합니다.',
+    keywords: 'AION 2 아이템, 아이온2 장비, 아이템 검색, 장비 옵션, 마석, 각인',
+    openGraph: {
+        title: '아이템 정보 - AION 2 장비 & 아이템 검색 | HitOn',
+        description: 'AION 2 아이템 정보를 검색하세요. 장비 티어, 옵션 정보 제공.',
+        type: 'website',
+        url: 'https://hiton.vercel.app/item',
+    },
+}
 
 export default function ItemLayout({
     children,
 }: {
     children: React.ReactNode
 }) {
-    const pathname = usePathname()
-
-    const tabs = [
-        { name: '인기 아이템 티어', path: '/item/tier' },
-        { name: '아이템 검색', path: '/item/search' },
-    ]
-
-    return (
-        <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-            <h1 style={{
-                fontSize: '1.75rem',
-                fontWeight: 'bold',
-                color: 'var(--text-main)',
-                marginBottom: '1.5rem'
-            }}>
-                아이템 정보
-            </h1>
-
-            {/* 탭 네비게이션 */}
-            <div style={{
-                display: 'flex',
-                gap: '0.5rem',
-                marginBottom: '1.5rem',
-                borderBottom: '1px solid var(--border)',
-                paddingBottom: '1rem'
-            }}>
-                {tabs.map(tab => {
-                    const isActive = pathname === tab.path || (tab.path === '/item/tier' && pathname === '/item')
-                    return (
-                        <Link
-                            key={tab.path}
-                            href={tab.path}
-                            style={{
-                                padding: '0.5rem 1rem',
-                                background: isActive ? 'var(--primary)' : 'transparent',
-                                color: isActive ? 'var(--primary-text)' : 'var(--text-secondary)',
-                                borderRadius: '6px',
-                                textDecoration: 'none',
-                                fontWeight: isActive ? 'bold' : 'normal',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            {tab.name}
-                        </Link>
-                    )
-                })}
-            </div>
-
-            {/* 콘텐츠 영역 */}
-            <div className="card" style={{ padding: '1.5rem', background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}>
-                {children}
-            </div>
-        </div>
-    )
+    return <ItemLayoutClient>{children}</ItemLayoutClient>
 }
