@@ -168,6 +168,13 @@ export default function ContentCard({
   const handleAddRecord = () => {
     if (!selectedBoss) return
 
+    // 잔여 횟수 확인 (기본 + 보너스)
+    const totalAvailable = currentTickets + bonusTickets
+    if (totalAvailable < completionCount) {
+      alert(`잔여 횟수가 부족합니다!\n현재 잔여: ${totalAvailable}회\n필요 횟수: ${completionCount}회`)
+      return  // 진행 중단
+    }
+
     // 오드 에너지 총 차감량 계산 (1회당 40)
     const totalOdCost = completionCount * 40
 
