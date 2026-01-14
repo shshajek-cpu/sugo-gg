@@ -64,10 +64,10 @@ export default function BottomNavBar({
           {/* 주간 수입 */}
           <AnimatedIncome icon="📈" label="주간수입" amount={weeklyIncome} />
 
-          {/* 충전 버튼 */}
+          {/* 설정&충전 버튼 */}
           <button className={styles.chargeBtn} onClick={onChargeClick}>
             <span className={styles.icon}>⚡</span>
-            <span>충전</span>
+            <span>설정&충전</span>
           </button>
         </div>
       )}

@@ -7,13 +7,13 @@ import styles from './DailyContentSection.module.css'
 interface DailyContentSectionProps {
   characterId: string | null
   selectedDate: string
+  getAuthHeader: () => Record<string, string>
   baseTickets?: {
     daily_dungeon: number
     awakening: number
     nightmare: number
     dimension: number
     subjugation: number
-    sanctuary: number
   }
   bonusTickets?: {
     daily_dungeon: number
@@ -21,7 +21,6 @@ interface DailyContentSectionProps {
     nightmare: number
     dimension: number
     subjugation: number
-    sanctuary: number
   }
   onBaseTicketsChange?: (updates: Record<string, number>) => void
   onBonusTicketsChange?: (updates: Record<string, number>) => void
@@ -30,26 +29,25 @@ interface DailyContentSectionProps {
 export default function DailyContentSection({
   characterId,
   selectedDate,
+  getAuthHeader,
   baseTickets = {
     daily_dungeon: 6,
     awakening: 6,
     nightmare: 6,
     dimension: 6,
-    subjugation: 6,
-    sanctuary: 6
+    subjugation: 6
   },
   bonusTickets = {
     daily_dungeon: 0,
     awakening: 0,
     nightmare: 0,
     dimension: 0,
-    subjugation: 0,
-    sanctuary: 0
+    subjugation: 0
   },
   onBaseTicketsChange,
   onBonusTicketsChange
 }: DailyContentSectionProps) {
-  const { contents, loading, error, handleIncrement, handleDecrement } = useDailyContent(characterId, selectedDate)
+  const { contents, loading, error, handleIncrement, handleDecrement } = useDailyContent(characterId, selectedDate, getAuthHeader)
 
   // 보너스 티켓이 적용된 컨텐츠 목록
   const contentsWithBonus = contents.map(content => {
@@ -58,8 +56,7 @@ export default function DailyContentSection({
       '각성전': bonusTickets.awakening,
       '악몽': bonusTickets.nightmare,
       '차원침공': bonusTickets.dimension,
-      '토벌전': bonusTickets.subjugation,
-      '성역': bonusTickets.sanctuary
+      '토벌전': bonusTickets.subjugation
     }
 
     return {

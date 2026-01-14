@@ -88,9 +88,26 @@ const EXPEDITION_DATA = {
   ]
 }
 
+// 성역 데이터 (심연의 재련: 루드라)
+const SANCTUARY_DATA = {
+  contentType: 'sanctuary',
+  maxTickets: 4,
+  chargeInterval: null, // 매주 수요일 5시 충전
+  categories: [
+    {
+      id: 'abyss_refining',
+      name: '심연의 재련',
+      bosses: [
+        { id: 'rudra', name: '루드라', kina: 1000000, imageUrl: '/메달/성역/루드라.png' }
+      ]
+    }
+  ]
+}
+
 export async function GET() {
   return NextResponse.json({
     transcend: TRANSCEND_DATA,
-    expedition: EXPEDITION_DATA
+    expedition: EXPEDITION_DATA,
+    sanctuary: SANCTUARY_DATA
   })
 }

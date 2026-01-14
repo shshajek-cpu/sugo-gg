@@ -32,10 +32,14 @@
   opacity: 1;
 }
 
+.cardCompleted {
+  opacity: 0.4;
+}
+
 .imageContainer {
   position: relative;
   width: 100%;
-  height: 112px;
+  height: 132px;
   overflow: hidden;
   background: transparent;
 }
@@ -85,21 +89,20 @@
 
 .titleArea {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
+  top: 10px;
+  left: 10px;
+  text-align: left;
   z-index: 3;
 }
 
 .title {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 700;
-  color: var(--card-color);
+  color: #FFFFFF;
   font-family: 'Rajdhani', sans-serif;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  text-shadow: 0 0 20px var(--card-color-glow), 0 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .timerInfo {
@@ -158,6 +161,14 @@
   color: #FACC15;
   margin-left: 4px;
   text-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+  font-weight: 600;
+}
+
+.bonusCount {
+  font-size: 16px;
+  color: #10b981;
+  margin-left: 4px;
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
   font-weight: 600;
 }
 

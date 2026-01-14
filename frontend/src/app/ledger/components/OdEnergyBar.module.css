@@ -1,0 +1,46 @@
+.container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: linear-gradient(135deg, rgba(26, 29, 36, 0.95) 0%, rgba(15, 17, 21, 0.95) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  margin-left: 16px;
+  transition: all 0.2s;
+}
+
+.container:hover {
+  border-color: rgba(250, 204, 21, 0.3);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.energyAmount {
+  font-size: 17px;
+  font-weight: 700;
+  color: #FACC15;
+  font-family: 'Rajdhani', sans-serif;
+  white-space: nowrap;
+}
+
+.bonus {
+  color: #3B82F6;
+  font-weight: 700;
+  margin-left: 4px;
+}
+
+.chargeTime {
+  font-size: 13px;
+  color: #9CA3AF;
+  font-weight: 500;
+  white-space: nowrap;
+}

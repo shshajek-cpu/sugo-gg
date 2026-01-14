@@ -62,8 +62,13 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
   }, [])
 
   const handleIncrement = () => {
-    const totalAvailable = content.maxCount + (content.bonusCount || 0)
-    if (content.completionCount < totalAvailable) {
+    // 기본 잔여 + 보너스 잔여
+    const baseRem = Math.max(0, content.maxCount - content.completionCount)
+    const usedBonus = Math.max(0, content.completionCount - content.maxCount)
+    const bonusRem = Math.max(0, (content.bonusCount || 0) - usedBonus)
+    const totalRem = baseRem + bonusRem
+
+    if (totalRem > 0) {
       onIncrement(content.id)
       createParticles()
     }
@@ -105,13 +110,19 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
     }
   }
 
-  const totalAvailable = content.maxCount + (content.bonusCount || 0)
-  const isComplete = content.completionCount >= totalAvailable
+  // 기본 잔여 횟수 계산 (기본 횟수에서 먼저 차감)
+  const baseRemaining = Math.max(0, content.maxCount - content.completionCount)
+  // 보너스 잔여 횟수 계산 (기본이 0이 된 후에만 차감)
+  const usedFromBonus = Math.max(0, content.completionCount - content.maxCount)
+  const bonusRemaining = Math.max(0, (content.bonusCount || 0) - usedFromBonus)
+  // 총 잔여 횟수
+  const totalRemaining = baseRemaining + bonusRemaining
+  const isComplete = totalRemaining === 0
 
   return (
     <div
       ref={cardRef}
-      className={styles.card}
+      className={`${styles.card} ${isComplete ? styles.cardCompleted : ''}`}
       style={{
         '--card-color': content.color,
         '--card-color-light': content.colorLight,
@@ -132,28 +143,23 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
         )}
         <div className={styles.overlay} />
 
-        {/* Complete Badge (Top Left) */}
-        {isComplete && (
-          <div className={styles.completeBadge}>✓</div>
-        )}
-
         {/* Button Group (Top Right) */}
         <div className={styles.buttonGroupTop}>
           <button
             className={styles.btn}
-            onClick={handleDecrement}
-            disabled={content.completionCount === 0}
-            aria-label={`${content.name} 횟수 감소`}
+            onClick={handleIncrement}
+            disabled={totalRemaining === 0}
+            aria-label={`${content.name} 횟수 사용`}
           >
-            −
+            +
           </button>
           <button
             className={`${styles.btn} ${styles.btnIncrement}`}
-            onClick={handleIncrement}
-            disabled={content.completionCount >= totalAvailable}
-            aria-label={`${content.name} 횟수 증가`}
+            onClick={handleDecrement}
+            disabled={content.completionCount === 0}
+            aria-label={`${content.name} 횟수 복구`}
           >
-            +
+            −
           </button>
         </div>
 
@@ -173,9 +179,9 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
         <div className={styles.progressInfo}>
           <div className={styles.progressLabel}>잔여 횟수</div>
           <div className={styles.progressText}>
-            {content.completionCount}/{content.maxCount}
-            {(content.bonusCount || 0) > 0 && (
-              <span className={styles.bonusText}>(+{content.bonusCount})</span>
+            {baseRemaining}/{content.maxCount}
+            {bonusRemaining > 0 && (
+              <span className={styles.bonusCount}>(+{bonusRemaining})</span>
             )}
           </div>
         </div>

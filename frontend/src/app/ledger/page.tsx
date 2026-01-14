@@ -24,10 +24,12 @@ import ItemManagementTab from './components/ItemManagementTab'
 import WeeklyChart from './components/WeeklyChart'
 import AddCharacterModal from './components/AddCharacterModal'
 import AddItemModal from './components/AddItemModal'
-import DateSelectorModal from './components/DateSelectorModal'
+import CalendarModal from './components/CalendarModal'
 import NicknameModal from '@/components/NicknameModal'
 import MainCharacterModal from '@/components/MainCharacterModal'
 import { useAuth } from '@/context/AuthContext'
+import DebugPanel, { createDebugLog } from './components/DebugPanel'
+import { getGameDate, getWeekKey } from './utils/dateUtils'
 import styles from './ledger.module.css'
 
 export default function LedgerPage() {
@@ -39,7 +41,7 @@ export default function LedgerPage() {
   // 상태
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('content')
-  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [selectedDate, setSelectedDate] = useState<string>(getGameDate(new Date()))
   const [showAddCharacterModal, setShowAddCharacterModal] = useState(false)
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showDateModal, setShowDateModal] = useState(false)
@@ -53,36 +55,119 @@ export default function LedgerPage() {
     weeklyIncome: 0
   })
 
+  // 던전 컨텐츠 키나 (초월/원정/루드라)
+  const [dungeonKina, setDungeonKina] = useState(0)
+
   // 티켓 기본 횟수 (자동 충전)
   const [baseTickets, setBaseTickets] = useState<Record<string, number>>({
     transcend: 14,
     expedition: 21,
+    sanctuary: 4,
     daily_dungeon: 6,
     awakening: 6,
     nightmare: 6,
     dimension: 6,
-    subjugation: 6,
-    sanctuary: 6
+    subjugation: 6
   })
 
   // 티켓 보너스 횟수 (수동 충전)
   const [ticketBonuses, setTicketBonuses] = useState<Record<string, number>>({
     transcend: 0,
     expedition: 0,
+    sanctuary: 0,
     daily_dungeon: 0,
     awakening: 0,
     nightmare: 0,
     dimension: 0,
-    subjugation: 0,
-    sanctuary: 0
+    subjugation: 0
   })
 
   // 마지막 충전 시간
   const [lastChargeTime, setLastChargeTime] = useState<Date>(new Date())
 
-  // 3시간마다 자동 충전 (0, 3, 6, 9, 12, 15, 18, 21시)
+  // 마지막 성역 충전 시간
+  const [lastSanctuaryChargeTime, setLastSanctuaryChargeTime] = useState<Date>(new Date())
+
+  // 오드 에너지 상태
+  const [odEnergy, setOdEnergy] = useState({
+    timeEnergy: 840,          // 시간 충전 (최대 840)
+    ticketEnergy: 0,          // 충전권 (최대 2,000)
+    lastChargeTime: new Date(),
+    nextChargeIn: 30          // 다음 충전까지 남은 초
+  })
+
+  // 초월/원정 자동 충전 (21:00 기준 8시간마다)
   useEffect(() => {
-    const checkAutoCharge = () => {
+    const checkTranscendExpeditionCharge = () => {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      // 충전 시간 확인 (21, 05, 13)
+      const chargeHours = [21, 5, 13]
+      const isChargeTime = chargeHours.includes(currentHour) && currentMinute === 0
+
+      // 이미 충전했는지 확인
+      const lastChargeHour = lastChargeTime.getHours()
+      const isSameHour = currentHour === lastChargeHour &&
+                         now.getDate() === lastChargeTime.getDate()
+
+      if (isChargeTime && !isSameHour) {
+        console.log('[자동 충전] 초월/원정 충전:', now.toLocaleString())
+
+        setBaseTickets(prev => ({
+          ...prev,
+          transcend: Math.min(14, prev.transcend + 1),
+          expedition: Math.min(21, prev.expedition + 1)
+        }))
+
+        setLastChargeTime(now)
+      }
+    }
+
+    // 1분마다 체크
+    const interval = setInterval(checkTranscendExpeditionCharge, 60000)
+    checkTranscendExpeditionCharge() // 즉시 한번 실행
+
+    return () => clearInterval(interval)
+  }, [lastChargeTime])
+
+  // 악몽 자동 충전 (02:00 기준 3시간마다)
+  useEffect(() => {
+    const checkNightmareCharge = () => {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      // 충전 시간 확인 (02, 05, 08, 11, 14, 17, 20, 23)
+      const chargeHours = [2, 5, 8, 11, 14, 17, 20, 23]
+      const isChargeTime = chargeHours.includes(currentHour) && currentMinute === 0
+
+      // 이미 충전했는지 확인
+      const lastChargeHour = lastChargeTime.getHours()
+      const isSameHour = currentHour === lastChargeHour &&
+                         now.getDate() === lastChargeTime.getDate()
+
+      if (isChargeTime && !isSameHour) {
+        console.log('[자동 충전] 악몽 충전:', now.toLocaleString())
+
+        setBaseTickets(prev => ({
+          ...prev,
+          nightmare: Math.min(6, prev.nightmare + 1)
+        }))
+      }
+    }
+
+    // 1분마다 체크
+    const interval = setInterval(checkNightmareCharge, 60000)
+    checkNightmareCharge() // 즉시 한번 실행
+
+    return () => clearInterval(interval)
+  }, [lastChargeTime])
+
+  // 기타 티켓 자동 충전 (0, 3, 6, 9, 12, 15, 18, 21시)
+  useEffect(() => {
+    const checkOtherTicketsCharge = () => {
       const now = new Date()
       const currentHour = now.getHours()
       const currentMinute = now.getMinutes()
@@ -90,44 +175,137 @@ export default function LedgerPage() {
       // 충전 시간인지 확인 (3시간 단위 정각)
       const isChargeTime = currentHour % 3 === 0 && currentMinute === 0
 
-      // 이미 충전했는지 확인 (같은 시간에 중복 충전 방지)
+      // 이미 충전했는지 확인
       const lastChargeHour = lastChargeTime.getHours()
       const isSameHour = currentHour === lastChargeHour &&
                          now.getDate() === lastChargeTime.getDate()
 
       if (isChargeTime && !isSameHour) {
-        console.log('[자동 충전] 티켓 자동 충전 시작:', now.toLocaleString())
+        console.log('[자동 충전] 기타 티켓 충전:', now.toLocaleString())
 
-        setBaseTickets(prev => {
-          const maxTickets: Record<string, number> = {
-            transcend: 14,
-            expedition: 21,
-            daily_dungeon: 6,
-            awakening: 6,
-            nightmare: 6,
-            dimension: 6,
-            subjugation: 6,
-            sanctuary: 6
-          }
-
-          const newTickets = { ...prev }
-          Object.keys(newTickets).forEach(key => {
-            newTickets[key] = Math.min(maxTickets[key], newTickets[key] + 1)
-          })
-
-          return newTickets
-        })
-
-        setLastChargeTime(now)
+        setBaseTickets(prev => ({
+          ...prev,
+          daily_dungeon: Math.min(6, prev.daily_dungeon + 1),
+          awakening: Math.min(6, prev.awakening + 1),
+          dimension: Math.min(6, prev.dimension + 1),
+          subjugation: Math.min(6, prev.subjugation + 1)
+        }))
       }
     }
 
     // 1분마다 체크
-    const interval = setInterval(checkAutoCharge, 60000)
-    checkAutoCharge() // 즉시 한번 실행
+    const interval = setInterval(checkOtherTicketsCharge, 60000)
+    checkOtherTicketsCharge() // 즉시 한번 실행
 
     return () => clearInterval(interval)
   }, [lastChargeTime])
+
+  // 매주 수요일 5시 성역 티켓 충전
+  useEffect(() => {
+    const checkSanctuaryCharge = () => {
+      const now = new Date()
+      const currentDay = now.getDay() // 0 (일요일) ~ 6 (토요일)
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      // 수요일 5시인지 확인
+      const isSanctuaryChargeTime = currentDay === 3 && currentHour === 5 && currentMinute === 0
+
+      // 이미 충전했는지 확인 (같은 날에 중복 충전 방지)
+      const lastChargeDay = lastSanctuaryChargeTime.getDay()
+      const lastChargeDate = lastSanctuaryChargeTime.getDate()
+      const nowDate = now.getDate()
+      const isSameWeek = currentDay === 3 && lastChargeDay === 3 && lastChargeDate === nowDate
+
+      if (isSanctuaryChargeTime && !isSameWeek) {
+        console.log('[자동 충전] 성역 주간 충전 시작:', now.toLocaleString())
+
+        setBaseTickets(prev => ({
+          ...prev,
+          sanctuary: 4  // 성역은 4회로 완전 충전
+        }))
+
+        setLastSanctuaryChargeTime(now)
+      }
+    }
+
+    // 1분마다 체크
+    const interval = setInterval(checkSanctuaryCharge, 60000)
+    checkSanctuaryCharge() // 즉시 한번 실행
+
+    return () => clearInterval(interval)
+  }, [lastSanctuaryChargeTime])
+
+  // 오드 에너지 자동 충전 (02:00 기준 3시간마다 +15)
+  useEffect(() => {
+    const checkOdEnergyCharge = () => {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      // 충전 시간 확인 (02:00 기준 3시간마다: 02, 05, 08, 11, 14, 17, 20, 23)
+      const chargeHours = [2, 5, 8, 11, 14, 17, 20, 23]
+      const isChargeTime = chargeHours.includes(currentHour) && currentMinute === 0
+
+      // 이미 충전했는지 확인
+      const lastChargeHour = odEnergy.lastChargeTime.getHours()
+      const isSameHour = currentHour === lastChargeHour &&
+                         now.getDate() === odEnergy.lastChargeTime.getDate()
+
+      if (isChargeTime && !isSameHour) {
+        console.log('[오드 에너지] 자동 충전:', now.toLocaleString())
+        setOdEnergy(prev => ({
+          ...prev,
+          timeEnergy: Math.min(840, prev.timeEnergy + 15),
+          lastChargeTime: now
+        }))
+      }
+    }
+
+    // 1분마다 체크
+    const interval = setInterval(checkOdEnergyCharge, 60000)
+    checkOdEnergyCharge() // 즉시 한번 실행
+
+    return () => clearInterval(interval)
+  }, [odEnergy.lastChargeTime])
+
+  // 오드 에너지 타이머 업데이트 (1초마다)
+  useEffect(() => {
+    const updateOdEnergyTimer = () => {
+      const now = new Date()
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+      const currentSecond = now.getSeconds()
+
+      // 충전 시간: 2, 5, 8, 11, 14, 17, 20, 23
+      const chargeHours = [2, 5, 8, 11, 14, 17, 20, 23]
+
+      // 다음 충전 시간 찾기
+      let nextChargeHour = chargeHours.find(h => h > currentHour)
+
+      if (nextChargeHour === undefined) {
+        // 오늘의 모든 충전 시간이 지났으면 내일 2시
+        nextChargeHour = 24 + 2 // 내일 2시
+      }
+
+      // 다음 충전까지 남은 시간 (초)
+      const hoursUntil = nextChargeHour - currentHour
+      const minutesUntil = 60 - currentMinute - 1
+      const secondsUntil = 60 - currentSecond
+
+      const totalSeconds = (hoursUntil - 1) * 3600 + minutesUntil * 60 + secondsUntil
+
+      setOdEnergy(prev => ({
+        ...prev,
+        nextChargeIn: totalSeconds
+      }))
+    }
+
+    updateOdEnergyTimer() // 즉시 한번 실행
+    const interval = setInterval(updateOdEnergyTimer, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
 
   // Google 로그인 후 닉네임이 없으면 모달 표시
   useEffect(() => {
@@ -166,6 +344,151 @@ export default function LedgerPage() {
 
   // 현재 선택된 캐릭터 ID
   const selectedCharacterId = activeTab !== 'dashboard' ? activeTab : characters[0]?.id || null
+
+  // 데이터 로딩 중 플래그
+  const [isLoadingCharacterData, setIsLoadingCharacterData] = useState(false)
+
+  // 디버그 로그
+  const [debugLogs, setDebugLogs] = useState<any[]>([])
+
+  const addDebugLog = useCallback((type: 'load' | 'save' | 'error' | 'info', message: string, data?: any) => {
+    const log = createDebugLog(type, message, data)
+    setDebugLogs(prev => [...prev, log])
+    console.log(`[DEBUG ${type.toUpperCase()}]`, message, data || '')
+  }, [])
+
+  // 캐릭터별 데이터 로드
+  useEffect(() => {
+    if (!selectedCharacterId || !isReady) return
+
+    addDebugLog('load', `캐릭터 데이터 로드 시작: ${selectedCharacterId}`)
+
+    const loadCharacterData = async () => {
+      setIsLoadingCharacterData(true)
+      try {
+        const authHeaders = getAuthHeader()
+        const res = await fetch(
+          `/api/ledger/character-state?characterId=${selectedCharacterId}`,
+          { headers: authHeaders }
+        )
+
+        if (!res.ok) {
+          throw new Error('Failed to load character state')
+        }
+
+        const data = await res.json()
+        addDebugLog('load', `데이터 로드 성공: ${selectedCharacterId}`, {
+          baseTickets: data.baseTickets,
+          bonusTickets: data.bonusTickets,
+          odEnergy: data.odEnergy
+        })
+
+        // 티켓 데이터 복원
+        if (data.baseTickets) setBaseTickets(data.baseTickets)
+        if (data.bonusTickets) setTicketBonuses(data.bonusTickets)
+
+        // 오드 에너지 데이터 복원
+        if (data.odEnergy) {
+          setOdEnergy({
+            timeEnergy: data.odEnergy.timeEnergy,
+            ticketEnergy: data.odEnergy.ticketEnergy,
+            lastChargeTime: new Date(data.odEnergy.lastChargeTime),
+            nextChargeIn: 30
+          })
+        }
+
+        // 충전 시간 복원
+        if (data.lastChargeTime) setLastChargeTime(new Date(data.lastChargeTime))
+        if (data.lastSanctuaryChargeTime) setLastSanctuaryChargeTime(new Date(data.lastSanctuaryChargeTime))
+      } catch (error: any) {
+        addDebugLog('error', `데이터 로드 실패: ${selectedCharacterId}`, { error: error.message })
+        // 에러 발생 시 기본값으로 초기화
+        setBaseTickets({
+          transcend: 14,
+          expedition: 21,
+          sanctuary: 4,
+          daily_dungeon: 6,
+          awakening: 6,
+          nightmare: 6,
+          dimension: 6,
+          subjugation: 6
+        })
+        setTicketBonuses({
+          transcend: 0,
+          expedition: 0,
+          sanctuary: 0,
+          daily_dungeon: 0,
+          awakening: 0,
+          nightmare: 0,
+          dimension: 0,
+          subjugation: 0
+        })
+        setOdEnergy({
+          timeEnergy: 840,
+          ticketEnergy: 0,
+          lastChargeTime: new Date(),
+          nextChargeIn: 30
+        })
+        setLastChargeTime(new Date())
+        setLastSanctuaryChargeTime(new Date())
+      } finally {
+        setIsLoadingCharacterData(false)
+      }
+    }
+
+    loadCharacterData()
+  }, [selectedCharacterId, isReady, getAuthHeader, addDebugLog])
+
+  // 캐릭터별 데이터 저장 (디바운스)
+  useEffect(() => {
+    if (!selectedCharacterId || !isReady || isLoadingCharacterData) return
+
+    const saveCharacterData = async () => {
+      try {
+        addDebugLog('save', `데이터 저장 시작: ${selectedCharacterId}`, {
+          baseTickets,
+          bonusTickets: ticketBonuses,
+          odEnergy: {
+            timeEnergy: odEnergy.timeEnergy,
+            ticketEnergy: odEnergy.ticketEnergy
+          }
+        })
+
+        const authHeaders = getAuthHeader()
+        const res = await fetch('/api/ledger/character-state', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...authHeaders
+          },
+          body: JSON.stringify({
+            characterId: selectedCharacterId,
+            baseTickets,
+            bonusTickets: ticketBonuses,
+            odEnergy: {
+              timeEnergy: odEnergy.timeEnergy,
+              ticketEnergy: odEnergy.ticketEnergy,
+              lastChargeTime: odEnergy.lastChargeTime.toISOString()
+            },
+            lastChargeTime: lastChargeTime.toISOString(),
+            lastSanctuaryChargeTime: lastSanctuaryChargeTime.toISOString()
+          })
+        })
+
+        if (res.ok) {
+          addDebugLog('save', `데이터 저장 성공: ${selectedCharacterId}`)
+        } else {
+          addDebugLog('error', `데이터 저장 실패: ${selectedCharacterId}`, { status: res.status })
+        }
+      } catch (error: any) {
+        addDebugLog('error', `데이터 저장 에러: ${selectedCharacterId}`, { error: error.message })
+      }
+    }
+
+    // 1초 디바운스 (500ms에서 증가)
+    const timeoutId = setTimeout(saveCharacterData, 1000)
+    return () => clearTimeout(timeoutId)
+  }, [selectedCharacterId, isReady, isLoadingCharacterData, baseTickets, ticketBonuses, odEnergy, lastChargeTime, lastSanctuaryChargeTime, getAuthHeader, addDebugLog])
 
   // 컨텐츠 기록
   const {
@@ -334,6 +657,45 @@ export default function LedgerPage() {
     loadSelectedDateIncome()
   }, [selectedDate, selectedCharacterId, isReady, getAuthHeader])
 
+  // 던전 컨텐츠 키나 계산 (초월/원정/루드라 - localStorage에서, 일별 기록)
+  useEffect(() => {
+    if (!selectedCharacterId) {
+      setDungeonKina(0)
+      return
+    }
+
+    // 일별 기록에서 키나 계산
+    const storageKey = `dungeonRecords_${selectedCharacterId}_${selectedDate}`
+    const savedData = localStorage.getItem(storageKey)
+
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData)
+        let totalKina = 0
+
+        // 초월 기록 합산
+        if (parsed.transcend && Array.isArray(parsed.transcend)) {
+          totalKina += parsed.transcend.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+        }
+        // 원정 기록 합산
+        if (parsed.expedition && Array.isArray(parsed.expedition)) {
+          totalKina += parsed.expedition.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+        }
+        // 성역(루드라) 기록 합산
+        if (parsed.sanctuary && Array.isArray(parsed.sanctuary)) {
+          totalKina += parsed.sanctuary.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+        }
+
+        setDungeonKina(totalKina)
+      } catch (e) {
+        console.error('Failed to parse dungeon records for kina:', e)
+        setDungeonKina(0)
+      }
+    } else {
+      setDungeonKina(0)
+    }
+  }, [selectedDate, selectedCharacterId])
+
   // 캐릭터 추가 핸들러
   const handleAddCharacter = async (charData: any) => {
     const result = await addCharacter(charData)
@@ -396,6 +758,94 @@ export default function LedgerPage() {
         }
       })
       return newBonuses
+    })
+  }
+
+  // 오드 에너지 충전 핸들러
+  const handleOdEnergyCharge = (amount: number) => {
+    setOdEnergy(prev => ({
+      ...prev,
+      ticketEnergy: Math.min(2000, prev.ticketEnergy + amount)
+    }))
+  }
+
+  // 오드 에너지 차감 핸들러 (컨텐츠 사용 시)
+  const handleOdEnergyDeduct = (amount: number = 40): boolean => {
+    const totalEnergy = odEnergy.timeEnergy + odEnergy.ticketEnergy
+
+    if (totalEnergy < amount) {
+      // 에너지 부족
+      return false
+    }
+
+    setOdEnergy(prev => {
+      let remaining = amount
+      let newTimeEnergy = prev.timeEnergy
+      let newTicketEnergy = prev.ticketEnergy
+
+      // 먼저 시간 충전 에너지에서 차감
+      if (newTimeEnergy >= remaining) {
+        newTimeEnergy -= remaining
+        remaining = 0
+      } else {
+        remaining -= newTimeEnergy
+        newTimeEnergy = 0
+      }
+
+      // 남은 금액은 티켓 에너지에서 차감
+      if (remaining > 0) {
+        newTicketEnergy -= remaining
+      }
+
+      return {
+        ...prev,
+        timeEnergy: newTimeEnergy,
+        ticketEnergy: newTicketEnergy
+      }
+    })
+
+    return true
+  }
+
+  // 오드 에너지 복구 핸들러 (기록 삭제 시)
+  const handleOdEnergyRestore = (amount: number) => {
+    setOdEnergy(prev => ({
+      ...prev,
+      // 시간 에너지로 복구 (최대 840까지)
+      timeEnergy: Math.min(840, prev.timeEnergy + amount)
+    }))
+  }
+
+  // 초기설정 동기화 핸들러
+  const handleInitialSync = (settings: {
+    odTimeEnergy: number
+    odTicketEnergy: number
+    tickets: Record<string, number>
+  }) => {
+    // 오드 에너지 동기화
+    setOdEnergy(prev => ({
+      ...prev,
+      timeEnergy: settings.odTimeEnergy,
+      ticketEnergy: settings.odTicketEnergy,
+      lastChargeTime: new Date()
+    }))
+
+    // 티켓 동기화
+    setBaseTickets(prev => ({
+      ...prev,
+      ...settings.tickets
+    }))
+
+    // 보너스 티켓 초기화
+    setTicketBonuses({
+      transcend: 0,
+      expedition: 0,
+      sanctuary: 0,
+      daily_dungeon: 0,
+      awakening: 0,
+      nightmare: 0,
+      dimension: 0,
+      subjugation: 0
     })
   }
 
@@ -475,18 +925,23 @@ export default function LedgerPage() {
               {/* 주간 컨텐츠 */}
               <WeeklyContentSection
                 characterId={selectedCharacterId}
+                selectedDate={selectedDate}
+                onDebugLog={addDebugLog}
               />
 
-              {/* 초월 & 원정 */}
+              {/* 초월 & 원정 & 성역 */}
               <DungeonContentSection
                 characterId={selectedCharacterId}
+                selectedDate={selectedDate}
                 baseTickets={{
                   transcend: baseTickets.transcend,
-                  expedition: baseTickets.expedition
+                  expedition: baseTickets.expedition,
+                  sanctuary: baseTickets.sanctuary
                 }}
                 bonusTickets={{
                   transcend: ticketBonuses.transcend,
-                  expedition: ticketBonuses.expedition
+                  expedition: ticketBonuses.expedition,
+                  sanctuary: ticketBonuses.sanctuary
                 }}
                 onBaseTicketsChange={(updates) => {
                   setBaseTickets(prev => ({ ...prev, ...updates }))
@@ -494,27 +949,34 @@ export default function LedgerPage() {
                 onBonusTicketsChange={(updates) => {
                   setTicketBonuses(prev => ({ ...prev, ...updates }))
                 }}
+                odEnergy={{
+                  timeEnergy: odEnergy.timeEnergy,
+                  ticketEnergy: odEnergy.ticketEnergy,
+                  nextChargeIn: odEnergy.nextChargeIn
+                }}
+                onOdEnergyDeduct={handleOdEnergyDeduct}
+                onOdEnergyRestore={handleOdEnergyRestore}
+                onTotalKinaChange={setDungeonKina}
               />
 
               {/* 일일 컨텐츠 */}
               <DailyContentSection
                 characterId={selectedCharacterId}
                 selectedDate={selectedDate}
+                getAuthHeader={getAuthHeader}
                 baseTickets={{
                   daily_dungeon: baseTickets.daily_dungeon,
                   awakening: baseTickets.awakening,
                   nightmare: baseTickets.nightmare,
                   dimension: baseTickets.dimension,
-                  subjugation: baseTickets.subjugation,
-                  sanctuary: baseTickets.sanctuary
+                  subjugation: baseTickets.subjugation
                 }}
                 bonusTickets={{
                   daily_dungeon: ticketBonuses.daily_dungeon,
                   awakening: ticketBonuses.awakening,
                   nightmare: ticketBonuses.nightmare,
                   dimension: ticketBonuses.dimension,
-                  subjugation: ticketBonuses.subjugation,
-                  sanctuary: ticketBonuses.sanctuary
+                  subjugation: ticketBonuses.subjugation
                 }}
                 onBaseTicketsChange={(updates) => {
                   setBaseTickets(prev => ({ ...prev, ...updates }))
@@ -578,10 +1040,11 @@ export default function LedgerPage() {
         onAdd={handleAddItem}
       />
 
-      {/* 날짜 선택 모달 */}
-      <DateSelectorModal
+      {/* 캘린더 모달 */}
+      <CalendarModal
         isOpen={showDateModal}
         currentDate={selectedDate}
+        characterId={selectedCharacterId}
         onClose={() => setShowDateModal(false)}
         onSelectDate={setSelectedDate}
       />
@@ -610,25 +1073,45 @@ export default function LedgerPage() {
         currentTickets={{
           transcend: { base: baseTickets.transcend, bonus: ticketBonuses.transcend },
           expedition: { base: baseTickets.expedition, bonus: ticketBonuses.expedition },
+          sanctuary: { base: baseTickets.sanctuary, bonus: ticketBonuses.sanctuary },
           daily_dungeon: { base: baseTickets.daily_dungeon, bonus: ticketBonuses.daily_dungeon },
           awakening: { base: baseTickets.awakening, bonus: ticketBonuses.awakening },
           nightmare: { base: baseTickets.nightmare, bonus: ticketBonuses.nightmare },
           dimension: { base: baseTickets.dimension, bonus: ticketBonuses.dimension },
-          subjugation: { base: baseTickets.subjugation, bonus: ticketBonuses.subjugation },
-          sanctuary: { base: baseTickets.sanctuary, bonus: ticketBonuses.sanctuary }
+          subjugation: { base: baseTickets.subjugation, bonus: ticketBonuses.subjugation }
         }}
+        odEnergy={{
+          timeEnergy: odEnergy.timeEnergy,
+          ticketEnergy: odEnergy.ticketEnergy
+        }}
+        onOdEnergyCharge={handleOdEnergyCharge}
+        onInitialSync={handleInitialSync}
       />
 
       {/* 하단 네비게이션 바 (캐릭터 선택 시에만 표시) */}
       {activeTab !== 'dashboard' && selectedCharacterId && (
         <BottomNavBar
-          todayIncome={selectedDateIncome.dailyIncome}
-          weeklyIncome={selectedDateIncome.weeklyIncome}
+          todayIncome={selectedDateIncome.dailyIncome + dungeonKina}
+          weeklyIncome={selectedDateIncome.weeklyIncome + dungeonKina}
           selectedDate={selectedDate}
           onDateClick={() => setShowDateModal(true)}
           onChargeClick={() => setShowChargePopup(true)}
         />
       )}
+
+      {/* 디버그 패널 */}
+      <DebugPanel
+        logs={debugLogs}
+        currentState={{
+          characterId: selectedCharacterId,
+          baseTickets,
+          bonusTickets: ticketBonuses,
+          odEnergy: {
+            timeEnergy: odEnergy.timeEnergy,
+            ticketEnergy: odEnergy.ticketEnergy
+          }
+        }}
+      />
     </div>
   )
 }

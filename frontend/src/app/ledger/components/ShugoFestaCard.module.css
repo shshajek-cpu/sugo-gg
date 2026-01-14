@@ -1,3 +1,7 @@
+.cardWrapper {
+  position: relative;
+}
+
 .card {
   background: linear-gradient(135deg, rgba(26, 29, 36, 0.95) 0%, rgba(15, 17, 21, 0.95) 100%);
   border: 1.5px solid rgba(255, 255, 255, 0.1);
@@ -9,6 +13,8 @@
   gap: 6px;
   transition: all 0.3s;
   box-sizing: border-box;
+  cursor: pointer;
+  position: relative;
 }
 
 .card:hover {
@@ -43,6 +49,23 @@
 
 .image {
   object-fit: contain;
+  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6))
+          drop-shadow(0 0 16px rgba(250, 204, 21, 0.4))
+          drop-shadow(0 0 24px rgba(250, 204, 21, 0.2));
+  animation: neonPulse 2s ease-in-out infinite;
+}
+
+@keyframes neonPulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6))
+            drop-shadow(0 0 16px rgba(250, 204, 21, 0.4))
+            drop-shadow(0 0 24px rgba(250, 204, 21, 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.8))
+            drop-shadow(0 0 24px rgba(250, 204, 21, 0.6))
+            drop-shadow(0 0 36px rgba(250, 204, 21, 0.4));
+  }
 }
 
 /* 노란 네온 타이머 */
@@ -77,4 +100,100 @@
 .bonusTicket {
   color: #facc15;
   font-weight: 700;
+}
+
+.arrow {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  font-size: 12px;
+  color: #facc15;
+  font-weight: 700;
+  transition: transform 0.2s;
+  pointer-events: none;
+}
+
+/* 드롭다운 */
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
+  background: linear-gradient(135deg, rgba(26, 29, 36, 0.98) 0%, rgba(15, 17, 21, 0.98) 100%);
+  border: 1.5px solid rgba(250, 204, 21, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+.dropdownTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #E5E7EB;
+  font-family: 'Rajdhani', sans-serif;
+  margin: 0 0 16px 0;
+  text-align: center;
+}
+
+.chargeInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.infoRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(26, 29, 36, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+}
+
+.infoRow:first-child {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.infoLabel {
+  font-size: 13px;
+  color: #9CA3AF;
+  font-weight: 600;
+}
+
+.infoValue {
+  font-size: 14px;
+  color: #FACC15;
+  font-weight: 700;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.openTime {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.closeBtn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 16px;
+  border-radius: 6px;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  background: rgba(26, 29, 36, 0.95);
+  color: #facc15;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeBtn:hover {
+  border-color: #facc15;
+  background: rgba(250, 204, 21, 0.1);
+  transform: scale(1.02);
 }

@@ -1,0 +1,261 @@
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modal {
+  background: #1a1d24;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 360px;
+  padding: 20px;
+  border: 1px solid rgba(250, 204, 21, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+
+/* 헤더 */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin: 0;
+}
+
+.navButton {
+  background: transparent;
+  border: none;
+  color: #facc15;
+  font-size: 16px;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.navButton:hover {
+  background: rgba(250, 204, 21, 0.1);
+}
+
+/* 요일 헤더 */
+.weekdayHeader {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 8px;
+}
+
+.weekday {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  color: #9ca3af;
+  padding: 4px 0;
+}
+
+.weekday.sunday {
+  color: #ef4444;
+}
+
+.weekday.saturday {
+  color: #3b82f6;
+}
+
+/* 달력 그리드 */
+.calendarGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.emptyCell {
+  aspect-ratio: 1;
+}
+
+.dayCell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  padding: 4px;
+}
+
+.dayCell:hover {
+  background: rgba(250, 204, 21, 0.1);
+}
+
+.dayCell.sunday .dayNumber {
+  color: #ef4444;
+}
+
+.dayCell.saturday .dayNumber {
+  color: #3b82f6;
+}
+
+.dayNumber {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e5e7eb;
+}
+
+/* 오늘 날짜 */
+.dayCell.today {
+  background: rgba(250, 204, 21, 0.2);
+}
+
+.dayCell.today .dayNumber {
+  color: #facc15;
+  font-weight: 700;
+}
+
+/* 선택된 날짜 */
+.dayCell.selected {
+  border-color: #facc15;
+  background: rgba(250, 204, 21, 0.15);
+}
+
+/* 미래 날짜 (비활성화) */
+.dayCell.disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.dayCell.disabled:hover {
+  background: transparent;
+}
+
+/* 기록 있음 표시 (점) */
+.recordDot {
+  position: absolute;
+  bottom: 4px;
+  width: 5px;
+  height: 5px;
+  background: #10b981;
+  border-radius: 50%;
+}
+
+/* 선택된 날짜 정보 */
+.selectedInfo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.hasRecordBadge {
+  background: rgba(16, 185, 129, 0.2);
+  color: #10b981;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* 버튼 영역 */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  gap: 8px;
+}
+
+.actionRight {
+  display: flex;
+  gap: 8px;
+}
+
+.todayButton {
+  padding: 10px 16px;
+  background: rgba(250, 204, 21, 0.1);
+  border: 1px solid rgba(250, 204, 21, 0.3);
+  border-radius: 8px;
+  color: #facc15;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.todayButton:hover {
+  background: rgba(250, 204, 21, 0.2);
+}
+
+.cancelButton {
+  padding: 10px 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  color: #9ca3af;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.confirmButton {
+  padding: 10px 20px;
+  background: #facc15;
+  border: none;
+  border-radius: 8px;
+  color: #0b0d12;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.confirmButton:hover {
+  background: #fde047;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 400px) {
+  .modal {
+    padding: 16px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .dayNumber {
+    font-size: 13px;
+  }
+
+  .weekday {
+    font-size: 11px;
+  }
+}
