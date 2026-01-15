@@ -347,7 +347,17 @@ export async function GET(request: NextRequest) {
             if (upsertError) {
                 console.error('[Supabase] Upsert error:', upsertError)
             } else {
-                // console.log(`[Supabase] Successfully saved character ${infoData.profile.characterName}`)
+                // 상세 수집 로그 저장 (유저가 "캐릭터수집"이라고 부르는 활동)
+                try {
+                    await supabase.from('collector_logs').insert({
+                        server_name: infoData.profile.serverName || serverId,
+                        keyword: `${infoData.profile.characterName}`,
+                        collected_count: 1,
+                        type: 'detail'
+                    })
+                } catch (logErr) {
+                    console.error('[Log Error]', logErr)
+                }
             }
         } else {
             // console.warn('[Supabase] Credentials missing, skipping DB save')

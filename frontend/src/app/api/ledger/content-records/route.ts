@@ -167,58 +167,31 @@ export async function POST(request: Request) {
     // 총 금액 계산
     const total_kina = completion_count * base_kina * (is_double ? 2 : 1)
 
-    // Upsert: 기존 기록이 있으면 업데이트, 없으면 생성
-    const { data: existing } = await supabase
+    console.log(`[Content Records] Saving: characterId=${characterId}, date=${date}, type=${content_type}, count=${completion_count}, total_kina=${total_kina}`)
+
+    // Upsert: character_id + record_date + content_type 기준으로 업데이트/생성
+    const { data, error } = await supabase
       .from('ledger_content_records')
-      .select('id')
-      .eq('character_id', characterId)
-      .eq('record_date', date)
-      .eq('content_type', content_type)
+      .upsert({
+        character_id: characterId,
+        record_date: date,
+        content_type,
+        dungeon_tier,
+        max_count,
+        completion_count,
+        is_double,
+        base_kina,
+        total_kina,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'character_id,record_date,content_type'
+      })
+      .select()
       .single()
 
-    let result
-    if (existing) {
-      // 업데이트
-      const { data, error } = await supabase
-        .from('ledger_content_records')
-        .update({
-          dungeon_tier,
-          max_count,
-          completion_count,
-          is_double,
-          base_kina,
-          total_kina,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', existing.id)
-        .select()
-        .single()
+    if (error) throw error
 
-      if (error) throw error
-      result = data
-    } else {
-      // 생성
-      const { data, error } = await supabase
-        .from('ledger_content_records')
-        .insert({
-          character_id: characterId,
-          record_date: date,
-          content_type,
-          dungeon_tier,
-          max_count,
-          completion_count,
-          is_double,
-          base_kina,
-          total_kina
-        })
-        .select()
-        .single()
-
-      if (error) throw error
-      result = data
-    }
-
-    return NextResponse.json(result)
+    return NextResponse.json(data)
   } catch (e: any) {
     console.error('Save content record error:', e)
     return NextResponse.json({ error: e.message }, { status: 500 })
@@ -227,13 +200,77 @@ export async function POST(request: Request) {
 
 // DELETE: 컨텐츠 기록 삭제
 export async function DELETE(request: Request) {
+  const user = await getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const id = searchParams.get('id')
+  const characterId = searchParams.get('characterId')
+  const cleanupZeroKina = searchParams.get('cleanupZeroKina') // 0키나 컨텐츠 정리
 
-  if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+  const supabase = getSupabase()
 
   try {
-    const supabase = getSupabase()
+    // 특정 캐릭터의 특정 content_type 기록 삭제
+    const contentType = searchParams.get('contentType')
+    if (contentType && characterId) {
+      // 캐릭터 소유권 확인
+      const { data: character } = await supabase
+        .from('ledger_characters')
+        .select('id')
+        .eq('id', characterId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!character) {
+        return NextResponse.json({ error: 'Character not found or access denied' }, { status: 403 })
+      }
+
+      const { error, count } = await supabase
+        .from('ledger_content_records')
+        .delete()
+        .eq('character_id', characterId)
+        .eq('content_type', contentType)
+
+      if (error) throw error
+      console.log(`[Content Records] Deleted ${count} ${contentType} records for character ${characterId}`)
+      return NextResponse.json({ success: true, deletedCount: count })
+    }
+
+    // 0키나 컨텐츠 (일일던전, 각성전, 토벌전, 악몽, 차원침공) 기록 삭제
+    if (cleanupZeroKina === 'true' && characterId) {
+      // 캐릭터 소유권 확인
+      const { data: character } = await supabase
+        .from('ledger_characters')
+        .select('id')
+        .eq('id', characterId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (!character) {
+        return NextResponse.json({ error: 'Character not found or access denied' }, { status: 403 })
+      }
+
+      // 키나를 주지 않는 모든 컨텐츠 타입
+      const zeroKinaContentTypes = [
+        'daily_dungeon', 'awakening_battle', 'subjugation', 'nightmare', 'dimension_invasion',
+        'shugo_festa', 'abyss_hallway', 'mission', 'weekly_order', 'abyss_order'
+      ]
+
+      const { error, count } = await supabase
+        .from('ledger_content_records')
+        .delete()
+        .eq('character_id', characterId)
+        .in('content_type', zeroKinaContentTypes)
+
+      if (error) throw error
+      console.log(`[Content Records] Cleaned up ${count} zero-kina records for character ${characterId}`)
+      return NextResponse.json({ success: true, deletedCount: count })
+    }
+
+    // 특정 ID로 삭제
+    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 })
+
     const { error } = await supabase
       .from('ledger_content_records')
       .delete()

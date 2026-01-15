@@ -123,6 +123,7 @@ interface ItemStatItem {
 interface ItemManagementTabProps {
   items: EnhancedLedgerItem[]
   favorites: FavoriteItem[]
+  selectedDate: string  // 선택된 날짜
   onAddItem: (item: any) => Promise<void>
   onUpdateItem: (id: string, data: Partial<EnhancedLedgerItem>) => Promise<void>
   onSellItem: (id: string, soldPrice: number) => Promise<void>
@@ -136,6 +137,7 @@ interface ItemManagementTabProps {
 export default function ItemManagementTab({
   items,
   favorites,
+  selectedDate,
   onAddItem,
   onUpdateItem,
   onSellItem,
@@ -457,10 +459,9 @@ export default function ItemManagementTab({
     'sold_date'
   )
 
-  // 오늘 판매 수입 계산
-  const todayStr = new Date().toISOString().split('T')[0]
-  const todaySoldIncome = soldItems
-    .filter(i => i.sold_date?.split('T')[0] === todayStr)
+  // 선택한 날짜의 판매 수입 계산
+  const selectedDateSoldIncome = soldItems
+    .filter(i => i.sold_date?.split('T')[0] === selectedDate)
     .reduce((sum, i) => sum + i.total_price, 0)
 
   return (
@@ -742,8 +743,8 @@ export default function ItemManagementTab({
         <div className={styles.summaryTitle}>💰 아이템 판매 통계</div>
         <div className={styles.summaryGrid}>
           <div className={styles.summaryItem}>
-            <div className={styles.summaryLabel}>오늘 수입</div>
-            <div className={`${styles.summaryValue} ${styles.todayIncome}`}>+{todaySoldIncome.toLocaleString()} 키나</div>
+            <div className={styles.summaryLabel}>선택일 수입</div>
+            <div className={`${styles.summaryValue} ${styles.todayIncome}`}>+{selectedDateSoldIncome.toLocaleString()} 키나</div>
           </div>
           <div className={styles.summaryItem}>
             <div className={styles.summaryLabel}>총 판매 수입</div>

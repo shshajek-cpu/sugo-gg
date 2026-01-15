@@ -13,6 +13,7 @@ interface ProgressBarProps {
   onIncrement: () => void
   onDecrement: () => void
   onComplete: () => void
+  readOnly?: boolean
 }
 
 // 다음 리셋 시간 계산
@@ -72,7 +73,8 @@ export default function ProgressBar({
   resetType,
   onIncrement,
   onDecrement,
-  onComplete
+  onComplete,
+  readOnly = false
 }: ProgressBarProps) {
   const [timeUntilReset, setTimeUntilReset] = useState('')
 
@@ -110,7 +112,8 @@ export default function ProgressBar({
           <button
             className={styles.completeBtn}
             onClick={onComplete}
-            disabled={currentCount >= maxCount}
+            disabled={readOnly || currentCount >= maxCount}
+            title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
           >
             전체 완료 하기
           </button>
@@ -121,14 +124,16 @@ export default function ProgressBar({
             <button
               className={styles.btn}
               onClick={onIncrement}
-              disabled={currentCount >= maxCount}
+              disabled={readOnly || currentCount >= maxCount}
+              title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
             >
               +
             </button>
             <button
               className={styles.btn}
               onClick={onDecrement}
-              disabled={currentCount <= 0}
+              disabled={readOnly || currentCount <= 0}
+              title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
             >
               −
             </button>

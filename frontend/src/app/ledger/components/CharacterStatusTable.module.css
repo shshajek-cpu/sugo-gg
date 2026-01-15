@@ -36,14 +36,18 @@
 }
 
 .characterCard {
-  background: #212227;
+  background: #252730;
   border-radius: 10px;
   overflow: hidden;
   transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .characterCard:hover {
-  background: #27282e;
+  background: #2d2f38;
+  border-color: rgba(251, 219, 81, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .characterHeader {
@@ -51,7 +55,6 @@
   align-items: center;
   gap: 16px;
   padding: 16px;
-  cursor: pointer;
 }
 
 .characterInfo {
@@ -67,20 +70,24 @@
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
+  border: 2px solid rgba(251, 219, 81, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .avatarPlaceholder {
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: #161618;
+  background: linear-gradient(135deg, #2a2d35 0%, #1a1c22 100%);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a5a8b4;
+  color: #fbdb51;
   font-size: 18px;
-  font-weight: 600;
+  font-weight: 700;
   flex-shrink: 0;
+  border: 2px solid rgba(251, 219, 81, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .characterDetails {
@@ -89,10 +96,37 @@
   gap: 2px;
 }
 
+.characterNameRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .characterName {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.goToBtn {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: rgba(251, 219, 81, 0.1);
+  border: 1px solid rgba(251, 219, 81, 0.3);
+  color: #fbdb51;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.goToBtn:hover {
+  background: rgba(251, 219, 81, 0.2);
+  border-color: #fbdb51;
 }
 
 .characterMeta {
@@ -117,25 +151,28 @@
 
 .statLabel {
   font-size: 11px;
-  color: #848999;
+  color: #9ca3af;
+  font-weight: 500;
 }
 
 .statValue {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: #fbdb51;
+  text-shadow: 0 0 8px rgba(251, 219, 81, 0.4);
 }
 
 .statValueNeutral {
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: #ffffff;
 }
 
 .statValueSuccess {
   font-size: 14px;
-  font-weight: 600;
-  color: #56c288;
+  font-weight: 700;
+  color: #4ade80;
+  text-shadow: 0 0 8px rgba(74, 222, 128, 0.4);
 }
 
 .expandBtn {
@@ -184,9 +221,21 @@
 .contentCell {
   background: #161618;
   border-radius: 8px;
-  padding: 10px;
+  padding: 8px 10px;
   display: flex;
   flex-direction: column;
+  gap: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.contentCellComplete {
+  opacity: 0.4;
+}
+
+.contentHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 6px;
 }
 
@@ -198,28 +247,31 @@
   text-overflow: ellipsis;
 }
 
-.contentProgress {
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
-  overflow: hidden;
+.contentTime {
+  font-size: 10px;
+  color: #fbdb51;
+  font-family: 'Consolas', 'Monaco', monospace;
+  white-space: nowrap;
 }
 
-.contentProgressBar {
-  height: 100%;
-  background: #fbdb51;
-  border-radius: 2px;
-  transition: width 0.3s ease;
+.checkIcon {
+  color: #56c288;
+  flex-shrink: 0;
 }
 
 .contentCount {
   font-size: 12px;
   font-weight: 600;
   color: #cfd1d7;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
-.contentComplete {
+.bonusCount {
+  font-size: 11px;
   color: #56c288;
+  font-weight: 500;
 }
 
 /* 빈 상태 */

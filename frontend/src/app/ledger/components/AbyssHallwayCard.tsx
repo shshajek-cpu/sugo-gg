@@ -13,11 +13,13 @@ interface Region {
 interface AbyssHallwayCardProps {
   regions: Region[]
   onToggleRegion: (regionId: string) => void
+  readOnly?: boolean
 }
 
 export default function AbyssHallwayCard({
   regions,
-  onToggleRegion
+  onToggleRegion,
+  readOnly = false
 }: AbyssHallwayCardProps) {
   const [timeUntilReset, setTimeUntilReset] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -93,6 +95,8 @@ export default function AbyssHallwayCard({
                   checked={region.enabled}
                   onChange={() => onToggleRegion(region.id)}
                   className={styles.checkbox}
+                  disabled={readOnly}
+                  title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
                 />
                 <span className={styles.regionName}>{region.name}</span>
               </label>

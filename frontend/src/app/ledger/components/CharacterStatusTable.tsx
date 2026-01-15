@@ -1,15 +1,21 @@
 'use client'
 
-import { Users, ChevronDown, ChevronUp } from 'lucide-react'
-import { useState } from 'react'
+import { Users, ChevronDown, ChevronUp, ExternalLink, Check } from 'lucide-react'
+import { useState, useEffect } from 'react'
 import { LedgerCharacter } from '@/types/ledger'
 import styles from './CharacterStatusTable.module.css'
+
+// 충전 타입 정의
+type ChargeType = '8h' | 'daily' | '24h' | 'weekly' | 'shugo'
 
 interface ContentProgress {
   id: string
   name: string
-  current: number
-  max: number
+  current: number      // 완료 횟수
+  max: number          // 기본 최대 횟수
+  bonus?: number       // 충전권 보너스 횟수
+  chargeType?: ChargeType  // 충전 타입
+  nextChargeSeconds?: number  // 다음 충전까지 남은 초
 }
 
 interface CharacterStatus {
@@ -28,31 +34,63 @@ interface CharacterStatusTableProps {
 }
 
 const formatKina = (value: number) => {
-  if (value >= 1000000) {
-    return `${(value / 1000000).toFixed(1)}M`
-  }
-  if (value >= 1000) {
-    return `${(value / 1000).toFixed(0)}K`
-  }
   return value.toLocaleString('ko-KR')
 }
 
+// 남은 시간 포맷팅 (초 → 시:분:초 또는 N일 시:분:초)
+function formatTimeRemaining(seconds: number): string {
+  if (seconds <= 0) return '0:00:00'
+
+  const days = Math.floor(seconds / 86400)
+  const hours = Math.floor((seconds % 86400) / 3600)
+  const mins = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+
+  if (days > 0) {
+    return `${days}일 ${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${hours}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+}
+
 function ContentProgressCell({ content }: { content: ContentProgress }) {
-  const isComplete = content.current >= content.max
-  const percentage = content.max > 0 ? (content.current / content.max) * 100 : 0
+  const [timeRemaining, setTimeRemaining] = useState(content.nextChargeSeconds || 0)
+
+  // 1초마다 타이머 업데이트
+  useEffect(() => {
+    if (content.nextChargeSeconds === undefined) return
+
+    setTimeRemaining(content.nextChargeSeconds)
+
+    const interval = setInterval(() => {
+      setTimeRemaining(prev => Math.max(0, prev - 1))
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [content.nextChargeSeconds])
+
+  // 기본 잔여 횟수 (충전권 제외, 시간충전분만)
+  const baseRemaining = content.max - content.current
+  // 전체 잔여 = 기본 잔여 + 충전권 (완료 여부 판단용)
+  const totalRemaining = baseRemaining + (content.bonus || 0)
+  const isComplete = totalRemaining <= 0
 
   return (
-    <div className={styles.contentCell}>
-      <div className={styles.contentName}>{content.name}</div>
-      <div className={styles.contentProgress}>
-        <div
-          className={styles.contentProgressBar}
-          style={{ width: `${percentage}%` }}
-        />
+    <div className={`${styles.contentCell} ${isComplete ? styles.contentCellComplete : ''}`}>
+      <div className={styles.contentHeader}>
+        <span className={styles.contentName}>{content.name}</span>
+        {isComplete ? (
+          <Check size={12} className={styles.checkIcon} />
+        ) : (
+          <span className={styles.contentTime}>
+            {formatTimeRemaining(timeRemaining)}
+          </span>
+        )}
       </div>
-      <div className={`${styles.contentCount} ${isComplete ? styles.contentComplete : ''}`}>
-        {content.current}/{content.max}
-        {isComplete && ' ✓'}
+      <div className={styles.contentCount}>
+        {baseRemaining}/{content.max}
+        {content.bonus && content.bonus > 0 && (
+          <span className={styles.bonusCount}>(+{content.bonus})</span>
+        )}
       </div>
     </div>
   )
@@ -69,10 +107,7 @@ function CharacterRow({ status, onCharacterClick }: { status: CharacterStatus; o
   return (
     <div className={styles.characterCard}>
       {/* 캐릭터 헤더 */}
-      <div
-        className={styles.characterHeader}
-        onClick={() => onCharacterClick(status.character.id)}
-      >
+      <div className={styles.characterHeader}>
         <div className={styles.characterInfo}>
           {status.character.profile_image ? (
             <img
@@ -86,7 +121,16 @@ function CharacterRow({ status, onCharacterClick }: { status: CharacterStatus; o
             </div>
           )}
           <div className={styles.characterDetails}>
-            <div className={styles.characterName}>{status.character.name}</div>
+            <div className={styles.characterNameRow}>
+              <span className={styles.characterName}>{status.character.name}</span>
+              <button
+                className={styles.goToBtn}
+                onClick={() => onCharacterClick(status.character.id)}
+                title="가계부 페이지로 이동"
+              >
+                <ExternalLink size={12} />
+              </button>
+            </div>
             <div className={styles.characterMeta}>
               {status.character.class_name} · {status.character.server_name}
               {status.character.item_level && status.character.item_level > 0 && ` · IL ${status.character.item_level}`}
@@ -176,7 +220,7 @@ export default function CharacterStatusTable({
           캐릭터별 현황
         </h2>
         <span className={styles.subtitle}>
-          클릭하여 상세 페이지로 이동, 펼쳐서 컨텐츠 확인
+          펼쳐서 컨텐츠 확인
         </span>
       </div>
 

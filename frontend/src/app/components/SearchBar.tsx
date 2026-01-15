@@ -641,6 +641,12 @@ export default function SearchBar() {
                 isVisible={showResults}
                 isLoading={isSearching}
                 onSelect={handleResultSelect}
+                onDetailsFetched={(updatedChar) => {
+                    // 백그라운드에서 조회된 상세 정보로 results 업데이트
+                    setResults(prev => prev.map(r =>
+                        r.characterId === updatedChar.characterId ? updatedChar : r
+                    ))
+                }}
             />
 
             {/* 최근 검색 캐릭터 - 검색창이 비어있고 드롭다운이 닫혀있을 때만 표시 */}

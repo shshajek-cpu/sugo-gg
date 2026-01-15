@@ -17,7 +17,11 @@ export function getGameDate(date: Date = new Date()): string {
     adjusted.setDate(adjusted.getDate() - 1)
   }
 
-  return adjusted.toISOString().split('T')[0]
+  // 로컬 시간 기준으로 YYYY-MM-DD 포맷 반환 (toISOString은 UTC 기준이라 문제됨)
+  const year = adjusted.getFullYear()
+  const month = String(adjusted.getMonth() + 1).padStart(2, '0')
+  const day = String(adjusted.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 /**
@@ -55,21 +59,13 @@ export function getWeekKey(date: Date = new Date()): string {
 }
 
 /**
- * 특정 날짜가 수정 가능한지 확인 (이틀 전까지만 수정 가능)
+ * 특정 날짜가 수정 가능한지 확인 (당일만 수정 가능)
  */
 export function isEditable(targetDate: string): boolean {
-  const today = new Date()
-  const gameToday = getGameDate(today)
+  const gameToday = getGameDate(new Date())
 
-  const target = new Date(targetDate)
-  const current = new Date(gameToday)
-
-  // 날짜 차이 계산 (일 단위)
-  const diffTime = current.getTime() - target.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
-
-  // 0 (오늘), 1 (어제), 2 (그저께)까지 수정 가능
-  return diffDays <= 2
+  // 당일만 수정 가능
+  return targetDate === gameToday
 }
 
 /**
@@ -95,7 +91,7 @@ export function getWeekStartDate(date: Date = new Date()): string {
   const weekStart = new Date(adjusted)
   weekStart.setDate(adjusted.getDate() - daysSinceWednesday)
 
-  return weekStart.toISOString().split('T')[0]
+  return formatLocalDate(weekStart)
 }
 
 /**
@@ -106,5 +102,15 @@ export function getWeekEndDate(date: Date = new Date()): string {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekStart.getDate() + 6)
 
-  return weekEnd.toISOString().split('T')[0]
+  return formatLocalDate(weekEnd)
+}
+
+/**
+ * 로컬 시간 기준으로 YYYY-MM-DD 포맷 반환
+ */
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }

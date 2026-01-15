@@ -1,8 +1,8 @@
 'use client'
 
-import { CharacterSearchResult } from '../../lib/supabaseApi'
+import { CharacterSearchResult, supabaseApi } from '../../lib/supabaseApi'
 import { Loader2 } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import Image from 'next/image'
 
 const normalizeName = (value: string) => value.replace(/<\/?[^>]+(>|$)/g, '').trim()
@@ -76,9 +76,103 @@ interface SearchAutocompleteProps {
     isVisible: boolean
     isLoading: boolean
     onSelect: (character: CharacterSearchResult) => void
+    onDetailsFetched?: (updatedChar: CharacterSearchResult) => void
 }
 
-export default function SearchAutocomplete({ results, isVisible, isLoading, onSelect }: SearchAutocompleteProps) {
+// 동시 조회 제한 (Rate Limit 방지)
+const MAX_CONCURRENT_FETCHES = 3
+
+export default function SearchAutocomplete({ results, isVisible, isLoading, onSelect, onDetailsFetched }: SearchAutocompleteProps) {
+    // 이미 조회 요청한 characterId 추적
+    const fetchedIdsRef = useRef<Set<string>>(new Set())
+    // 현재 조회 중인 characterId 추적
+    const [loadingIds, setLoadingIds] = useState<Set<string>>(new Set())
+    // 디버그용 로그
+    const [debugLogs, setDebugLogs] = useState<string[]>([])
+    const addDebugLog = (msg: string) => {
+        const timestamp = new Date().toLocaleTimeString()
+        setDebugLogs(prev => [`[${timestamp}] ${msg}`, ...prev].slice(0, 10))
+        console.log(`[Background Detail] ${msg}`)
+    }
+
+    // 백그라운드 상세 조회 로직 (순차 조회 + 딜레이로 Rate Limit 방지)
+    useEffect(() => {
+        if (!isVisible || results.length === 0 || !onDetailsFetched) return
+
+        // DB에 item_level이 없는 캐릭터 필터링 (아직 조회 안 한 것만)
+        const needsFetch = results.filter(char =>
+            char.characterId &&
+            char.server_id &&
+            (!char.item_level || char.item_level === 0) &&
+            !fetchedIdsRef.current.has(char.characterId)
+        )
+
+        addDebugLog(`Need to fetch: ${needsFetch.length} characters`)
+        if (needsFetch.length === 0) return
+
+        // 취소 플래그 - 검색어 바뀌면 이전 조회 중단
+        let cancelled = false
+
+        // 순차 조회 (조회 시작 전 3초 대기, 조회 간격 10초)
+        const fetchSequentially = async () => {
+            // 검색 결과 안정화 대기 (3초)
+            addDebugLog('Waiting 2 seconds before fetch...')
+            await new Promise(resolve => setTimeout(resolve, 2000))
+            if (cancelled) {
+                addDebugLog('Cancelled during wait')
+                return
+            }
+
+            for (const char of needsFetch.slice(0, 1)) { // 최대 1개만
+                if (cancelled) break
+                if (fetchedIdsRef.current.has(char.characterId)) continue
+
+                fetchedIdsRef.current.add(char.characterId)
+                setLoadingIds(prev => new Set(prev).add(char.characterId))
+
+                addDebugLog(`Fetching: ${char.name}`)
+
+                try {
+                    const detail = await supabaseApi.fetchCharacterDetailForSearch(char.characterId, char.server_id!)
+                    if (cancelled) break
+                    if (detail) {
+                        addDebugLog(`Success: ${char.name} -> IL.${detail.item_level}`)
+                        onDetailsFetched({
+                            ...char,
+                            item_level: detail.item_level,
+                            job: detail.className || char.job,
+                            noa_score: detail.noa_score
+                        })
+                    }
+                } catch (e) {
+                    addDebugLog(`Failed: ${char.name} - ${e}`)
+                } finally {
+                    setLoadingIds(prev => {
+                        const next = new Set(prev)
+                        next.delete(char.characterId)
+                        return next
+                    })
+                }
+
+                if (cancelled) break
+                // Rate Limit 방지: 8초 대기
+                await new Promise(resolve => setTimeout(resolve, 8000))
+            }
+        }
+
+        fetchSequentially()
+
+        // cleanup: 검색어 바뀌면 취소
+        return () => {
+            cancelled = true
+        }
+    }, [results, isVisible, onDetailsFetched])
+
+    // 검색 결과가 바뀌면 조회 기록 초기화
+    useEffect(() => {
+        fetchedIdsRef.current.clear()
+    }, [results.length])
+
     // noa_score 기준 내림차순 정렬
     const sortedResults = useMemo(() => {
         return [...results].sort((a, b) => {
@@ -219,13 +313,15 @@ export default function SearchAutocomplete({ results, isVisible, isLoading, onSe
                                     </span>
                                     <span style={{ color: '#4b5563' }}>|</span>
                                     <span>{char.server}</span>
-                                    {char.item_level !== undefined && char.item_level > 0 && (
+                                    {char.item_level !== undefined && char.item_level > 0 ? (
                                         <>
                                             <span style={{ color: '#4b5563' }}>|</span>
                                             <span style={{ color: '#a78bfa' }}>
                                                 IL.{char.item_level}
                                             </span>
                                         </>
+                                    ) : loadingIds.has(char.characterId) && (
+                                        <Loader2 className="animate-spin" size={10} style={{ color: '#6b7280', marginLeft: '4px' }} />
                                     )}
                                 </div>
                             </div>
@@ -245,6 +341,25 @@ export default function SearchAutocomplete({ results, isVisible, isLoading, onSe
                     </div>
                 )}
             </div>
+
+            {/* 디버그 패널 */}
+            {debugLogs.length > 0 && (
+                <div style={{
+                    background: '#0a0b0d',
+                    borderTop: '1px solid #1f2937',
+                    padding: '8px 12px',
+                    fontSize: '10px',
+                    fontFamily: 'monospace',
+                    color: '#6b7280',
+                    maxHeight: '80px',
+                    overflowY: 'auto'
+                }}>
+                    <div style={{ color: '#fbbf24', marginBottom: '4px' }}>🔧 Debug Log</div>
+                    {debugLogs.map((log, i) => (
+                        <div key={i} style={{ opacity: 1 - i * 0.1 }}>{log}</div>
+                    ))}
+                </div>
+            )}
         </div>
     )
 }

@@ -378,5 +378,41 @@ export const supabaseApi = {
             console.error('Background sync failed', e)
             // Silently fail as this is a background task
         }
+    },
+
+    /**
+     * Fetch character detail for search enrichment (lightweight).
+     * Returns only essential fields: item_level, className, noa_score
+     */
+    async fetchCharacterDetailForSearch(characterId: string, serverId: number): Promise<{
+        item_level?: number
+        className?: string
+        noa_score?: number
+    } | null> {
+        try {
+            const res = await fetch(`${getApiBaseUrl()}/api/character?id=${encodeURIComponent(characterId)}&server=${serverId}`)
+            
+            if (!res.ok) {
+                console.warn(`[fetchCharacterDetailForSearch] Failed for ${characterId}: ${res.status}`)
+                return null
+            }
+
+            const data = await res.json()
+            
+            // Extract essential fields from the response
+            const statList = data.stats?.statList || []
+            const itemLevelStat = statList.find((s: any) => 
+                s.name === '아이템레벨' || s.type === 'ItemLevel'
+            )
+
+            return {
+                item_level: itemLevelStat?.value || 0,
+                className: data.profile?.className,
+                noa_score: data.profile?.noa_score || 0
+            }
+        } catch (e) {
+            console.error('[fetchCharacterDetailForSearch] Error:', e)
+            return null
+        }
     }
 }

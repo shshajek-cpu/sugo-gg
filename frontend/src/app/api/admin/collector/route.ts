@@ -1,407 +1,156 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { verifyAdminAuth } from '@/lib/adminAuth'
-import {
-    CollectorState,
-    CollectorConfig,
-    CollectorLog,
-    CollectorCheckpoint,
-    INITIAL_COLLECTOR_STATE,
-    DEFAULT_COLLECTOR_CONFIG
-} from '@/types/collector'
-import { SERVERS } from '@/app/constants/servers'
 
-// In-memory state (서버 재시작 시 초기화됨)
-let collectorState: CollectorState = { ...INITIAL_COLLECTOR_STATE }
-let collectorConfig: CollectorConfig = { ...DEFAULT_COLLECTOR_CONFIG }
-let collectorLogs: CollectorLog[] = []
-let collectorCheckpoint: CollectorCheckpoint | null = null
-let isCollecting = false
-let shouldStop = false
-let shouldPause = false
+export const dynamic = 'force-dynamic'
+export const maxDuration = 60
 
-// Supabase 클라이언트
-const getSupabase = () => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    return createClient(url, key)
-}
+// 전체 서버 목록
+const SERVERS = [
+    { id: 1001, name: '시엘' }, { id: 1002, name: '네자칸' }, { id: 1003, name: '바이젤' },
+    { id: 1004, name: '카이시넬' }, { id: 1005, name: '유스티엘' }, { id: 1006, name: '아리엘' },
+    { id: 1007, name: '프레기온' }, { id: 1008, name: '메스람타에다' }, { id: 1009, name: '히타니에' },
+    { id: 1010, name: '나니아' }, { id: 1011, name: '타하바타' }, { id: 1012, name: '루터스' },
+    { id: 1013, name: '페르노스' }, { id: 1014, name: '다미누' }, { id: 1015, name: '카사카' },
+    { id: 1016, name: '바카르마' }, { id: 1017, name: '챈가룽' }, { id: 1018, name: '코치룽' },
+    { id: 1019, name: '이슈타르' }, { id: 1020, name: '티아마트' }, { id: 1021, name: '포에타' },
+    { id: 2001, name: '이스라펠' }, { id: 2002, name: '지켈' }, { id: 2003, name: '트리니엘' },
+    { id: 2004, name: '루미엘' }, { id: 2005, name: '마르쿠탄' }, { id: 2006, name: '아스펠' },
+    { id: 2007, name: '에레슈키갈' }, { id: 2008, name: '브리트라' }, { id: 2009, name: '네몬' },
+    { id: 2010, name: '하달' }, { id: 2011, name: '루드라' }, { id: 2012, name: '울고른' },
+    { id: 2013, name: '무닌' }, { id: 2014, name: '오다르' }, { id: 2015, name: '젠카카' },
+    { id: 2016, name: '크로메데' }, { id: 2017, name: '콰이링' }, { id: 2018, name: '바바룽' },
+    { id: 2019, name: '파프니르' }, { id: 2020, name: '인드나흐' }, { id: 2021, name: '이스할겐' }
+]
 
-// 체크포인트 저장 (Supabase settings 테이블 사용)
-const saveCheckpoint = async (checkpoint: CollectorCheckpoint) => {
+export async function GET(request: NextRequest) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+    if (!supabaseUrl || !supabaseKey) {
+        return NextResponse.json({ error: 'Missing Supabase credentials' }, { status: 500 })
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+
     try {
-        const supabase = getSupabase()
-        await supabase.from('settings').upsert({
-            key: 'collector_checkpoint',
-            value: checkpoint,
-            updated_at: new Date().toISOString()
-        }, { onConflict: 'key' })
-        collectorCheckpoint = checkpoint
-    } catch (err) {
-        console.error('Checkpoint save error:', err)
-    }
-}
+        // 랜덤 서버 선택
+        const randomServer = SERVERS[Math.floor(Math.random() * SERVERS.length)]
 
-// 체크포인트 로드
-const loadCheckpoint = async (): Promise<CollectorCheckpoint | null> => {
-    try {
-        const supabase = getSupabase()
-        const { data } = await supabase
-            .from('settings')
-            .select('value')
-            .eq('key', 'collector_checkpoint')
-            .single()
+        // 의미 없는 문자 대신 자주 쓰이는 한글 음절 사용 (약 500자)
+        const COMMON_SYLLABLES = "가각간갈감갑강개객거건걸검겁게격견결겸경계고곡곤골곰공곶과곽관광괘괴교구국군굴궁권귀규균그극근글금급기긴길김까깨꼬꽃꾸꿈끝나낙난날남납낭내냉너널네녀년념녕노논놀농뇌누눈뉴느늑니닉다단달담답당대댁덕도독돈돌동둑둔뒤드득들등디따땅때또뚜뛰라락란랄람랍랑래랭량러럭런럼레력련렬렴령례로록론롱뢰루류륙률륭르리린림마막만많말망매맥맨맹머먹메며면명모목몰몸몽묘무묵문물미민밀박반발방배백뱀버번벌범법벽변별병보복본볼봄봉부북분불붕비빈빌빙사삭산살삼상새색생서석선설섬섭성세소속손솔송쇼수숙순술숨숭쉐슈스슬승시식신실심십쌍씨아악안알암압앙애액야약양어억언얼엄업에엔여역연열염엽영예오옥온올옴옹와완왕왜외요욕용우욱운울움웅원월위유육윤율융은을음응의이익인일임입잇있자작잔잠잡장재쟁저적전절점접정제조족존졸종좋좌죄주죽준줄중즉즐증지직진질짐집징차착찬찰참창채책처척천철첩청체초촉촌총최추축춘출춤충취츠측층치칙친칠침카칸캄캐커컨컬컴컵케코콜콤콩쾌쿠쿵크큰클키타탁탄탈탐탑탕태택탱터테토통투퉁특튼티틀트파팍판팔패팽퍼페펴편평포폭표푸품풍프피필핏하학한할함합항해핵행향허헌험헤헬혀현혈협형혜호혹혼홀홍화확환활황회획횟효후훈훌훔훤훼휘휴흉흐흑흔흘흠흡희흰히힘"
 
-        if (data?.value) {
-            collectorCheckpoint = data.value as CollectorCheckpoint
-            return collectorCheckpoint
-        }
-    } catch (err) {
-        console.error('Checkpoint load error:', err)
-    }
-    return null
-}
+        const COMMON_LAST_NAMES = "김이박최정강조윤장임한오서신권황안송류홍전고문양손배조백허유남심노하곽성차주우구신임나전민유진지엄채원천방공강현함변염양변여추노소현범왕반양부성편조임"
 
-// 체크포인트 삭제
-const clearCheckpoint = async () => {
-    try {
-        const supabase = getSupabase()
-        await supabase.from('settings').delete().eq('key', 'collector_checkpoint')
-        collectorCheckpoint = null
-    } catch (err) {
-        console.error('Checkpoint clear error:', err)
-    }
-}
+        const lastName = COMMON_LAST_NAMES[Math.floor(Math.random() * COMMON_LAST_NAMES.length)]
+        const firstName = COMMON_SYLLABLES[Math.floor(Math.random() * COMMON_SYLLABLES.length)]
+        const randomKeyword = lastName + firstName
 
-// 로그 추가
-const addLog = (type: CollectorLog['type'], message: string, details?: any) => {
-    const log: CollectorLog = {
-        id: Date.now().toString(),
-        timestamp: new Date().toISOString(),
-        type,
-        message,
-        details
-    }
-    collectorLogs.unshift(log)
-    // 최대 100개 로그 유지
-    if (collectorLogs.length > 100) {
-        collectorLogs = collectorLogs.slice(0, 100)
-    }
-}
+        console.log(`[Collector] Searching "${randomKeyword}" on ${randomServer.name}...`)
 
-// 캐릭터 검색 API 호출
-const searchCharacters = async (keyword: string, serverId: string, page: number) => {
-    const url = new URL('https://aion2.plaync.com/ko-kr/api/search/aion2/search/v2/character')
-    url.searchParams.append('keyword', keyword)
-    url.searchParams.append('page', page.toString())
-    url.searchParams.append('size', collectorConfig.pageSize.toString())
-    url.searchParams.append('serverId', serverId)
+        const searchUrl = new URL('https://aion2.plaync.com/ko-kr/api/search/aion2/search/v2/character')
+        searchUrl.searchParams.append('keyword', randomKeyword)
+        searchUrl.searchParams.append('serverId', randomServer.id.toString())
+        searchUrl.searchParams.append('page', '1')
+        searchUrl.searchParams.append('size', '50')
 
-    const response = await fetch(url.toString(), {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://aion2.plaync.com/',
-            'Accept': 'application/json'
-        }
-    })
-
-    if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
-    }
-
-    return await response.json()
-}
-
-// pcId -> 직업명 매핑 (supabaseApi.ts와 동일)
-const PC_ID_TO_CLASS: Record<number, string> = {
-    // 전사 계열 (Warrior)
-    6: '검성', 7: '검성', 8: '검성', 9: '검성',
-    10: '수호성', 11: '수호성', 12: '수호성', 13: '수호성',
-    // 정찰 계열 (Scout)
-    14: '궁성', 15: '궁성', 16: '궁성', 17: '궁성',
-    18: '살성', 19: '살성', 20: '살성', 21: '살성',
-    // 법사 계열 (Mage)
-    22: '정령성', 23: '정령성', 24: '정령성', 25: '정령성',
-    26: '마도성', 27: '마도성', 28: '마도성', 29: '마도성',
-    // 성직자 계열 (Priest)
-    30: '치유성', 31: '치유성', 32: '치유성', 33: '치유성',
-    34: '호법성', 35: '호법성', 36: '호법성', 37: '호법성',
-    // 기공사 계열
-    38: '기공사', 39: '기공사', 40: '기공사', 41: '기공사',
-    // 기본 직업 (전직 전)
-    1: '전사', 2: '정찰병', 3: '법사', 4: '사제', 5: '기공사'
-}
-
-// 캐릭터 데이터 저장
-const saveCharacters = async (characters: any[], serverId: string) => {
-    if (characters.length === 0) return 0
-
-    const supabase = getSupabase()
-
-    const mappedChars = characters.map((char: any) => ({
-        character_id: decodeURIComponent(char.characterId),
-        server_id: parseInt(serverId),
-        name: char.name?.replace(/<[^>]*>/g, '') || 'Unknown',
-        level: char.level || 1,
-        class_name: PC_ID_TO_CLASS[char.pcId] || char.className || 'Unknown',
-        race_name: char.race === 1 ? 'Elyos' : 'Asmodian',
-        profile_image: char.profileImageUrl ?
-            (char.profileImageUrl.startsWith('http') ? char.profileImageUrl : `https://profileimg.plaync.com${char.profileImageUrl}`)
-            : null,
-        updated_at: new Date().toISOString()
-    }))
-
-    const { error } = await supabase
-        .from('characters')
-        .upsert(mappedChars, {
-            onConflict: 'character_id',
-            ignoreDuplicates: false
+        const response = await fetch(searchUrl.toString(), {
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': 'https://aion2.plaync.com/'
+            }
         })
 
-    if (error) {
-        console.error('Save error:', error)
-        throw error
-    }
+        if (!response.ok) {
+            console.error(`[Collector] API Failed: ${response.status} ${response.statusText}`)
+            // 실패 로그 저장
+            await supabase.from('collector_logs').insert({
+                server_name: randomServer.name,
+                keyword: `${randomKeyword} (Error ${response.status})`,
+                collected_count: 0,
+                type: 'auto'
+            })
 
-    return mappedChars.length
-}
-
-// 수집 실행 (비동기)
-const runCollection = async () => {
-    if (isCollecting) return
-
-    isCollecting = true
-    shouldStop = false
-    shouldPause = false
-
-    const servers = collectorConfig.enabledServers.length > 0
-        ? SERVERS.filter(s => collectorConfig.enabledServers.includes(s.id))
-        : SERVERS
-
-    const keywords = collectorConfig.keywords
-    const totalTasks = servers.length * keywords.length
-
-    // 체크포인트 로드
-    const checkpoint = await loadCheckpoint()
-    let startServerIndex = 0
-    let startKeywordIndex = 0
-    let previousCollected = 0
-
-    if (checkpoint) {
-        startServerIndex = checkpoint.serverIndex
-        startKeywordIndex = checkpoint.keywordIndex
-        previousCollected = checkpoint.totalCollected
-        addLog('info', `체크포인트에서 재개: ${checkpoint.lastKeyword} (${checkpoint.lastServer}) - 이전 ${previousCollected}명`)
-    }
-
-    let completedTasks = startServerIndex * keywords.length + startKeywordIndex
-
-    collectorState = {
-        ...collectorState,
-        status: 'running',
-        startedAt: new Date().toISOString(),
-        totalCollected: previousCollected,
-        totalErrors: 0,
-        progress: Math.round((completedTasks / totalTasks) * 100)
-    }
-
-    addLog('info', `수집 시작: ${servers.length}개 서버, ${keywords.length}개 키워드`)
-
-    try {
-        for (let si = startServerIndex; si < servers.length; si++) {
-            const server = servers[si]
-            if (shouldStop) break
-
-            const kwStart = (si === startServerIndex) ? startKeywordIndex : 0
-
-            for (let ki = kwStart; ki < keywords.length; ki++) {
-                const keyword = keywords[ki]
-                if (shouldStop) break
-
-                // 일시정지 처리
-                while (shouldPause && !shouldStop) {
-                    collectorState.status = 'paused'
-                    await new Promise(r => setTimeout(r, 1000))
-                }
-                if (shouldStop) break
-
-                collectorState.status = 'running'
-                collectorState.currentKeyword = keyword
-                collectorState.currentServer = server.id
-                collectorState.currentServerName = server.name
-
-                let page = 1
-                let hasMore = true
-
-                const maxPages = collectorConfig.maxPages || 5  // 기본 5페이지
-
-                while (hasMore && !shouldStop && !shouldPause && page <= maxPages) {
-                    try {
-                        collectorState.currentPage = page
-                        collectorState.lastUpdatedAt = new Date().toISOString()
-
-                        const result = await searchCharacters(keyword, server.id, page)
-
-                        if (result.list && result.list.length > 0) {
-                            const saved = await saveCharacters(result.list, server.id)
-                            collectorState.totalCollected += saved
-
-                            // 다음 페이지 확인 (maxPages 제한 추가)
-                            const pagination = result.pagination
-                            hasMore = page < pagination.endPage && result.list.length === collectorConfig.pageSize && page < maxPages
-                            page++
-                        } else {
-                            hasMore = false
-                        }
-
-                        // 속도 제한 대기
-                        await new Promise(r => setTimeout(r, collectorConfig.delayMs))
-
-                    } catch (err: any) {
-                        collectorState.totalErrors++
-                        addLog('error', `오류: ${keyword} (${server.name}) p${page}`, err.message)
-
-                        // 재시도 로직
-                        await new Promise(r => setTimeout(r, collectorConfig.delayMs * 2))
-                        hasMore = false // 다음 키워드로 이동
-                    }
-                }
-
-                completedTasks++
-                collectorState.progress = Math.round((completedTasks / totalTasks) * 100)
-
-                // 예상 남은 시간 계산
-                const elapsed = Date.now() - new Date(collectorState.startedAt!).getTime()
-                const remaining = (elapsed / completedTasks) * (totalTasks - completedTasks)
-                collectorState.estimatedRemaining = formatDuration(remaining)
-
-                // 체크포인트 저장 (매 키워드 완료 시)
-                await saveCheckpoint({
-                    serverIndex: si,
-                    keywordIndex: ki + 1,  // 다음 키워드부터 시작하도록
-                    totalCollected: collectorState.totalCollected,
-                    lastKeyword: keyword,
-                    lastServer: server.name,
-                    savedAt: new Date().toISOString()
-                })
-
-                addLog('success', `완료: "${keyword}" (${server.name}) - ${collectorState.totalCollected}명 수집`)
-            }
+            return NextResponse.json({
+                error: 'Search API failed',
+                status: response.status,
+                server: randomServer.name,
+                keyword: randomKeyword
+            }, { status: 200 }) // Frontend 처리를 위해 200 반환 (단 에러 내용은 포함)
         }
 
-        // 수집 완료 시 체크포인트 삭제
-        if (!shouldStop) {
-            await clearCheckpoint()
-            addLog('info', '체크포인트 초기화됨 (수집 완료)')
+        const data = await response.json()
+        const characters = data.list || []
+
+        // pcId를 직업명으로 변환
+        const pcIdToClassName: Record<number, string> = {
+            6: '검성', 7: '검성', 8: '검성', 9: '검성',
+            10: '수호성', 11: '수호성', 12: '수호성', 13: '수호성',
+            14: '궁성', 15: '궁성', 16: '궁성', 17: '궁성',
+            18: '살성', 19: '살성', 20: '살성', 21: '살성',
+            22: '정령성', 23: '정령성', 24: '정령성', 25: '정령성',
+            26: '마도성', 27: '마도성', 28: '마도성', 29: '마도성',
+            30: '치유성', 31: '치유성', 32: '치유성', 33: '치유성',
+            34: '호법성', 35: '호법성', 36: '호법성', 37: '호법성'
         }
 
-        collectorState.status = shouldStop ? 'stopped' : 'idle'
-        collectorState.progress = shouldStop ? collectorState.progress : 100
-        addLog('info', `수집 ${shouldStop ? '중지됨' : '완료'}: 총 ${collectorState.totalCollected}명`)
+        // DB에 저장할 데이터 준비
+        const charactersToUpsert = characters.map((item: any) => ({
+            character_id: item.characterId,
+            name: item.characterName?.replace(/<[^>]*>/g, '') || item.characterName,
+            server_id: item.serverId,
+            // server_name: 컬럼이 없어서 에러 발생으로 제거
+            class_name: pcIdToClassName[item.pcId] || null,
+            race_name: item.race === 1 ? 'Elyos' : 'Asmodian',
+            level: item.level,
+            profile_image: item.profileImageUrl?.startsWith('http')
+                ? item.profileImageUrl
+                : item.profileImageUrl ? `https://profileimg.plaync.com${item.profileImageUrl}` : null,
+            scraped_at: new Date().toISOString()
+        }))
+
+        // DB에 upsert
+        const { error, count } = await supabase
+            .from('characters')
+            .upsert(charactersToUpsert, {
+                onConflict: 'character_id',
+                ignoreDuplicates: false
+            })
+
+        if (error) {
+            console.error('[Collector] Upsert error:', error)
+            return NextResponse.json({ error: error.message }, { status: 500 })
+        }
+
+        console.log(`[Collector] Saved ${charactersToUpsert.length} characters from ${randomServer.name}`)
+
+        // 수집 로그 저장
+        await supabase.from('collector_logs').insert({
+            server_name: randomServer.name,
+            keyword: randomKeyword,
+            collected_count: charactersToUpsert.length,
+            type: 'auto'
+        })
+
+        // 현재 전체 캐릭터 수 조회
+        const { count: totalCount } = await supabase
+            .from('characters')
+            .select('*', { count: 'exact', head: true })
+
+        return NextResponse.json({
+            message: `Collected ${charactersToUpsert.length} characters`,
+            server: randomServer.name,
+            keyword: randomKeyword,
+            totalCharacters: totalCount,
+            new_characters: charactersToUpsert.map((c: any) => ({
+                id: c.character_id,
+                server: c.server_id,
+                name: c.name
+            }))
+        })
 
     } catch (err: any) {
-        collectorState.status = 'error'
-        collectorState.errorMessage = err.message
-        addLog('error', `치명적 오류: ${err.message}`)
-    } finally {
-        isCollecting = false
-    }
-}
-
-// 시간 포맷
-const formatDuration = (ms: number): string => {
-    if (ms < 0) return '-'
-    const seconds = Math.floor(ms / 1000)
-    const minutes = Math.floor(seconds / 60)
-    const hours = Math.floor(minutes / 60)
-
-    if (hours > 0) return `약 ${hours}시간 ${minutes % 60}분`
-    if (minutes > 0) return `약 ${minutes}분`
-    return `약 ${seconds}초`
-}
-
-// GET: 상태 조회
-export async function GET(request: NextRequest) {
-    // 인증 검증
-    const auth = verifyAdminAuth(request)
-    if (!auth.authorized) {
-        return auth.error!
-    }
-
-    const type = request.nextUrl.searchParams.get('type') || 'status'
-
-    switch (type) {
-        case 'status':
-            return NextResponse.json({
-                state: collectorState,
-                isRunning: isCollecting,
-                checkpoint: collectorCheckpoint
-            })
-        case 'config':
-            return NextResponse.json(collectorConfig)
-        case 'logs':
-            return NextResponse.json(collectorLogs.slice(0, 50))
-        case 'checkpoint':
-            const cp = await loadCheckpoint()
-            return NextResponse.json({ checkpoint: cp })
-        default:
-            return NextResponse.json({ error: 'Invalid type' }, { status: 400 })
-    }
-}
-
-// POST: 제어 명령
-export async function POST(request: NextRequest) {
-    // 인증 검증
-    const auth = verifyAdminAuth(request)
-    if (!auth.authorized) {
-        return auth.error!
-    }
-
-    const body = await request.json()
-    const { action, config } = body
-
-    switch (action) {
-        case 'start':
-            if (isCollecting) {
-                return NextResponse.json({ error: '이미 수집 중입니다' }, { status: 400 })
-            }
-            // 비동기로 수집 시작
-            runCollection()
-            addLog('info', '수집 시작 요청됨')
-            return NextResponse.json({ success: true, message: '수집을 시작합니다' })
-
-        case 'pause':
-            shouldPause = true
-            addLog('info', '일시정지 요청됨')
-            return NextResponse.json({ success: true, message: '일시정지합니다' })
-
-        case 'resume':
-            shouldPause = false
-            addLog('info', '재개 요청됨')
-            return NextResponse.json({ success: true, message: '재개합니다' })
-
-        case 'stop':
-            shouldStop = true
-            shouldPause = false
-            addLog('info', '중지 요청됨')
-            return NextResponse.json({ success: true, message: '중지합니다' })
-
-        case 'updateConfig':
-            if (config) {
-                collectorConfig = { ...collectorConfig, ...config }
-                addLog('info', '설정 변경됨', config)
-                return NextResponse.json({ success: true, config: collectorConfig })
-            }
-            return NextResponse.json({ error: 'Config required' }, { status: 400 })
-
-        case 'reset':
-            collectorState = { ...INITIAL_COLLECTOR_STATE }
-            collectorLogs = []
-            await clearCheckpoint()  // 체크포인트도 삭제
-            addLog('info', '상태 및 체크포인트 초기화됨')
-            return NextResponse.json({ success: true, message: '초기화되었습니다 (처음부터 다시 시작)' })
-
-        default:
-            return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+        console.error('[Collector Error]', err)
+        return NextResponse.json({ error: err.message }, { status: 500 })
     }
 }

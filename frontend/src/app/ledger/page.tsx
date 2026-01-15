@@ -619,35 +619,43 @@ export default function LedgerPage() {
   const loadDashboardStats = useCallback(async () => {
     if (!isReady || characters.length === 0) return
 
+    const authHeaders = getAuthHeader()
+
+    // 모든 캐릭터의 통계와 아이템을 병렬로 조회
+    const results = await Promise.all(
+      characters.map(async (char) => {
+        try {
+          // 각 캐릭터의 stats와 items를 병렬로 조회
+          const [statsRes, itemsRes] = await Promise.all([
+            fetch(`/api/ledger/stats?characterId=${char.id}&type=summary`, { headers: authHeaders }),
+            fetch(`/api/ledger/items?characterId=${char.id}&sold=false`, { headers: authHeaders })
+          ])
+
+          const statsData = statsRes.ok ? await statsRes.json() : { todayIncome: 0, weeklyIncome: 0 }
+          const itemsData = itemsRes.ok ? await itemsRes.json() : []
+
+          return {
+            todayIncome: statsData.todayIncome || 0,
+            weeklyIncome: statsData.weeklyIncome || 0,
+            unsoldItems: itemsData
+          }
+        } catch (e) {
+          console.error('Load stats error:', char.id, e)
+          return { todayIncome: 0, weeklyIncome: 0, unsoldItems: [] }
+        }
+      })
+    )
+
+    // 결과 집계
     let totalToday = 0
     let totalWeekly = 0
     let allUnsoldItems: any[] = []
 
-    // 각 캐릭터별 통계 집계
-    const authHeaders = getAuthHeader()
-    for (const char of characters) {
-      try {
-        const res = await fetch(`/api/ledger/stats?characterId=${char.id}&type=summary`, {
-          headers: authHeaders
-        })
-        if (res.ok) {
-          const data = await res.json()
-          totalToday += data.todayIncome || 0
-          totalWeekly += data.weeklyIncome || 0
-        }
-
-        // 미판매 아이템 조회
-        const itemsRes = await fetch(`/api/ledger/items?characterId=${char.id}&sold=false`, {
-          headers: authHeaders
-        })
-        if (itemsRes.ok) {
-          const itemsData = await itemsRes.json()
-          allUnsoldItems = [...allUnsoldItems, ...itemsData]
-        }
-      } catch (e) {
-        console.error('Load stats error:', e)
-      }
-    }
+    results.forEach(result => {
+      totalToday += result.todayIncome
+      totalWeekly += result.weeklyIncome
+      allUnsoldItems = [...allUnsoldItems, ...result.unsoldItems]
+    })
 
     // 등급별 미판매 아이템 집계
     const unsoldByGrade = {

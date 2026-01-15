@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Skill(dev)",
+      "Bash(npm run dev:*)",
+      "Bash(timeout:*)",
+      "WebFetch(domain:localhost)",
+      "Bash(curl:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell -Command \"Get-Content -Tail 100\")",
+      "Bash(powershell -Command \"Get-Content -Path ''C:\\\\Users\\\\shsha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--projects-hiton2-frontend\\\\tasks\\\\b4134e1.output'' -Tail 30\")",
+      "Bash(powershell -Command \"Get-Content -Path ''C:\\\\Users\\\\shsha\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--projects-hiton2-frontend\\\\tasks\\\\b4134e1.output'' -Tail 50\")",
+      "Skill(supabase)",
+      "Bash(powershell:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

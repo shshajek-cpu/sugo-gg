@@ -16,11 +16,11 @@ export interface DailyContent {
   colorDark: string
   colorGlow: string
   imageUrl?: string
-  resetType?: 'daily' | 'weekly' | 'charge3h'  // daily: 매일 5시, weekly: 수요일 5시, charge3h: 3시간마다 충전
+  resetType?: 'daily' | 'weekly' | 'charge3h' | 'charge24h'  // daily: 매일 5시, weekly: 수요일 5시, charge3h: 3시간마다 충전, charge24h: 24시간마다 충전
 }
 
 // 다음 리셋/충전 시간 계산
-function getNextResetTime(resetType: 'daily' | 'weekly' | 'charge3h'): Date {
+function getNextResetTime(resetType: 'daily' | 'weekly' | 'charge3h' | 'charge24h'): Date {
   const now = new Date()
   const reset = new Date(now)
 
@@ -43,6 +43,9 @@ function getNextResetTime(resetType: 'daily' | 'weekly' | 'charge3h'): Date {
     }
 
     reset.setHours(nextChargeHour, 0, 0, 0)
+  } else if (resetType === 'charge24h') {
+    // 24시간마다 충전 - 다음 충전까지 24시간 표시
+    reset.setTime(now.getTime() + 24 * 60 * 60 * 1000)
   } else if (resetType === 'daily') {
     // 매일 새벽 5시
     reset.setHours(5, 0, 0, 0)
@@ -87,16 +90,17 @@ interface DailyContentCardProps {
   content: DailyContent
   onIncrement: (id: string) => void
   onDecrement: (id: string) => void
+  readOnly?: boolean
 }
 
-export default function DailyContentCard({ content, onIncrement, onDecrement }: DailyContentCardProps) {
+export default function DailyContentCard({ content, onIncrement, onDecrement, readOnly = false }: DailyContentCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [timeUntilCharge, setTimeUntilCharge] = useState('')
 
   // 리셋 타입 결정
   // weekly: 일일던전, 각성전, 토벌전 (수요일 5시 리셋)
   // charge3h: 악몽, 차원침공 (02시 기준 3시간마다 1회 충전)
-  const resetType: 'daily' | 'weekly' | 'charge3h' = content.resetType ||
+  const resetType: 'daily' | 'weekly' | 'charge3h' | 'charge24h' = content.resetType ||
     (['daily_dungeon', 'awakening_battle', 'subjugation'].includes(content.id) ? 'weekly' : 'charge3h')
 
   // 다음 리셋/충전까지 시간 계산
@@ -200,16 +204,18 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
           <button
             className={styles.btn}
             onClick={handleIncrement}
-            disabled={totalRemaining === 0}
+            disabled={readOnly || totalRemaining === 0}
             aria-label={`${content.name} 횟수 사용`}
+            title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
           >
             +
           </button>
           <button
             className={`${styles.btn} ${styles.btnIncrement}`}
             onClick={handleDecrement}
-            disabled={content.completionCount === 0}
+            disabled={readOnly || content.completionCount === 0}
             aria-label={`${content.name} 횟수 복구`}
+            title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
           >
             −
           </button>
@@ -222,9 +228,7 @@ export default function DailyContentCard({ content, onIncrement, onDecrement }: 
 
         {/* Timer (Bottom Left) */}
         <div className={styles.timerInfo}>
-          <div className={styles.timerLabel}>
-            {resetType === 'weekly' ? '주간 리셋' : '다음 충전'}
-          </div>
+          <div className={styles.timerLabel}>이용권 충전</div>
           <div className={styles.timerLabel}>남은시간</div>
           <div className={styles.timerText}>{timeUntilCharge}</div>
         </div>

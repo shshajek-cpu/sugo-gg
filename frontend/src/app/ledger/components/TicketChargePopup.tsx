@@ -19,7 +19,8 @@ const TICKET_TYPES: TicketType[] = [
   { id: 'awakening', name: '각성전', icon: '⭐', maxBase: 3 },
   { id: 'nightmare', name: '악몽', icon: '👻', maxBase: 14 },
   { id: 'dimension', name: '차원침공', icon: '🌀', maxBase: 14 },
-  { id: 'subjugation', name: '토벌전', icon: '⚡', maxBase: 3 }
+  { id: 'subjugation', name: '토벌전', icon: '⚡', maxBase: 3 },
+  { id: 'shugo_festa', name: '슈고페스타', icon: '🎪', maxBase: 14 }
 ]
 
 interface TicketChargePopupProps {
@@ -63,7 +64,8 @@ export default function TicketChargePopup({
     awakening: 3,
     nightmare: 14,
     dimension: 14,
-    subjugation: 3
+    subjugation: 3,
+    shugo_festa: 14
   })
 
   if (!isOpen) return null

@@ -8,12 +8,18 @@ interface ShugoFestaCardProps {
   currentTickets: number
   maxTickets: number
   bonusTickets: number
+  onTicketUse?: () => void
+  onTicketRefund?: () => void
+  readOnly?: boolean
 }
 
 export default function ShugoFestaCard({
   currentTickets,
   maxTickets,
-  bonusTickets
+  bonusTickets,
+  onTicketUse,
+  onTicketRefund,
+  readOnly = false
 }: ShugoFestaCardProps) {
   const [timeUntilEntry, setTimeUntilEntry] = useState('')
   const [isAlarmActive, setIsAlarmActive] = useState(false)
@@ -169,12 +175,48 @@ export default function ShugoFestaCard({
               <span className={styles.infoLabel}>다음 충전까지</span>
               <span className={styles.infoValue}>{timeUntilCharge}</span>
             </div>
+            <div className={styles.infoRow}>
+              <span className={styles.infoLabel}>잔여 횟수</span>
+              <span className={styles.infoValue}>
+                {currentTickets}/{maxTickets}
+                {bonusTickets > 0 && <span className={styles.bonusText}> (+{bonusTickets})</span>}
+              </span>
+            </div>
+          </div>
+          <div className={styles.buttonRow}>
+            <button
+              className={styles.actionBtn}
+              onClick={(e) => {
+                e.stopPropagation()
+                const totalRemaining = currentTickets + bonusTickets
+                if (onTicketUse && totalRemaining > 0) {
+                  onTicketUse()
+                }
+              }}
+              disabled={readOnly || currentTickets + bonusTickets <= 0}
+              title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
+            >
+              사용 -1
+            </button>
+            <button
+              className={`${styles.actionBtn} ${styles.refundBtn}`}
+              onClick={(e) => {
+                e.stopPropagation()
+                if (onTicketRefund && currentTickets < maxTickets) {
+                  onTicketRefund()
+                }
+              }}
+              disabled={readOnly || currentTickets >= maxTickets}
+              title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
+            >
+              복구 +1
+            </button>
           </div>
           <button className={styles.closeBtn} onClick={(e) => {
             e.stopPropagation()
             setShowModal(false)
           }}>
-            확인
+            닫기
           </button>
         </div>
       )}

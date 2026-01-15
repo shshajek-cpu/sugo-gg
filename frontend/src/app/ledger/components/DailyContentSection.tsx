@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef, useMemo, useCallback } from 'react'
 import DailyContentCard from './DailyContentCard'
 import { useDailyContent } from '../hooks/useDailyContent'
+import { isEditable } from '../utils/dateUtils'
 import styles from './DailyContentSection.module.css'
 
 interface DailyContentSectionProps {
@@ -25,6 +26,15 @@ interface DailyContentSectionProps {
   }
   onBaseTicketsChange?: (updates: Record<string, number>) => void
   onBonusTicketsChange?: (updates: Record<string, number>) => void
+  // 초기설정 동기화용
+  initialSyncTickets?: {
+    daily_dungeon: number
+    awakening: number
+    nightmare: number
+    dimension: number
+    subjugation: number
+  }
+  onInitialSyncComplete?: () => void
 }
 
 export default function DailyContentSection({
@@ -46,20 +56,126 @@ export default function DailyContentSection({
     subjugation: 0
   },
   onBaseTicketsChange,
-  onBonusTicketsChange
+  onBonusTicketsChange,
+  initialSyncTickets,
+  onInitialSyncComplete
 }: DailyContentSectionProps) {
-  const { contents, loading, error, handleIncrement, handleDecrement, updateRemainingCounts } = useDailyContent(characterId, selectedDate, getAuthHeader)
+  const { contents, loading, error, handleIncrement, handleDecrement, updateRemainingCounts, forceSync } = useDailyContent(characterId, selectedDate, getAuthHeader)
 
-  // baseTickets = 잔여 횟수, 초기설정에서 받은 값으로 completionCount 동기화
+  // 수정 가능 여부 (당일만)
+  const canEdit = useMemo(() => isEditable(selectedDate), [selectedDate])
+
+  // 이전 baseTickets 값 저장
+  const prevBaseTicketsRef = useRef<typeof baseTickets | null>(null)
+
+  // 초기설정 동기화 (강제 적용)
   useEffect(() => {
-    updateRemainingCounts({
-      daily_dungeon: baseTickets.daily_dungeon,
-      awakening_battle: baseTickets.awakening,
-      nightmare: baseTickets.nightmare,
-      dimension_invasion: baseTickets.dimension,
-      subjugation: baseTickets.subjugation
-    })
+    if (initialSyncTickets && characterId) {
+      console.log('[DailyContentSection] 초기설정 동기화:', initialSyncTickets)
+      const syncData: Record<string, number> = {
+        daily_dungeon: initialSyncTickets.daily_dungeon,
+        awakening_battle: initialSyncTickets.awakening,
+        nightmare: initialSyncTickets.nightmare,
+        dimension_invasion: initialSyncTickets.dimension,
+        subjugation: initialSyncTickets.subjugation
+      }
+      forceSync(syncData)
+      // prevBaseTicketsRef도 업데이트하여 이후 자동충전 로직이 정상 작동하도록
+      prevBaseTicketsRef.current = { ...baseTickets, ...initialSyncTickets }
+      onInitialSyncComplete?.()
+    }
+  }, [initialSyncTickets, characterId])
+
+  // 자동 충전 시에만 updateRemainingCounts 호출 (값이 증가했을 때만)
+  useEffect(() => {
+    if (!prevBaseTicketsRef.current) {
+      // 최초 로드 시에는 저장만 하고 업데이트 안 함
+      prevBaseTicketsRef.current = { ...baseTickets }
+      return
+    }
+
+    // 이전 값보다 증가한 항목만 업데이트
+    const updates: Record<string, number> = {}
+    let hasUpdate = false
+
+    if (baseTickets.daily_dungeon > prevBaseTicketsRef.current.daily_dungeon) {
+      updates.daily_dungeon = baseTickets.daily_dungeon
+      hasUpdate = true
+    }
+    if (baseTickets.awakening > prevBaseTicketsRef.current.awakening) {
+      updates.awakening_battle = baseTickets.awakening
+      hasUpdate = true
+    }
+    if (baseTickets.nightmare > prevBaseTicketsRef.current.nightmare) {
+      updates.nightmare = baseTickets.nightmare
+      hasUpdate = true
+    }
+    if (baseTickets.dimension > prevBaseTicketsRef.current.dimension) {
+      updates.dimension_invasion = baseTickets.dimension
+      hasUpdate = true
+    }
+    if (baseTickets.subjugation > prevBaseTicketsRef.current.subjugation) {
+      updates.subjugation = baseTickets.subjugation
+      hasUpdate = true
+    }
+
+    if (hasUpdate) {
+      updateRemainingCounts(updates)
+    }
+
+    prevBaseTicketsRef.current = { ...baseTickets }
   }, [baseTickets, updateRemainingCounts])
+
+  // ID → bonusTickets 키 매핑
+  const bonusKeyMap: Record<string, keyof typeof bonusTickets> = {
+    'daily_dungeon': 'daily_dungeon',
+    'awakening_battle': 'awakening',
+    'nightmare': 'nightmare',
+    'dimension_invasion': 'dimension',
+    'subjugation': 'subjugation'
+  }
+
+  // + 버튼 클릭 래퍼: 충전권 차감 처리
+  const handleIncrementWithBonus = useCallback((id: string) => {
+    const content = contents.find(c => c.id === id)
+    if (!content) return
+
+    const bonusKey = bonusKeyMap[id]
+    if (!bonusKey) return
+
+    // 현재 상태 계산
+    const baseRemaining = Math.max(0, content.maxCount - content.completionCount)
+    const usedFromBonus = Math.max(0, content.completionCount - content.maxCount)
+    const currentBonus = bonusTickets[bonusKey] || 0
+    const bonusRemaining = Math.max(0, currentBonus - usedFromBonus)
+
+    // 기본 잔여가 0이고 충전권 잔여가 있으면 충전권 차감
+    if (baseRemaining === 0 && bonusRemaining > 0 && onBonusTicketsChange) {
+      onBonusTicketsChange({ [bonusKey]: currentBonus - 1 })
+    }
+
+    // 원래 증가 로직 실행
+    handleIncrement(id)
+  }, [contents, bonusTickets, handleIncrement, onBonusTicketsChange])
+
+  // - 버튼 클릭 래퍼: 충전권 복구 처리
+  const handleDecrementWithBonus = useCallback((id: string) => {
+    const content = contents.find(c => c.id === id)
+    if (!content) return
+
+    const bonusKey = bonusKeyMap[id]
+    if (!bonusKey) return
+
+    // 현재 completionCount가 maxCount를 초과한 경우에만 충전권 복구
+    // (즉, 충전권을 사용한 상태에서 - 를 누른 경우)
+    if (content.completionCount > content.maxCount && onBonusTicketsChange) {
+      const currentBonus = bonusTickets[bonusKey] || 0
+      onBonusTicketsChange({ [bonusKey]: currentBonus + 1 })
+    }
+
+    // 원래 감소 로직 실행
+    handleDecrement(id)
+  }, [contents, bonusTickets, handleDecrement, onBonusTicketsChange])
 
   // 보너스 티켓이 적용된 컨텐츠 목록
   const contentsWithBonus = contents.map(content => {
@@ -100,8 +216,9 @@ export default function DailyContentSection({
           <DailyContentCard
             key={content.id}
             content={content}
-            onIncrement={handleIncrement}
-            onDecrement={handleDecrement}
+            onIncrement={handleIncrementWithBonus}
+            onDecrement={handleDecrementWithBonus}
+            readOnly={!canEdit}
           />
         ))}
       </div>

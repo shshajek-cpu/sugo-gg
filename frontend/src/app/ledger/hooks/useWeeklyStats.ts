@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { WeeklyStats, DailyStats } from '@/types/ledger'
+import { getAuthHeader } from './useDeviceId'
 
 interface UseWeeklyStatsProps {
   characterId: string | null
@@ -26,7 +27,10 @@ export function useWeeklyStats({ characterId, date }: UseWeeklyStatsProps) {
         params.append('date', date)
       }
 
-      const res = await fetch(`/api/ledger/stats?${params}`)
+      const authHeaders = getAuthHeader()
+      const res = await fetch(`/api/ledger/stats?${params}`, {
+        headers: authHeaders
+      })
       if (res.ok) {
         const data = await res.json()
         setStats(data)

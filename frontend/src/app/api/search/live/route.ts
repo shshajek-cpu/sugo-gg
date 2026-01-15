@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         // 1. Supabase DB에서 검색 (저장된 캐릭터는 항상 나옴)
         let dbQuery = supabase
             .from('characters')
-            .select('character_id, name, server_id, class_name, race_name, level, combat_power, item_level, profile_image, scraped_at')
+            .select('character_id, name, server_id, class_name, race_name, level, combat_power, item_level, noa_score, profile_image, scraped_at')
             .ilike('name', `%${name}%`)
             .order('level', { ascending: false })
             .limit(50)  // DB에서 더 많이 가져옴
@@ -92,12 +92,18 @@ export async function POST(request: NextRequest) {
 
                 // API 결과를 DB에 캐싱 (백그라운드)
                 if (apiResults.length > 0) {
-                    cacheSearchResults(supabase, apiResults).catch(err => {
-                        console.error('[Live Search] Cache save error:', err)
+                    const collectionPromise = cacheSearchResults(supabase, apiResults)
+                    const logPromise = logCollection(supabase, name, serverId, apiResults.length)
+
+                    // 둘 다 기다리지 않고 백그라운드 처리 (Promise.allSettled 등으로 에러만 로깅하면 좋으나, 여기선 catch만)
+                    Promise.all([collectionPromise, logPromise]).catch(err => {
+                        console.error('[Live Search] Background task error:', err)
                     })
                 }
             } else {
                 console.error('[Live Search] API failed:', response.status)
+                // 에러 로그 저장
+                logCollection(supabase, name, serverId, 0, `(Error ${response.status})`).catch(e => console.error(e))
             }
         } catch (apiErr) {
             console.error('[Live Search] API error:', apiErr)
@@ -204,6 +210,9 @@ function transformCachedToApiFormat(cached: any) {
         // 추가 정보
         combatPower: cached.combat_power,
         itemLevel: cached.item_level,
+        // 프론트엔드 호환성을 위한 snake_case 필드 추가
+        item_level: cached.item_level,
+        noa_score: cached.noa_score,
         // DB에서 온 데이터 표시
         fromDb: true
     }
@@ -229,7 +238,7 @@ async function cacheSearchResults(supabase: any, results: any[]) {
         character_id: item.characterId,
         name: item.name?.replace(/<[^>]*>/g, '') || item.name, // HTML 태그 제거
         server_id: item.serverId,
-        server_name: serverIdToName[item.serverId] || item.serverName,
+        // server_name: serverIdToName[item.serverId] || item.serverName, // 컬럼 없음
         class_name: item.className || item.jobName,
         race_name: item.raceName || (item.race === 1 ? '천족' : '마족'),
         level: item.level,
@@ -251,5 +260,34 @@ async function cacheSearchResults(supabase: any, results: any[]) {
         console.error('[Cache] Upsert error:', error)
     } else {
         console.log('[Cache] Saved', charactersToUpsert.length, 'characters')
+    }
+}
+
+async function logCollection(supabase: any, keyword: string, serverId: number | undefined, count: number, errorMsg?: string) {
+    const serverIdToName: Record<number, string> = {
+        1001: '시엘', 1002: '네자칸', 1003: '바이젤', 1004: '카이시넬',
+        1005: '유스티엘', 1006: '아리엘', 1007: '프레기온', 1008: '메스람타에다',
+        1009: '히타니에', 1010: '나니아', 1011: '타하바타', 1012: '루터스',
+        1013: '페르노스', 1014: '다미누', 1015: '카사카', 1016: '바카르마',
+        1017: '챈가룽', 1018: '코치룽', 1019: '이슈타르', 1020: '티아마트',
+        1021: '포에타', 2001: '이스라펠', 2002: '지켈', 2003: '트리니엘',
+        2004: '루미엘', 2005: '마르쿠탄', 2006: '아스펠', 2007: '에레슈키갈',
+        2008: '브리트라', 2009: '네몬', 2010: '하달', 2011: '루드라',
+        2012: '울고른', 2013: '무닌', 2014: '오다르', 2015: '젠카카',
+        2016: '크로메데', 2017: '콰이링', 2018: '바바룽', 2019: '파프니르',
+        2020: '인드나흐', 2021: '이스할겐'
+    }
+
+    const serverName = serverId ? (serverIdToName[serverId] || `서버${serverId}`) : '전체'
+
+    try {
+        await supabase.from('collector_logs').insert({
+            server_name: serverName,
+            keyword: errorMsg ? `${keyword} ${errorMsg}` : keyword,
+            collected_count: count,
+            type: 'user'
+        })
+    } catch (err) {
+        console.error('[Log Error]', err)
     }
 }

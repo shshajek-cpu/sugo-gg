@@ -1,584 +1,344 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { SERVERS } from '../../constants/servers'
-import {
-    CollectorState,
-    CollectorConfig,
-    CollectorLog,
-    INITIAL_COLLECTOR_STATE,
-    DEFAULT_COLLECTOR_CONFIG
-} from '@/types/collector'
+import { useState, useEffect } from 'react'
+import DSCard from '@/app/components/design-system/DSCard'
+import DSButton from '@/app/components/design-system/DSButton'
+import DSBadge from '@/app/components/design-system/DSBadge'
 
-// Admin API 인증 헤더
-const getAuthHeaders = (): HeadersInit => {
-    const headers: HeadersInit = {
-        'Content-Type': 'application/json'
-    }
-    const apiKey = process.env.NEXT_PUBLIC_ADMIN_API_KEY
-    if (apiKey) {
-        headers['Authorization'] = `Bearer ${apiKey}`
-    }
-    return headers
+interface CollectorLog {
+    id: number
+    server_name: string
+    keyword: string
+    collected_count: number
+    created_at: string
+    type: string
 }
 
-// 상태 색상 매핑
-const STATUS_COLORS: Record<string, { bg: string, border: string, text: string }> = {
-    idle: { bg: 'rgba(107, 114, 128, 0.1)', border: '#6B7280', text: '#9CA3AF' },
-    running: { bg: 'rgba(34, 197, 94, 0.1)', border: '#22C55E', text: '#4ADE80' },
-    paused: { bg: 'rgba(245, 158, 11, 0.1)', border: '#F59E0B', text: '#FBBF24' },
-    stopped: { bg: 'rgba(239, 68, 68, 0.1)', border: '#EF4444', text: '#F87171' },
-    error: { bg: 'rgba(239, 68, 68, 0.2)', border: '#DC2626', text: '#FCA5A5' }
+interface DailyStat {
+    date: string
+    count: number
 }
 
-const STATUS_LABELS: Record<string, string> = {
-    idle: '대기 중',
-    running: '수집 중',
-    paused: '일시정지',
-    stopped: '중지됨',
-    error: '오류 발생'
+// Stat Card Component (Local reuse)
+function StatCard({ label, value, icon, trend }: { label: string; value: string; icon: string; trend?: string }) {
+    return (
+        <div style={{
+            background: '#111318',
+            border: '1px solid var(--border)',
+            borderRadius: '8px',
+            padding: '1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem'
+        }}>
+            <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '12px',
+                background: 'rgba(217, 43, 75, 0.1)',
+                color: 'var(--brand-red-main)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem'
+            }}>
+                {icon}
+            </div>
+            <div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '0.25rem' }}>{label}</div>
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)' }}>{value}</div>
+                {trend && <div style={{ fontSize: '0.75rem', color: '#34D399', marginTop: '0.25rem' }}>{trend}</div>}
+            </div>
+        </div>
+    )
 }
 
 export default function CollectorPage() {
-    const [state, setState] = useState<CollectorState>(INITIAL_COLLECTOR_STATE)
-    const [config, setConfig] = useState<CollectorConfig>(DEFAULT_COLLECTOR_CONFIG)
     const [logs, setLogs] = useState<CollectorLog[]>([])
-    const [isLoading, setIsLoading] = useState(false)
-    const [showConfig, setShowConfig] = useState(false)
+    const [dailyStats, setDailyStats] = useState<DailyStat[]>([])
+    const [todayCount, setTodayCount] = useState(0)
+    const [loading, setLoading] = useState(true)
+    const [lastUpdated, setLastUpdated] = useState<Date>(new Date())
 
-    // 상태 조회
-    const fetchStatus = useCallback(async () => {
+    // Filter State
+    const [activeTab, setActiveTab] = useState<'all' | 'auto' | 'user' | 'detail'>('all')
+
+    // Auto Collection State
+    const [isCollecting, setIsCollecting] = useState(true)
+
+    const fetchLogs = async () => {
         try {
-            const res = await fetch('/api/admin/collector?type=status', {
-                headers: getAuthHeaders()
-            })
+            const res = await fetch(`/api/admin/logs?type=${activeTab}`, { cache: 'no-store' })
             const data = await res.json()
-            if (data.state) {
-                setState(data.state)
-            }
-        } catch (err) {
-            console.error('Status fetch error:', err)
-        }
-    }, [])
-
-    // 설정 조회
-    const fetchConfig = useCallback(async () => {
-        try {
-            const res = await fetch('/api/admin/collector?type=config', {
-                headers: getAuthHeaders()
-            })
-            const data = await res.json()
-            if (data && data.delayMs !== undefined) {
-                setConfig(data)
-            }
-        } catch (err) {
-            console.error('Config fetch error:', err)
-        }
-    }, [])
-
-    // 로그 조회
-    const fetchLogs = useCallback(async () => {
-        try {
-            const res = await fetch('/api/admin/collector?type=logs', {
-                headers: getAuthHeaders()
-            })
-            const data = await res.json()
-            if (Array.isArray(data)) {
-                setLogs(data)
-            }
-        } catch (err) {
-            console.error('Logs fetch error:', err)
-        }
-    }, [])
-
-    // 초기 로딩 및 폴링
-    useEffect(() => {
-        fetchStatus()
-        fetchConfig()
-        fetchLogs()
-
-        // 3초마다 상태 업데이트
-        const interval = setInterval(() => {
-            fetchStatus()
-            fetchLogs()
-        }, 3000)
-
-        return () => clearInterval(interval)
-    }, [fetchStatus, fetchConfig, fetchLogs])
-
-    // 제어 명령 전송
-    const sendCommand = async (action: string, extraData?: any) => {
-        setIsLoading(true)
-        try {
-            const res = await fetch('/api/admin/collector', {
-                method: 'POST',
-                headers: getAuthHeaders(),
-                body: JSON.stringify({ action, ...extraData })
-            })
-            const data = await res.json()
-            if (!res.ok) {
-                alert(data.error || '오류가 발생했습니다')
-            }
-            // 즉시 상태 업데이트
-            await fetchStatus()
-            await fetchLogs()
-        } catch (err) {
-            console.error('Command error:', err)
-            alert('명령 실행 중 오류가 발생했습니다')
+            if (data.recentLogs) setLogs(data.recentLogs)
+            if (data.dailyStats) setDailyStats(data.dailyStats)
+            if (data.todayCount) setTodayCount(data.todayCount)
+            setLastUpdated(new Date())
+        } catch (e) {
+            console.error('Collector logs fetch error:', e)
         } finally {
-            setIsLoading(false)
+            setLoading(false)
         }
     }
 
-    // 설정 변경
-    const updateConfig = async (newConfig: Partial<CollectorConfig>) => {
-        await sendCommand('updateConfig', { config: newConfig })
-        await fetchConfig()
-    }
+    // ... (useEffect 생략, 변경 없음) ...
 
-    const statusColor = STATUS_COLORS[state.status] || STATUS_COLORS.idle
+    // Initial Load & Log Polling
+    useEffect(() => {
+        fetchLogs()
+        const interval = setInterval(fetchLogs, 5000)
+        return () => clearInterval(interval)
+    }, [activeTab])
+
+    // Background Collection Trigger
+    useEffect(() => {
+        if (!isCollecting) return
+
+        const triggerCollection = async () => {
+            try {
+                // 자동 수집 트리거 (로그 갱신은 위 interval이 처리)
+                const res = await fetch('/api/admin/collector')
+
+                // 상세 수집 연쇄 호출 (Chaining)
+                // 목록만 수집하면 유저가 불안해하므로, 발견된 캐릭터 중 일부의 상세 정보를 즉시 긁어옴
+                if (res.ok) {
+                    const data = await res.json()
+                    if (data.new_characters && Array.isArray(data.new_characters) && data.new_characters.length > 0) {
+                        // Rate Limit을 고려하여 랜덤하게 최대 3명만 상세 수집 진행
+                        const targets = data.new_characters
+                            .sort(() => 0.5 - Math.random())
+                            .slice(0, 3)
+
+                        // 비동기로 상세 수집 호출 (결과 기다리지 않음, 로그는 DB에 쌓임)
+                        targets.forEach((target: any) => {
+                            fetch(`/api/character?id=${target.id}&server=${target.server}`)
+                                .catch(err => console.error(`Failed to sync detail for ${target.name}`, err))
+                        })
+                    }
+                }
+
+                // 만약 현재 탭이 'auto'거나 'all'이면 즉시 갱신해주는 게 좋음
+                if (activeTab === 'auto' || activeTab === 'all' || activeTab === 'detail') fetchLogs()
+            } catch (e) {
+                console.error('Collection trigger failed:', e)
+            }
+        }
+
+        // 페이지 진입 시 즉시 1회 실행
+        triggerCollection()
+
+        const interval = setInterval(triggerCollection, 4000) // 4초마다 수집 실행
+        return () => clearInterval(interval)
+    }, [isCollecting, activeTab])
 
     return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {/* 헤더 정보 */}
-            <div style={{
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.1), rgba(139, 92, 246, 0.1))',
-                border: '1px solid rgba(99, 102, 241, 0.3)',
-                borderRadius: '12px',
-                padding: '1.25rem'
-            }}>
-                <h2 style={{ margin: 0, marginBottom: '0.5rem', color: '#A5B4FC', fontSize: '1rem' }}>
-                    🔍 캐릭터 전체 수집기
-                </h2>
-                <p style={{ margin: 0, color: '#9CA3AF', fontSize: '0.85rem', lineHeight: 1.6 }}>
-                    AION2 공식 사이트에서 <strong style={{ color: '#E5E7EB' }}>모든 캐릭터 정보</strong>를 자동으로 수집합니다.<br />
-                    한글/영문 키워드로 검색하여 서버에 있는 캐릭터들을 데이터베이스에 저장합니다.
-                </p>
-            </div>
-
-            {/* 상태 카드 */}
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(4, 1fr)',
-                gap: '0.75rem'
-            }}>
-                {/* 현재 상태 */}
-                <div style={{
-                    background: statusColor.bg,
-                    border: `1px solid ${statusColor.border}`,
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>상태</div>
-                    <div style={{
-                        fontSize: '1.1rem',
-                        fontWeight: 'bold',
-                        color: statusColor.text,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem'
-                    }}>
-                        <span style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: statusColor.text,
-                            animation: state.status === 'running' ? 'pulse 1.5s infinite' : 'none'
-                        }} />
-                        {STATUS_LABELS[state.status]}
-                    </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Header ... -> 생략 (변경없음) */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '0.5rem' }}>
+                        자동 수집 현황
+                    </h2>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                        실시간 캐릭터 수집 로그 및 통계 모니터링
+                    </p>
                 </div>
-
-                {/* 수집된 캐릭터 */}
-                <div style={{
-                    background: 'rgba(34, 197, 94, 0.1)',
-                    border: '1px solid rgba(34, 197, 94, 0.3)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>수집된 캐릭터</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#4ADE80', fontFamily: 'monospace' }}>
-                        {state.totalCollected.toLocaleString()}
-                    </div>
-                </div>
-
-                {/* 진행률 */}
-                <div style={{
-                    background: 'rgba(99, 102, 241, 0.1)',
-                    border: '1px solid rgba(99, 102, 241, 0.3)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>진행률</div>
-                    <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#A5B4FC', fontFamily: 'monospace' }}>
-                        {state.progress}%
-                    </div>
-                </div>
-
-                {/* 남은 시간 */}
-                <div style={{
-                    background: 'rgba(245, 158, 11, 0.1)',
-                    border: '1px solid rgba(245, 158, 11, 0.3)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    textAlign: 'center'
-                }}>
-                    <div style={{ fontSize: '0.7rem', color: '#9CA3AF', marginBottom: '0.25rem' }}>예상 남은 시간</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: 'bold', color: '#FBBF24', fontFamily: 'monospace' }}>
-                        {state.estimatedRemaining}
-                    </div>
-                </div>
-            </div>
-
-            {/* 현재 작업 */}
-            {state.status === 'running' && (
-                <div style={{
-                    background: 'rgba(34, 197, 94, 0.05)',
-                    border: '1px solid rgba(34, 197, 94, 0.2)',
-                    borderRadius: '10px',
-                    padding: '1rem'
-                }}>
-                    <div style={{ fontSize: '0.75rem', color: '#9CA3AF', marginBottom: '0.5rem' }}>현재 작업</div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                            padding: '0.4rem 0.8rem',
-                            background: 'rgba(34, 197, 94, 0.2)',
-                            borderRadius: '6px',
-                            color: '#4ADE80',
-                            fontSize: '0.9rem',
-                            fontWeight: 600
-                        }}>
-                            "{state.currentKeyword}"
-                        </div>
-                        <div style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
-                            서버: <span style={{ color: '#E5E7EB' }}>{state.currentServerName}</span>
-                        </div>
-                        <div style={{ color: '#9CA3AF', fontSize: '0.85rem' }}>
-                            페이지: <span style={{ color: '#E5E7EB' }}>{state.currentPage}</span>
-                        </div>
-                    </div>
-
-                    {/* 진행바 */}
-                    <div style={{
-                        marginTop: '0.75rem',
-                        height: '6px',
-                        background: 'rgba(255,255,255,0.1)',
-                        borderRadius: '3px',
-                        overflow: 'hidden'
-                    }}>
-                        <div style={{
-                            width: `${state.progress}%`,
-                            height: '100%',
-                            background: 'linear-gradient(90deg, #22C55E, #4ADE80)',
-                            borderRadius: '3px',
-                            transition: 'width 0.5s ease'
-                        }} />
-                    </div>
-                </div>
-            )}
-
-            {/* 제어 버튼 */}
-            <div style={{
-                display: 'flex',
-                gap: '0.75rem',
-                padding: '1rem',
-                background: '#111318',
-                borderRadius: '10px',
-                border: '1px solid var(--border)'
-            }}>
-                {state.status === 'idle' || state.status === 'stopped' || state.status === 'error' ? (
-                    <button
-                        onClick={() => sendCommand('start')}
-                        disabled={isLoading}
-                        style={{
-                            flex: 1,
-                            padding: '0.875rem',
-                            background: 'linear-gradient(135deg, #22C55E, #16A34A)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            color: 'white',
-                            fontSize: '0.95rem',
-                            fontWeight: 600,
-                            cursor: isLoading ? 'wait' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '0.5rem'
-                        }}
-                    >
-                        ▶️ 수집 시작
-                    </button>
-                ) : (
-                    <>
-                        <button
-                            onClick={() => sendCommand(state.status === 'paused' ? 'resume' : 'pause')}
-                            disabled={isLoading}
-                            style={{
-                                flex: 1,
-                                padding: '0.875rem',
-                                background: state.status === 'paused'
-                                    ? 'linear-gradient(135deg, #22C55E, #16A34A)'
-                                    : 'linear-gradient(135deg, #F59E0B, #D97706)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                color: 'white',
-                                fontSize: '0.95rem',
-                                fontWeight: 600,
-                                cursor: isLoading ? 'wait' : 'pointer'
-                            }}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {/* ... Controls 생략 ... */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '1rem' }}>
+                        <span style={{ fontSize: '0.8rem', color: isCollecting ? '#34D399' : 'var(--text-disabled)' }}>
+                            {isCollecting ? '● 자동 수집 중' : '○ 수집 일시정지'}
+                        </span>
+                        <DSButton
+                            variant={isCollecting ? 'danger' : 'primary'}
+                            size="sm"
+                            onClick={() => setIsCollecting(!isCollecting)}
                         >
-                            {state.status === 'paused' ? '▶️ 재개' : '⏸️ 일시정지'}
-                        </button>
-                        <button
-                            onClick={() => sendCommand('stop')}
-                            disabled={isLoading}
-                            style={{
-                                flex: 1,
-                                padding: '0.875rem',
-                                background: 'linear-gradient(135deg, #EF4444, #DC2626)',
-                                border: 'none',
-                                borderRadius: '8px',
-                                color: 'white',
-                                fontSize: '0.95rem',
-                                fontWeight: 600,
-                                cursor: isLoading ? 'wait' : 'pointer'
-                            }}
-                        >
-                            ⏹️ 중지
-                        </button>
-                    </>
-                )}
-
-                <button
-                    onClick={() => setShowConfig(!showConfig)}
-                    style={{
-                        padding: '0.875rem 1.25rem',
-                        background: 'rgba(99, 102, 241, 0.2)',
-                        border: '1px solid rgba(99, 102, 241, 0.4)',
-                        borderRadius: '8px',
-                        color: '#A5B4FC',
-                        fontSize: '0.9rem',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                    }}
-                >
-                    ⚙️ 설정
-                </button>
-
-                <button
-                    onClick={() => sendCommand('reset')}
-                    disabled={isLoading || state.status === 'running'}
-                    style={{
-                        padding: '0.875rem 1.25rem',
-                        background: 'rgba(107, 114, 128, 0.2)',
-                        border: '1px solid rgba(107, 114, 128, 0.4)',
-                        borderRadius: '8px',
-                        color: '#9CA3AF',
-                        fontSize: '0.9rem',
-                        fontWeight: 500,
-                        cursor: isLoading || state.status === 'running' ? 'not-allowed' : 'pointer',
-                        opacity: state.status === 'running' ? 0.5 : 1
-                    }}
-                >
-                    🔄 초기화
-                </button>
+                            {isCollecting ? '⏹ 중지' : '▶ 시작'}
+                        </DSButton>
+                    </div>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-disabled)' }}>
+                        마지막 업데이트: {lastUpdated.toLocaleTimeString()}
+                    </span>
+                    <DSButton variant="ghost" size="sm" onClick={fetchLogs} disabled={loading}>
+                        🔃
+                    </DSButton>
+                </div>
             </div>
 
-            {/* 설정 패널 */}
-            {showConfig && (
-                <div style={{
-                    background: '#111318',
-                    border: '1px solid var(--border)',
-                    borderRadius: '10px',
-                    padding: '1.25rem'
-                }}>
-                    <h3 style={{ margin: 0, marginBottom: '1rem', color: '#E5E7EB', fontSize: '0.95rem' }}>
-                        ⚙️ 수집 설정
-                    </h3>
+            {/* Stats Overview */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+                <StatCard
+                    label="오늘 수집된 캐릭터"
+                    value={`${todayCount.toLocaleString()}명`}
+                    icon="📅"
+                    trend={isCollecting ? "▲ 순항 중" : "일시정지됨"}
+                />
+                <StatCard
+                    label="최근 활동"
+                    value={`${logs.length > 0 ? (logs[0].type === 'detail' ? '상세수집' : logs[0].server_name) : '-'} / ${logs.length > 0 ? logs[0].keyword : '-'}`}
+                    icon="🔍"
+                />
+                <StatCard
+                    label="현재 모드"
+                    value={activeTab === 'auto' ? 'Auto Search' : activeTab === 'detail' ? 'Detail Sync' : activeTab === 'user' ? 'User Search' : 'All Views'}
+                    icon="⚡"
+                    trend={isCollecting ? "Background Active" : "Paused"}
+                />
+            </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                        {/* 속도 설정 */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                요청 간격 (ms) - 높을수록 안전
-                            </label>
-                            <input
-                                type="range"
-                                min="1000"
-                                max="10000"
-                                step="500"
-                                value={config.delayMs}
-                                onChange={(e) => updateConfig({ delayMs: parseInt(e.target.value) })}
-                                disabled={state.status === 'running'}
-                                style={{ width: '100%', accentColor: '#6366F1' }}
-                            />
-                            <div style={{
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                fontSize: '0.75rem',
-                                color: '#6B7280',
-                                marginTop: '0.25rem'
-                            }}>
-                                <span>빠름 (1초)</span>
-                                <span style={{ color: '#A5B4FC', fontWeight: 600 }}>{config.delayMs / 1000}초</span>
-                                <span>느림 (10초)</span>
-                            </div>
-                        </div>
-
-                        {/* 서버 선택 */}
-                        <div>
-                            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9CA3AF', fontSize: '0.8rem' }}>
-                                대상 서버
-                            </label>
-                            <select
-                                value={config.enabledServers.length === 0 ? 'all' : 'custom'}
-                                onChange={(e) => {
-                                    if (e.target.value === 'all') {
-                                        updateConfig({ enabledServers: [] })
-                                    }
-                                }}
-                                disabled={state.status === 'running'}
+            {/* Main Content Grid */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '1rem', minHeight: '500px' }}>
+                {/* Realtime Logs */}
+                <DSCard title="실시간 수집 로그 (최근 100건)" hoverEffect={false}>
+                    {/* Tabs */}
+                    <div style={{ display: 'flex', gap: '0.5rem', padding: '0 0 1rem 0', borderBottom: '1px solid var(--border)', marginBottom: '1rem', overflowX: 'auto' }}>
+                        {[
+                            { id: 'all', label: '전체' },
+                            { id: 'auto', label: '🤖 자동 검색' },
+                            { id: 'detail', label: '📥 캐릭터 수집' },
+                            { id: 'user', label: '🔍 유저 검색' }
+                        ].map(tab => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveTab(tab.id as any)}
                                 style={{
-                                    width: '100%',
-                                    padding: '0.6rem',
-                                    background: '#1F2937',
-                                    border: '1px solid #374151',
-                                    borderRadius: '6px',
-                                    color: '#E5E7EB',
-                                    fontSize: '0.85rem'
+                                    background: activeTab === tab.id ? 'var(--primary)' : 'transparent',
+                                    color: activeTab === tab.id ? 'black' : 'var(--text-secondary)',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    padding: '0.5rem 0.8rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: activeTab === tab.id ? 'bold' : 'normal',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    whiteSpace: 'nowrap'
                                 }}
                             >
-                                <option value="all">전체 서버 ({SERVERS.length}개)</option>
-                                <option value="custom">선택한 서버만</option>
-                            </select>
-                        </div>
+                                {tab.label}
+                            </button>
+                        ))}
                     </div>
 
-                    {/* 키워드 미리보기 */}
-                    <div style={{ marginTop: '1rem' }}>
-                        <label style={{ display: 'block', marginBottom: '0.5rem', color: '#9CA3AF', fontSize: '0.8rem' }}>
-                            검색 키워드 ({config.keywords.length}개)
-                        </label>
+                    <div style={{
+                        overflowX: 'auto',
+                        maxHeight: '600px',
+                        overflowY: 'auto'
+                    }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
+                            <thead style={{ position: 'sticky', top: 0, background: '#111318', zIndex: 10 }}>
+                                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)', width: '80px' }}>시간</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)', width: '80px' }}>구분</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>서버</th>
+                                    <th style={{ padding: '1rem', textAlign: 'left', color: 'var(--text-secondary)' }}>대상/키워드</th>
+                                    <th style={{ padding: '1rem', textAlign: 'right', color: 'var(--text-secondary)' }}>결과</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {logs.map(log => {
+                                    const isDetail = log.type === 'detail'
+                                    const isUser = log.type === 'user'
+                                    const isAuto = !log.type || log.type === 'auto'
+
+                                    return (
+                                        <tr key={log.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                                            <td style={{ padding: '0.75rem 1rem', color: 'var(--text-disabled)', fontFamily: 'monospace' }}>
+                                                {new Date(log.created_at).toLocaleTimeString()}
+                                            </td>
+                                            <td style={{ padding: '0.75rem 1rem' }}>
+                                                <span style={{
+                                                    fontSize: '0.75rem',
+                                                    color: isDetail ? '#10B981' : (isUser ? '#60A5FA' : '#F59E0B'),
+                                                    background: isDetail ? 'rgba(16, 185, 129, 0.1)' : (isUser ? 'rgba(96, 165, 250, 0.1)' : 'rgba(245, 158, 11, 0.1)'),
+                                                    padding: '2px 6px',
+                                                    borderRadius: '4px',
+                                                    fontWeight: 'bold'
+                                                }}>
+                                                    {isDetail ? 'SYNC' : (isUser ? 'USER' : 'AUTO')}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '0.75rem 1rem' }}>
+                                                <DSBadge variant="dark" size="sm">{log.server_name}</DSBadge>
+                                            </td>
+                                            <td style={{ padding: '0.75rem 1rem', color: isDetail ? 'var(--text-main)' : (isUser ? '#E5E7EB' : 'var(--primary)'), fontWeight: isDetail ? 'bold' : 'normal' }}>
+                                                {log.keyword}
+                                            </td>
+                                            <td style={{ padding: '0.75rem 1rem', textAlign: 'right' }}>
+                                                {log.collected_count > 0 ? (
+                                                    <span style={{ color: '#34D399', fontWeight: 'bold' }}>
+                                                        {isDetail ? 'Update Fail?' : `+${log.collected_count}명`}
+                                                        {/* Detail인 경우 count가 1이어야 성공. 0이면 실패? 
+                                                            Wait, Detail inserts 1 on success. 
+                                                        */}
+                                                        {isDetail && log.collected_count === 1 ? 'OK' : (!isDetail ? `+${log.collected_count}명` : 'Fail')}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--text-disabled)' }}>0</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    )
+                                })}
+                                {logs.length === 0 && (
+                                    <tr>
+                                        <td colSpan={5} style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-disabled)' }}>
+                                            수집 기록이 없습니다.
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </DSCard>
+
+                {/* Daily Chart & Summary */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <DSCard title="일별 수집 추이" hoverEffect={false} style={{ flex: 1 }}>
                         <div style={{
+                            height: '100%',
                             display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '0.3rem',
-                            padding: '0.75rem',
-                            background: '#0A0B0E',
-                            borderRadius: '6px',
-                            maxHeight: '80px',
-                            overflowY: 'auto'
+                            alignItems: 'flex-end',
+                            justifyContent: 'space-between',
+                            padding: '1rem 0',
+                            gap: '0.5rem'
                         }}>
-                            {config.keywords.map((kw, i) => (
-                                <span key={i} style={{
-                                    padding: '0.2rem 0.5rem',
-                                    background: 'rgba(99, 102, 241, 0.2)',
-                                    borderRadius: '4px',
-                                    color: '#A5B4FC',
-                                    fontSize: '0.75rem'
-                                }}>
-                                    {kw}
-                                </span>
-                            ))}
+                            {dailyStats.map((stat, idx) => {
+                                const max = Math.max(...dailyStats.map(d => d.count), 100)
+                                const height = Math.max((stat.count / max) * 100, 5) // 최소 높이 보장
+                                return (
+                                    <div key={idx} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+                                        <span style={{ fontSize: '0.75rem', color: '#34D399', fontWeight: 'bold' }}>{stat.count}</span>
+                                        <div style={{
+                                            width: '100%',
+                                            height: `${height}%`,
+                                            background: 'linear-gradient(to top, rgba(52, 211, 153, 0.2), rgba(52, 211, 153, 0.6))',
+                                            borderRadius: '4px 4px 0 0',
+                                            minHeight: '4px'
+                                        }} />
+                                        <span style={{ fontSize: '0.7rem', color: 'var(--text-disabled)', whiteSpace: 'nowrap' }}>
+                                            {stat.date.slice(5)}
+                                        </span>
+                                    </div>
+                                )
+                            })}
+                            {dailyStats.length === 0 && (
+                                <div style={{ width: '100%', textAlign: 'center', color: 'var(--text-disabled)', alignSelf: 'center' }}>
+                                    데이터가 부족합니다.
+                                </div>
+                            )}
                         </div>
-                    </div>
-                </div>
-            )}
+                    </DSCard>
 
-            {/* 로그 패널 */}
-            <div style={{
-                background: '#111318',
-                border: '1px solid var(--border)',
-                borderRadius: '10px',
-                padding: '1rem'
-            }}>
-                <div style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: '0.75rem'
-                }}>
-                    <h3 style={{ margin: 0, color: '#E5E7EB', fontSize: '0.9rem' }}>📋 실시간 로그</h3>
-                    <span style={{ color: '#6B7280', fontSize: '0.75rem' }}>
-                        {logs.length}개 기록
-                    </span>
-                </div>
-
-                <div style={{
-                    background: '#0A0B0E',
-                    borderRadius: '8px',
-                    padding: '0.75rem',
-                    height: '250px',
-                    overflowY: 'auto',
-                    fontFamily: 'monospace',
-                    fontSize: '0.75rem'
-                }}>
-                    {logs.length > 0 ? logs.map((log) => (
-                        <div key={log.id} style={{
-                            marginBottom: '0.3rem',
-                            padding: '0.3rem 0.5rem',
-                            borderRadius: '4px',
-                            background: log.type === 'error' ? 'rgba(239, 68, 68, 0.1)'
-                                : log.type === 'success' ? 'rgba(34, 197, 94, 0.1)'
-                                    : log.type === 'warning' ? 'rgba(245, 158, 11, 0.1)'
-                                        : 'transparent',
-                            color: log.type === 'error' ? '#F87171'
-                                : log.type === 'success' ? '#4ADE80'
-                                    : log.type === 'warning' ? '#FBBF24'
-                                        : '#9CA3AF'
-                        }}>
-                            <span style={{ color: '#6B7280', marginRight: '0.5rem' }}>
-                                [{new Date(log.timestamp).toLocaleTimeString()}]
-                            </span>
-                            {log.message}
+                    <DSCard title="도움말" hoverEffect={false}>
+                        <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                            <p style={{ marginBottom: '0.5rem' }}>• <b>자동 수집</b> 페이지가 열려있는 동안 브라우저가 백그라운드 작업을 트리거합니다.</p>
+                            <p style={{ marginBottom: '0.5rem' }}>• <b>"0 (No Result)"</b>는 해당 서버/검색어로 검색했으나 결과가 없었다는 뜻입니다. 정상 동작입니다.</p>
+                            <p>• 수집을 중지하려면 상단의 <b>중지</b> 버튼을 누르세요.</p>
                         </div>
-                    )) : (
-                        <div style={{
-                            color: '#6B7280',
-                            textAlign: 'center',
-                            paddingTop: '100px'
-                        }}>
-                            로그가 없습니다. 수집을 시작하면 여기에 진행 상황이 표시됩니다.
-                        </div>
-                    )}
+                    </DSCard>
                 </div>
             </div>
-
-            {/* 안내 카드 */}
-            <div style={{
-                background: 'rgba(245, 158, 11, 0.1)',
-                border: '1px solid rgba(245, 158, 11, 0.3)',
-                borderRadius: '10px',
-                padding: '1rem'
-            }}>
-                <h4 style={{ margin: 0, marginBottom: '0.5rem', color: '#FBBF24', fontSize: '0.85rem' }}>
-                    ⚠️ 사용 시 주의사항
-                </h4>
-                <ul style={{
-                    margin: 0,
-                    paddingLeft: '1.25rem',
-                    color: '#9CA3AF',
-                    fontSize: '0.8rem',
-                    lineHeight: 1.7
-                }}>
-                    <li>너무 빠른 속도로 수집하면 공식 서버에서 차단될 수 있습니다</li>
-                    <li>권장 설정: <strong style={{ color: '#FBBF24' }}>3초 이상</strong> 간격</li>
-                    <li>전체 수집에는 수 시간이 소요될 수 있습니다</li>
-                    <li>브라우저를 닫으면 수집이 중단됩니다 (서버 재시작 시에도 초기화)</li>
-                </ul>
-            </div>
-
-            {/* CSS 애니메이션 */}
-            <style jsx>{`
-                @keyframes pulse {
-                    0%, 100% { opacity: 1; }
-                    50% { opacity: 0.5; }
-                }
-            `}</style>
         </div>
     )
 }

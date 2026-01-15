@@ -11,6 +11,7 @@ interface ContentRecord {
   category?: string
   count: number
   kina: number
+  usedFromBonus?: number  // 충전권에서 사용한 횟수
 }
 
 interface ContentCardProps {
@@ -203,20 +204,11 @@ export default function ContentCard({
       totalKina = baseKina * completionCount * (isDoubleReward ? 2 : 1)
     }
 
-    const newRecord: Omit<ContentRecord, 'id'> = {
-      bossName: currentBoss.name,
-      tier: selectedTier,
-      category: selectedCategory,
-      count: completionCount,
-      kina: totalKina
-    }
-
-    onAddRecord(newRecord)
-
-    // 잔여 횟수 차감
+    // 잔여 횟수 차감 계산
     let remaining = completionCount
     let newBonus = bonusTickets
     let newBase = currentTickets
+    let usedFromBonus = 0  // 충전권에서 사용한 횟수
 
     // 1순위: 기본 티켓 차감 (0이 될 때까지)
     if (newBase >= remaining) {
@@ -229,17 +221,36 @@ export default function ContentCard({
 
     // 2순위: 보너스 티켓 차감 (기본이 0이 된 후에만)
     if (remaining > 0) {
+      usedFromBonus = Math.min(remaining, newBonus)  // 실제 충전권에서 사용한 횟수
       newBonus = Math.max(0, newBonus - remaining)
     }
 
+    const newRecord: Omit<ContentRecord, 'id'> = {
+      bossName: currentBoss.name,
+      tier: selectedTier,
+      category: selectedCategory,
+      count: completionCount,
+      kina: totalKina,
+      usedFromBonus  // 충전권 사용량 저장
+    }
+
+    onAddRecord(newRecord)
     onTicketsChange(newBase, newBonus)
     setCompletionCount(1)
   }
 
   // 기록 삭제
-  const handleDeleteRecord = (recordId: string, count: number) => {
-    // 횟수 복구 (기본 티켓에만 복구)
-    onTicketsChange(Math.min(maxTickets, currentTickets + count), bonusTickets)
+  const handleDeleteRecord = (recordId: string, count: number, usedFromBonus: number = 0) => {
+    // 횟수 복구 (사용한 곳으로 각각 복구)
+    const usedFromBase = count - usedFromBonus  // 기본에서 사용한 횟수
+
+    // 기본 티켓 복구 (최대치까지만)
+    const newBase = Math.min(maxTickets, currentTickets + usedFromBase)
+    // 충전권 복구
+    const newBonus = bonusTickets + usedFromBonus
+
+    onTicketsChange(newBase, newBonus)
+
     // 오드 에너지 복구 (1회당 40)
     if (onOdEnergyRestore) {
       onOdEnergyRestore(count * 40)
@@ -423,7 +434,7 @@ export default function ContentCard({
                   {!readOnly && (
                     <button
                       className={styles.deleteBtn}
-                      onClick={() => handleDeleteRecord(record.id, record.count)}
+                      onClick={() => handleDeleteRecord(record.id, record.count, record.usedFromBonus || 0)}
                       title="기록 삭제"
                     >
                       ✕

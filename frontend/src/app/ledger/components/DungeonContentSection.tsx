@@ -47,6 +47,7 @@ interface ContentRecord {
   category?: string
   count: number
   kina: number
+  usedFromBonus?: number  // 충전권에서 사용한 횟수
 }
 
 interface DungeonContentSectionProps {
@@ -333,9 +334,12 @@ export default function DungeonContentSection({
       }
     }
 
-    saveToContentRecords('transcend', transcendKina, transcendRecords.length)
-    saveToContentRecords('expedition', expeditionKina, expeditionRecords.length)
-    saveToContentRecords('sanctuary', sanctuaryKina, sanctuaryRecords.length)
+    // 3개 컨텐츠 동시 저장 (병렬 처리)
+    Promise.all([
+      saveToContentRecords('transcend', transcendKina, transcendRecords.length),
+      saveToContentRecords('expedition', expeditionKina, expeditionRecords.length),
+      saveToContentRecords('sanctuary', sanctuaryKina, sanctuaryRecords.length)
+    ]).catch(err => console.error('Failed to save content records:', err))
   }, [transcendRecords, expeditionRecords, sanctuaryRecords, characterId, selectedDate, getAuthHeader])
 
   // 컴포넌트 언마운트 시 타임아웃 정리
@@ -412,7 +416,12 @@ export default function DungeonContentSection({
       if (existing) {
         return prev.map(r =>
           r.id === existing.id
-            ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
+            ? {
+                ...r,
+                count: r.count + record.count,
+                kina: r.kina + record.kina,
+                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+              }
             : r
         )
       } else {
@@ -436,7 +445,12 @@ export default function DungeonContentSection({
       if (existing) {
         return prev.map(r =>
           r.id === existing.id
-            ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
+            ? {
+                ...r,
+                count: r.count + record.count,
+                kina: r.kina + record.kina,
+                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+              }
             : r
         )
       } else {
@@ -467,7 +481,12 @@ export default function DungeonContentSection({
       if (existing) {
         return prev.map(r =>
           r.id === existing.id
-            ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
+            ? {
+                ...r,
+                count: r.count + record.count,
+                kina: r.kina + record.kina,
+                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+              }
             : r
         )
       } else {

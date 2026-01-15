@@ -287,6 +287,55 @@ NEXT_PUBLIC_SUPABASE_URL=https://mnbngmdjiszyowfvnzhk.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uYm5nbWRqaXN6eW93ZnZuemhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5OTY0ODAsImV4cCI6MjA4MjU3MjQ4MH0.AIvvGxd_iQKpQDbmOBoe4yAmii1IpB92Pp7Scs8Lz7U
 ```
 
+## Windows Development Environment
+
+**CRITICAL: 이 프로젝트는 Windows 환경에서 개발됩니다.**
+
+### Claude Code 작업 규칙
+
+1. **Bash 도구 사용 금지**
+   - Claude Code의 Bash 도구로 명령어 실행하지 말 것
+   - 경로 문제 및 환경 충돌 발생 원인
+   - exit code 137 등 메모리/프로세스 오류 유발
+
+2. **빌드/실행은 사용자가 직접 수행**
+   - `npm run dev`, `npm run build` 등은 사용자가 터미널에서 직접 실행
+   - Claude는 코드 수정만 담당
+   - 에러 발생 시 사용자가 에러 메시지를 공유하면 코드로 해결
+
+3. **Claude가 해야 할 작업**
+   - ✅ 코드 읽기 (Read 도구)
+   - ✅ 코드 수정 (Edit 도구)
+   - ✅ 파일 생성 (Write 도구)
+   - ✅ 파일 검색 (Glob, Grep 도구)
+   - ❌ 명령어 실행 (Bash 도구) - 사용 금지
+
+4. **사용자가 해야 할 작업**
+   - 터미널에서 `npm run dev` 실행
+   - 터미널에서 `npm run build` 실행
+   - 에러 메시지 복사해서 Claude에게 공유
+
+5. **문제 해결 후 보고**
+   - 문제 해결 시 어떤 문제가 해결되었는지 간결하게 알려줄 것
+   - 예: "✅ `useWeeklyStats.ts`에 인증 헤더 누락 → 401 에러 해결"
+
+6. **작업 전 컨펌 필수**
+   - 간단한 수정(오타, 한 줄 변경 등)이 아닌 이상 작업 전 사용자에게 컨펌 받을 것
+   - 무엇을 수정할지, 어떤 파일을 변경할지 간결하게 설명 후 진행
+
+## 배포 및 데이터 저장 규칙
+
+**CRITICAL: 반드시 준수**
+
+1. **데이터 저장: Supabase만 사용**
+   - 모든 데이터베이스 저장 작업은 Supabase(`mnbngmdjiszyowfvnzhk`) 통해서만 수행
+   - localStorage 사용 금지 (임시 UI 상태 제외)
+   - 새로운 기능 추가 시 반드시 Supabase 테이블 설계부터
+
+2. **배포: Vercel만 사용**
+   - 프론트엔드 배포는 Vercel 프로젝트로만 진행
+   - Netlify, 기타 플랫폼 사용 금지
+
 ## CSS Theme
 
 Uses CSS Variables for Dark + Yellow accent theme:

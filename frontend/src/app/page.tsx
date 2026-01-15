@@ -29,6 +29,62 @@ export default function Home() {
         }
     }, [])
 
+    // 백그라운드에서 item_level이 0인 캐릭터 자동 조회
+    useEffect(() => {
+        let isMounted = true
+        let intervalId: NodeJS.Timeout
+
+        const runBatchUpdate = async () => {
+            try {
+                const res = await fetch('/api/admin/batch-update')
+                const data = await res.json()
+                console.log('[Auto Batch] Updated:', data.message, '| Remaining:', data.remaining)
+
+                // 남은 캐릭터가 없으면 중지
+                if (data.remaining === 0 && isMounted) {
+                    clearInterval(intervalId)
+                    console.log('[Auto Batch] Complete! All characters updated.')
+                }
+            } catch (e) {
+                console.error('[Auto Batch] Error:', e)
+            }
+        }
+
+        const runCollector = async () => {
+            try {
+                const res = await fetch('/api/admin/collector')
+                const data = await res.json()
+                console.log(`[Auto Collector] ${data.server} - "${data.keyword}": ${data.message} (Total: ${data.totalCharacters})`)
+            } catch (e) {
+                console.error('[Auto Collector] Error:', e)
+            }
+        }
+
+        // 배치 업데이트: 10초 후 시작, 30초마다 반복
+        const startTimeout = setTimeout(() => {
+            if (isMounted) {
+                runBatchUpdate()
+                intervalId = setInterval(runBatchUpdate, 30000)
+            }
+        }, 10000)
+
+        // 자동 수집: 15초 후 시작, 40초마다 반복 (새 캐릭터 발견)
+        const collectorTimeout = setTimeout(() => {
+            if (isMounted) {
+                runCollector()
+                // 수집은 조금 더 천천히 진행
+                setInterval(runCollector, 40000)
+            }
+        }, 15000)
+
+        return () => {
+            isMounted = false
+            clearTimeout(startTimeout)
+            clearTimeout(collectorTimeout)
+            if (intervalId) clearInterval(intervalId)
+        }
+    }, [])
+
     const handleCharacterClick = (char: RecentCharacter) => {
         router.push(`/c/${encodeURIComponent(char.server)}/${encodeURIComponent(char.name)}`)
     }

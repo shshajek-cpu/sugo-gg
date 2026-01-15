@@ -178,22 +178,66 @@
   white-space: nowrap;
 }
 
-.closeBtn {
-  width: 100%;
-  padding: 10px;
+.buttonRow {
+  display: flex;
+  gap: 8px;
   margin-top: 16px;
+}
+
+.actionBtn {
+  flex: 1;
+  padding: 10px;
   border-radius: 6px;
-  border: 1px solid rgba(250, 204, 21, 0.3);
-  background: rgba(26, 29, 36, 0.95);
-  color: #facc15;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
 }
 
+.actionBtn:hover:not(:disabled) {
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.25);
+}
+
+.actionBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.refundBtn {
+  border: 1px solid rgba(74, 222, 128, 0.5);
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.refundBtn:hover:not(:disabled) {
+  border-color: #4ade80;
+  background: rgba(74, 222, 128, 0.25);
+}
+
+.bonusText {
+  color: #facc15;
+  font-size: 12px;
+}
+
+.closeBtn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(26, 29, 36, 0.95);
+  color: #9CA3AF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
 .closeBtn:hover {
-  border-color: #facc15;
-  background: rgba(250, 204, 21, 0.1);
-  transform: scale(1.02);
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.05);
 }
