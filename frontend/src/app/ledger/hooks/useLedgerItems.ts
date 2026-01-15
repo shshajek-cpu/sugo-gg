@@ -7,9 +7,10 @@ interface UseLedgerItemsProps {
   getAuthHeader: () => Record<string, string>
   isReady: boolean
   characterId: string | null
+  selectedDate?: string  // 선택한 날짜 (판매 수입 필터용)
 }
 
-export function useLedgerItems({ getAuthHeader, isReady, characterId }: UseLedgerItemsProps) {
+export function useLedgerItems({ getAuthHeader, isReady, characterId, selectedDate }: UseLedgerItemsProps) {
   const [items, setItems] = useState<LedgerItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -200,8 +201,15 @@ export function useLedgerItems({ getAuthHeader, isReady, characterId }: UseLedge
   // 판매완료 아이템만 필터
   const soldItems = items.filter(i => i.sold_price !== null)
 
-  // 판매 수입 합계
+  // 전체 판매 수입 합계
   const totalSoldIncome = soldItems.reduce((sum, i) => sum + (i.sold_price || 0), 0)
+
+  // 선택한 날짜의 판매 수입 (sold_date 기준)
+  const selectedDateSoldIncome = selectedDate
+    ? soldItems
+        .filter(i => i.sold_date?.split('T')[0] === selectedDate)
+        .reduce((sum, i) => sum + (i.sold_price || 0), 0)
+    : 0
 
   return {
     items,
@@ -217,6 +225,7 @@ export function useLedgerItems({ getAuthHeader, isReady, characterId }: UseLedge
     unsellItem,
     deleteItem,
     totalSoldIncome,
+    selectedDateSoldIncome,
     refetch: fetchItems
   }
 }
