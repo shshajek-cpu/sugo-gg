@@ -20,7 +20,6 @@ import WeeklyContentSection from './components/WeeklyContentSection'
 import DailyContentSection from './components/DailyContentSection'
 import ItemSection from './components/ItemSection'
 import ItemManagementTab from './components/ItemManagementTab'
-import WeeklyChart from './components/WeeklyChart'
 import AddCharacterModal from './components/AddCharacterModal'
 import AddItemModal from './components/AddItemModal'
 import CalendarModal from './components/CalendarModal'
@@ -41,6 +40,34 @@ export default function LedgerPage() {
   const [activeTab, setActiveTab] = useState('dashboard')
   const [activeSubTab, setActiveSubTab] = useState<SubTabType>('content')
   const [selectedDate, setSelectedDate] = useState<string>(getGameDate(new Date()))
+
+  // 페이지 포커스 시 오늘 날짜로 자동 업데이트
+  useEffect(() => {
+    const updateToToday = () => {
+      const today = getGameDate(new Date())
+      setSelectedDate(today)
+    }
+
+    // 페이지가 다시 포커스될 때 오늘 날짜로 업데이트
+    const handleFocus = () => {
+      updateToToday()
+    }
+
+    // 1분마다 날짜 체크 (새벽 5시 넘어가면 자동 업데이트)
+    const interval = setInterval(() => {
+      const today = getGameDate(new Date())
+      if (selectedDate !== today) {
+        setSelectedDate(today)
+      }
+    }, 60000)
+
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      window.removeEventListener('focus', handleFocus)
+      clearInterval(interval)
+    }
+  }, [selectedDate])
   const [showAddCharacterModal, setShowAddCharacterModal] = useState(false)
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showDateModal, setShowDateModal] = useState(false)
@@ -53,19 +80,37 @@ export default function LedgerPage() {
     weeklyIncome: 0
   })
 
+  // 수입 새로고침 트리거 (던전 클리어/아이템 판매 시 증가)
+  const [incomeRefreshKey, setIncomeRefreshKey] = useState(0)
+
   // 던전 컨텐츠 키나 (초월/원정/루드라)
   const [dungeonKina, setDungeonKina] = useState(0)
+
+  // 슈고페스타 초기설정 동기화 값
+  const [shugoInitialSync, setShugoInitialSync] = useState<number | undefined>(undefined)
+
+  // 슈고페스타 보너스 충전 값
+  const [shugoBonusCharge, setShugoBonusCharge] = useState<number | undefined>(undefined)
+
+  // 일일컨텐츠 초기설정 동기화 값
+  const [dailyInitialSync, setDailyInitialSync] = useState<{
+    daily_dungeon: number
+    awakening: number
+    nightmare: number
+    dimension: number
+    subjugation: number
+  } | undefined>(undefined)
 
   // 티켓 기본 횟수 (자동 충전)
   const [baseTickets, setBaseTickets] = useState<Record<string, number>>({
     transcend: 14,
     expedition: 21,
     sanctuary: 4,
-    daily_dungeon: 7,
-    awakening: 3,
-    nightmare: 14,
-    dimension: 14,
-    subjugation: 3
+    daily_dungeon: 7,      // 주간 리셋 (수요일 05:00)
+    awakening: 3,          // 주간 리셋 (수요일 05:00)
+    nightmare: 14,         // 매일 05:00에 2회 충전
+    dimension: 14,         // 24시간마다 1회 충전
+    subjugation: 3         // 주간 리셋 (수요일 05:00)
   })
 
   // 티켓 보너스 횟수 (수동 충전)
@@ -130,29 +175,27 @@ export default function LedgerPage() {
     return () => clearInterval(interval)
   }, [lastChargeTime])
 
-  // 악몽 자동 충전 (02:00 기준 3시간마다)
+  // 악몽 자동 충전 (매일 05:00에 2회 충전)
   useEffect(() => {
     const checkNightmareCharge = () => {
       const now = new Date()
       const currentHour = now.getHours()
       const currentMinute = now.getMinutes()
 
-      // 충전 시간 확인 (02, 05, 08, 11, 14, 17, 20, 23)
-      const chargeHours = [2, 5, 8, 11, 14, 17, 20, 23]
-      const isChargeTime = chargeHours.includes(currentHour) && currentMinute === 0
+      // 충전 시간 확인 (매일 05:00)
+      const isChargeTime = currentHour === 5 && currentMinute === 0
 
-      // 이미 충전했는지 확인
-      const lastChargeHour = lastChargeTime.getHours()
-      const isSameHour = currentHour === lastChargeHour &&
-                         now.getDate() === lastChargeTime.getDate()
+      // 이미 충전했는지 확인 (같은 날 중복 방지)
+      const isSameDay = now.toDateString() === lastChargeTime.toDateString()
 
-      if (isChargeTime && !isSameHour) {
-        console.log('[자동 충전] 악몽 충전:', now.toLocaleString())
+      if (isChargeTime && !isSameDay) {
+        console.log('[자동 충전] 악몽 충전 (+2):', now.toLocaleString())
 
         setBaseTickets(prev => ({
           ...prev,
-          nightmare: Math.min(6, prev.nightmare + 1)
+          nightmare: Math.min(14, prev.nightmare + 2)
         }))
+        setLastChargeTime(now)
       }
     }
 
@@ -163,37 +206,61 @@ export default function LedgerPage() {
     return () => clearInterval(interval)
   }, [lastChargeTime])
 
-  // 기타 티켓 자동 충전 (0, 3, 6, 9, 12, 15, 18, 21시)
+  // 차원침공 자동 충전 (24시간마다 1회 충전)
+  const [lastDimensionChargeTime, setLastDimensionChargeTime] = useState<Date>(new Date())
   useEffect(() => {
-    const checkOtherTicketsCharge = () => {
+    const checkDimensionCharge = () => {
       const now = new Date()
-      const currentHour = now.getHours()
-      const currentMinute = now.getMinutes()
+      const hoursSinceLastCharge = (now.getTime() - lastDimensionChargeTime.getTime()) / (1000 * 60 * 60)
 
-      // 충전 시간인지 확인 (3시간 단위 정각)
-      const isChargeTime = currentHour % 3 === 0 && currentMinute === 0
-
-      // 이미 충전했는지 확인
-      const lastChargeHour = lastChargeTime.getHours()
-      const isSameHour = currentHour === lastChargeHour &&
-                         now.getDate() === lastChargeTime.getDate()
-
-      if (isChargeTime && !isSameHour) {
-        console.log('[자동 충전] 기타 티켓 충전:', now.toLocaleString())
+      if (hoursSinceLastCharge >= 24) {
+        console.log('[자동 충전] 차원침공 충전 (+1):', now.toLocaleString())
 
         setBaseTickets(prev => ({
           ...prev,
-          daily_dungeon: Math.min(6, prev.daily_dungeon + 1),
-          awakening: Math.min(6, prev.awakening + 1),
-          dimension: Math.min(6, prev.dimension + 1),
-          subjugation: Math.min(6, prev.subjugation + 1)
+          dimension: Math.min(14, prev.dimension + 1)
         }))
+        setLastDimensionChargeTime(now)
       }
     }
 
     // 1분마다 체크
-    const interval = setInterval(checkOtherTicketsCharge, 60000)
-    checkOtherTicketsCharge() // 즉시 한번 실행
+    const interval = setInterval(checkDimensionCharge, 60000)
+    checkDimensionCharge() // 즉시 한번 실행
+
+    return () => clearInterval(interval)
+  }, [lastDimensionChargeTime])
+
+  // 일일던전, 각성전, 토벌전 주간 리셋 (수요일 05:00)
+  useEffect(() => {
+    const checkWeeklyContentReset = () => {
+      const now = new Date()
+      const currentDay = now.getDay() // 0 (일요일) ~ 6 (토요일), 3 = 수요일
+      const currentHour = now.getHours()
+      const currentMinute = now.getMinutes()
+
+      // 수요일 05:00인지 확인
+      const isResetTime = currentDay === 3 && currentHour === 5 && currentMinute === 0
+
+      // 이미 리셋했는지 확인
+      const isSameDay = now.toDateString() === lastChargeTime.toDateString()
+
+      if (isResetTime && !isSameDay) {
+        console.log('[자동 충전] 일일던전/각성전/토벌전 주간 리셋:', now.toLocaleString())
+
+        setBaseTickets(prev => ({
+          ...prev,
+          daily_dungeon: 7,
+          awakening: 3,
+          subjugation: 3
+        }))
+        setLastChargeTime(now)
+      }
+    }
+
+    // 1분마다 체크
+    const interval = setInterval(checkWeeklyContentReset, 60000)
+    checkWeeklyContentReset() // 즉시 한번 실행
 
     return () => clearInterval(interval)
   }, [lastChargeTime])
@@ -503,11 +570,13 @@ export default function LedgerPage() {
     sellItem,
     unsellItem,
     deleteItem,
-    totalSoldIncome
+    totalSoldIncome,
+    selectedDateSoldIncome
   } = useLedgerItems({
     getAuthHeader,
     isReady,
-    characterId: selectedCharacterId
+    characterId: selectedCharacterId,
+    selectedDate
   })
 
   // 즐겨찾기 관리
@@ -621,19 +690,34 @@ export default function LedgerPage() {
       try {
         const authHeaders = getAuthHeader()
 
-        // 선택한 날짜의 통계 가져오기
-        const res = await fetch(
-          `/api/ledger/stats?characterId=${selectedCharacterId}&type=daily&date=${selectedDate}`,
-          { headers: authHeaders }
-        )
+        // 선택한 날짜의 일일/주간 통계 병렬로 가져오기
+        const [dailyRes, weeklyRes] = await Promise.all([
+          fetch(
+            `/api/ledger/stats?characterId=${selectedCharacterId}&type=daily&date=${selectedDate}`,
+            { headers: authHeaders }
+          ),
+          fetch(
+            `/api/ledger/stats?characterId=${selectedCharacterId}&type=weekly&date=${selectedDate}`,
+            { headers: authHeaders }
+          )
+        ])
 
-        if (res.ok) {
-          const data = await res.json()
-          setSelectedDateIncome({
-            dailyIncome: data.dailyIncome || 0,
-            weeklyIncome: data.weeklyIncome || 0
-          })
+        let dailyIncome = 0
+        let weeklyIncome = 0
+
+        if (dailyRes.ok) {
+          const data = await dailyRes.json()
+          // API 응답 필드: contentIncome, itemIncome, totalIncome
+          dailyIncome = data.totalIncome || 0
         }
+
+        if (weeklyRes.ok) {
+          const data = await weeklyRes.json()
+          // API 응답 필드: totalIncome (주간 합계)
+          weeklyIncome = data.totalIncome || 0
+        }
+
+        setSelectedDateIncome({ dailyIncome, weeklyIncome })
       } catch (error) {
         console.error('Failed to load selected date income:', error)
         setSelectedDateIncome({ dailyIncome: 0, weeklyIncome: 0 })
@@ -641,46 +725,54 @@ export default function LedgerPage() {
     }
 
     loadSelectedDateIncome()
-  }, [selectedDate, selectedCharacterId, isReady, getAuthHeader])
+  }, [selectedDate, selectedCharacterId, isReady, getAuthHeader, incomeRefreshKey])
 
-  // 던전 컨텐츠 키나 계산 (초월/원정/루드라 - localStorage에서, 일별 기록)
+  // 던전 컨텐츠 키나 계산 (초월/원정/성역 - DB에서)
   useEffect(() => {
-    if (!selectedCharacterId) {
-      setDungeonKina(0)
-      return
-    }
+    const loadDungeonKina = async () => {
+      if (!selectedCharacterId || !isReady) {
+        setDungeonKina(0)
+        return
+      }
 
-    // 일별 기록에서 키나 계산
-    const storageKey = `dungeonRecords_${selectedCharacterId}_${selectedDate}`
-    const savedData = localStorage.getItem(storageKey)
-
-    if (savedData) {
       try {
-        const parsed = JSON.parse(savedData)
+        const res = await fetch(
+          `/api/ledger/dungeon-records?characterId=${selectedCharacterId}&date=${selectedDate}`,
+          { headers: getAuthHeader() }
+        )
+
+        if (!res.ok) {
+          setDungeonKina(0)
+          return
+        }
+
+        const data = await res.json()
         let totalKina = 0
 
-        // 초월 기록 합산
-        if (parsed.transcend && Array.isArray(parsed.transcend)) {
-          totalKina += parsed.transcend.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
-        }
-        // 원정 기록 합산
-        if (parsed.expedition && Array.isArray(parsed.expedition)) {
-          totalKina += parsed.expedition.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
-        }
-        // 성역(루드라) 기록 합산
-        if (parsed.sanctuary && Array.isArray(parsed.sanctuary)) {
-          totalKina += parsed.sanctuary.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+        if (data.records) {
+          // 초월 기록 합산
+          if (data.records.transcend && Array.isArray(data.records.transcend)) {
+            totalKina += data.records.transcend.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+          }
+          // 원정 기록 합산
+          if (data.records.expedition && Array.isArray(data.records.expedition)) {
+            totalKina += data.records.expedition.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+          }
+          // 성역 기록 합산
+          if (data.records.sanctuary && Array.isArray(data.records.sanctuary)) {
+            totalKina += data.records.sanctuary.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+          }
         }
 
         setDungeonKina(totalKina)
       } catch (e) {
-        console.error('Failed to parse dungeon records for kina:', e)
+        console.error('Failed to load dungeon kina from DB:', e)
         setDungeonKina(0)
       }
-    } else {
-      setDungeonKina(0)
     }
-  }, [selectedDate, selectedCharacterId])
+
+    loadDungeonKina()
+  }, [selectedDate, selectedCharacterId, isReady, getAuthHeader])
 
   // 캐릭터 추가 핸들러
   const handleAddCharacter = async (charData: any) => {
@@ -726,10 +818,16 @@ export default function LedgerPage() {
 
   // 티켓 충전 핸들러
   const handleTicketCharge = (charges: Record<string, number>) => {
+    // 슈고페스타 보너스 충전 처리
+    if (charges.shugo_festa && charges.shugo_festa > 0) {
+      setShugoBonusCharge(charges.shugo_festa)
+    }
+
+    // 다른 티켓 보너스 충전 처리
     setTicketBonuses(prev => {
       const newBonuses = { ...prev }
       Object.keys(charges).forEach(key => {
-        if (charges[key] > 0) {
+        if (key !== 'shugo_festa' && charges[key] > 0) {
           newBonuses[key] = (newBonuses[key] || 0) + charges[key]
         }
       })
@@ -868,6 +966,20 @@ export default function LedgerPage() {
       setBaseTickets(newBaseTickets)
       setTicketBonuses(newBonusTickets)
 
+      // 슈고페스타 초기설정 동기화
+      if (settings.tickets.shugo_festa !== undefined) {
+        setShugoInitialSync(settings.tickets.shugo_festa)
+      }
+
+      // 일일컨텐츠 초기설정 동기화
+      setDailyInitialSync({
+        daily_dungeon: settings.tickets.daily_dungeon ?? 7,
+        awakening: settings.tickets.awakening ?? 3,
+        nightmare: settings.tickets.nightmare ?? 14,
+        dimension: settings.tickets.dimension ?? 14,
+        subjugation: settings.tickets.subjugation ?? 3
+      })
+
     } catch (error: any) {
       addDebugLog('error', `초기설정 저장 실패: ${selectedCharacterId}`, { error: error.message })
       console.error('[초기설정] 저장 실패:', error)
@@ -948,12 +1060,17 @@ export default function LedgerPage() {
                 characterId={selectedCharacterId}
                 selectedDate={selectedDate}
                 onDebugLog={addDebugLog}
+                shugoInitialSync={shugoInitialSync}
+                onShugoSyncComplete={() => setShugoInitialSync(undefined)}
+                shugoBonusCharge={shugoBonusCharge}
+                onShugoBonusChargeComplete={() => setShugoBonusCharge(undefined)}
               />
 
               {/* 초월 & 원정 & 성역 */}
               <DungeonContentSection
                 characterId={selectedCharacterId}
                 selectedDate={selectedDate}
+                getAuthHeader={getAuthHeader}
                 baseTickets={{
                   transcend: baseTickets.transcend,
                   expedition: baseTickets.expedition,
@@ -977,7 +1094,10 @@ export default function LedgerPage() {
                 }}
                 onOdEnergyDeduct={handleOdEnergyDeduct}
                 onOdEnergyRestore={handleOdEnergyRestore}
-                onTotalKinaChange={setDungeonKina}
+                onTotalKinaChange={(kina) => {
+                  setDungeonKina(kina)
+                  setIncomeRefreshKey(prev => prev + 1) // 수입 새로고침 트리거
+                }}
               />
 
               {/* 일일 컨텐츠 */}
@@ -1005,13 +1125,10 @@ export default function LedgerPage() {
                 onBonusTicketsChange={(updates) => {
                   setTicketBonuses(prev => ({ ...prev, ...updates }))
                 }}
+                initialSyncTickets={dailyInitialSync}
+                onInitialSyncComplete={() => setDailyInitialSync(undefined)}
               />
 
-              {/* 주간 수입 그래프 */}
-              <WeeklyChart
-                stats={weeklyStats}
-                isLoading={isStatsLoading}
-              />
             </>
           )}
 
@@ -1029,6 +1146,7 @@ export default function LedgerPage() {
                 sold_date: item.sold_date || undefined
               }))}
               favorites={favorites}
+              selectedDate={selectedDate}
               onAddItem={async (itemData) => {
                 await addItem(itemData)
               }}
@@ -1037,9 +1155,11 @@ export default function LedgerPage() {
               }}
               onSellItem={async (id, soldPrice) => {
                 await sellItem(id, soldPrice)
+                setIncomeRefreshKey(prev => prev + 1)
               }}
               onUnsellItem={async (id) => {
                 await unsellItem(id)
+                setIncomeRefreshKey(prev => prev + 1)
               }}
               onDeleteItem={async (id) => { await deleteItem(id) }}
               onToggleFavorite={handleToggleFavorite}
@@ -1115,8 +1235,8 @@ export default function LedgerPage() {
       {/* 하단 네비게이션 바 (캐릭터 선택 시에만 표시) */}
       {activeTab !== 'dashboard' && selectedCharacterId && (
         <BottomNavBar
-          todayIncome={selectedDateIncome.dailyIncome + dungeonKina + totalSoldIncome}
-          weeklyIncome={selectedDateIncome.weeklyIncome + dungeonKina + totalSoldIncome}
+          todayIncome={selectedDateIncome.dailyIncome}
+          weeklyIncome={selectedDateIncome.weeklyIncome}
           selectedDate={selectedDate}
           onDateClick={() => setShowDateModal(true)}
           onChargeClick={() => setShowChargePopup(true)}

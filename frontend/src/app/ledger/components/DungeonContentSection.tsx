@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import ContentCard from './ContentCard'
 import OdEnergyBar from './OdEnergyBar'
 import { getWeekKey, isEditable } from '../utils/dateUtils'
@@ -52,6 +52,7 @@ interface ContentRecord {
 interface DungeonContentSectionProps {
   characterId: string | null
   selectedDate: string
+  getAuthHeader?: () => Record<string, string>
   baseTickets?: {
     transcend: number
     expedition: number
@@ -77,6 +78,7 @@ interface DungeonContentSectionProps {
 export default function DungeonContentSection({
   characterId,
   selectedDate,
+  getAuthHeader,
   baseTickets = { transcend: 14, expedition: 21, sanctuary: 4 },
   bonusTickets = { transcend: 0, expedition: 0, sanctuary: 0 },
   onBaseTicketsChange,
@@ -88,6 +90,13 @@ export default function DungeonContentSection({
 }: DungeonContentSectionProps) {
   // 로딩 상태 (로딩 중에는 저장 안 함)
   const isLoadingRef = useRef(false)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const selectionsLoadedRef = useRef(false)
+
+  // onTotalKinaChange ref (인라인 함수로 전달되면 무한 루프 방지용)
+  // 실제 호출은 debouncedSave에서 DB 저장 완료 후 수행
+  const onTotalKinaChangeRef = useRef(onTotalKinaChange)
+  onTotalKinaChangeRef.current = onTotalKinaChange
 
   // 주간 키 계산 (수요일 5시 기준)
   const weekKey = useMemo(() => getWeekKey(new Date(selectedDate)), [selectedDate])
@@ -97,7 +106,7 @@ export default function DungeonContentSection({
 
   const [dungeonData, setDungeonData] = useState<DungeonData | null>(null)
 
-  // 접기/펼치기 상태 (localStorage에서 불러오기)
+  // 접기/펼치기 상태 (UI 상태라 localStorage 유지)
   const [collapsedCards, setCollapsedCards] = useState<Record<string, boolean>>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('dungeonCardsCollapsed')
@@ -106,40 +115,129 @@ export default function DungeonContentSection({
     return {}
   })
 
-  // 초월 상태 (props 우선, 없으면 기본값)
+  // 초월 상태
   const [transcendTickets, setTranscendTickets] = useState({ base: baseTickets.transcend || 14, bonus: bonusTickets.transcend || 0 })
   const [transcendDouble, setTranscendDouble] = useState(false)
   const [transcendBoss, setTranscendBoss] = useState('')
   const [transcendTier, setTranscendTier] = useState(1)
   const [transcendRecords, setTranscendRecords] = useState<ContentRecord[]>([])
 
-  // 원정 상태 (props 우선, 없으면 기본값)
+  // 원정 상태
   const [expeditionTickets, setExpeditionTickets] = useState({ base: baseTickets.expedition || 21, bonus: bonusTickets.expedition || 0 })
   const [expeditionDouble, setExpeditionDouble] = useState(false)
   const [expeditionCategory, setExpeditionCategory] = useState('')
   const [expeditionBoss, setExpeditionBoss] = useState('')
   const [expeditionRecords, setExpeditionRecords] = useState<ContentRecord[]>([])
 
-  // 성역 상태 (props 우선, 없으면 기본값)
+  // 성역 상태
   const [sanctuaryTickets, setSanctuaryTickets] = useState({ base: baseTickets.sanctuary || 4, bonus: bonusTickets.sanctuary || 0 })
   const [sanctuaryDouble, setSanctuaryDouble] = useState(false)
   const [sanctuaryBoss, setSanctuaryBoss] = useState('')
   const [sanctuaryRecords, setSanctuaryRecords] = useState<ContentRecord[]>([])
 
-  // 캐릭터별 보스/단계 선택 저장 여부
-  const selectionsLoadedRef = useRef(false)
-
-  // props 변경 시 티켓 state 동기화 (DB에서 관리하므로 localStorage 사용 안 함)
+  // props 변경 시 티켓 state 동기화
   useEffect(() => {
     setTranscendTickets({ base: baseTickets.transcend, bonus: bonusTickets.transcend })
     setExpeditionTickets({ base: baseTickets.expedition, bonus: bonusTickets.expedition })
     setSanctuaryTickets({ base: baseTickets.sanctuary, bonus: bonusTickets.sanctuary })
   }, [baseTickets.transcend, baseTickets.expedition, baseTickets.sanctuary, bonusTickets.transcend, bonusTickets.expedition, bonusTickets.sanctuary])
 
-  // 티켓은 DB에서 관리하므로 localStorage 저장 제거됨
-  // (page.tsx의 useEffect에서 character-state API로 저장)
+  // DB에서 던전 기록 로드
+  const loadFromDatabase = useCallback(async () => {
+    if (!characterId || !getAuthHeader) return null
 
-  // 기록 불러오기 (일별 기준 - 당일만 표시)
+    try {
+      const res = await fetch(
+        `/api/ledger/dungeon-records?characterId=${characterId}&date=${selectedDate}`,
+        { headers: getAuthHeader() }
+      )
+
+      if (!res.ok) {
+        if (res.status === 404) return null
+        throw new Error('Failed to load dungeon records')
+      }
+
+      return await res.json()
+    } catch (err) {
+      console.error('Failed to load dungeon records from DB:', err)
+      return null
+    }
+  }, [characterId, selectedDate, getAuthHeader])
+
+  // DB에 던전 기록 저장
+  const saveToDatabase = useCallback(async () => {
+    if (!characterId || !getAuthHeader || isLoadingRef.current || !canEdit) return
+
+    try {
+      await fetch('/api/ledger/dungeon-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({
+          characterId,
+          date: selectedDate,
+          transcendRecords,
+          expeditionRecords,
+          sanctuaryRecords,
+          transcendDouble,
+          expeditionDouble,
+          sanctuaryDouble
+        })
+      })
+    } catch (err) {
+      console.error('Failed to save dungeon records to DB:', err)
+    }
+  }, [characterId, selectedDate, getAuthHeader, canEdit, transcendRecords, expeditionRecords, sanctuaryRecords, transcendDouble, expeditionDouble, sanctuaryDouble])
+
+  // DB에 선택 정보 저장
+  const saveSelectionsToDatabase = useCallback(async () => {
+    if (!characterId || !getAuthHeader || !selectionsLoadedRef.current) return
+    if (!transcendBoss && !expeditionBoss && !sanctuaryBoss) return
+
+    try {
+      await fetch('/api/ledger/dungeon-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({
+          characterId,
+          selections: {
+            transcendBoss,
+            transcendTier,
+            expeditionCategory,
+            expeditionBoss,
+            sanctuaryBoss
+          }
+        })
+      })
+    } catch (err) {
+      console.error('Failed to save dungeon selections to DB:', err)
+    }
+  }, [characterId, getAuthHeader, transcendBoss, transcendTier, expeditionCategory, expeditionBoss, sanctuaryBoss])
+
+  // 디바운스된 저장 (저장 완료 후 수입 새로고침 트리거)
+  const debouncedSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current)
+    }
+    saveTimeoutRef.current = setTimeout(async () => {
+      await saveToDatabase()
+      // DB 저장 완료 후 부모에게 알림 (수입 새로고침 트리거)
+      if (onTotalKinaChangeRef.current) {
+        const totalKina =
+          transcendRecords.reduce((sum, r) => sum + (r.kina || 0), 0) +
+          expeditionRecords.reduce((sum, r) => sum + (r.kina || 0), 0) +
+          sanctuaryRecords.reduce((sum, r) => sum + (r.kina || 0), 0)
+        onTotalKinaChangeRef.current(totalKina)
+      }
+    }, 100)
+  }, [saveToDatabase, transcendRecords, expeditionRecords, sanctuaryRecords])
+
+  // 기록 불러오기 (캐릭터/날짜 변경 시)
   useEffect(() => {
     isLoadingRef.current = true
 
@@ -162,102 +260,92 @@ export default function DungeonContentSection({
     setExpeditionDouble(false)
     setSanctuaryDouble(false)
 
-    // localStorage에서 캐릭터+날짜별 기록 불러오기
-    const recordKey = `dungeonRecords_${characterId}_${selectedDate}`
-    const savedRecords = localStorage.getItem(recordKey)
-    if (savedRecords) {
-      try {
-        const parsed = JSON.parse(savedRecords)
-        if (parsed.transcend) setTranscendRecords(parsed.transcend)
-        if (parsed.expedition) setExpeditionRecords(parsed.expedition)
-        if (parsed.sanctuary) setSanctuaryRecords(parsed.sanctuary)
-        if (parsed.transcendDouble !== undefined) setTranscendDouble(parsed.transcendDouble)
-        if (parsed.expeditionDouble !== undefined) setExpeditionDouble(parsed.expeditionDouble)
-        if (parsed.sanctuaryDouble !== undefined) setSanctuaryDouble(parsed.sanctuaryDouble)
-      } catch (e) {
-        console.error('Failed to parse dungeon records:', e)
+    const loadData = async () => {
+      const data = await loadFromDatabase()
+
+      if (data?.records) {
+        if (data.records.transcend) setTranscendRecords(data.records.transcend)
+        if (data.records.expedition) setExpeditionRecords(data.records.expedition)
+        if (data.records.sanctuary) setSanctuaryRecords(data.records.sanctuary)
+        if (data.records.transcendDouble !== undefined) setTranscendDouble(data.records.transcendDouble)
+        if (data.records.expeditionDouble !== undefined) setExpeditionDouble(data.records.expeditionDouble)
+        if (data.records.sanctuaryDouble !== undefined) setSanctuaryDouble(data.records.sanctuaryDouble)
       }
+
+      if (data?.selections) {
+        if (data.selections.transcendBoss) setTranscendBoss(data.selections.transcendBoss)
+        if (data.selections.transcendTier) setTranscendTier(data.selections.transcendTier)
+        if (data.selections.expeditionCategory) setExpeditionCategory(data.selections.expeditionCategory)
+        if (data.selections.expeditionBoss) setExpeditionBoss(data.selections.expeditionBoss)
+        if (data.selections.sanctuaryBoss) setSanctuaryBoss(data.selections.sanctuaryBoss)
+      }
+
+      setTimeout(() => {
+        isLoadingRef.current = false
+        selectionsLoadedRef.current = true
+      }, 100)
     }
 
-    setTimeout(() => {
-      isLoadingRef.current = false
-    }, 100)
-  }, [characterId, selectedDate])
+    loadData()
+  }, [characterId, selectedDate, loadFromDatabase])
 
-  // 기록 저장 (일별 기준)
+  // 기록 변경 시 DB 저장 (디바운스)
   useEffect(() => {
     if (!characterId || isLoadingRef.current || !canEdit) return
+    debouncedSave()
+  }, [characterId, canEdit, transcendRecords, expeditionRecords, sanctuaryRecords, transcendDouble, expeditionDouble, sanctuaryDouble, debouncedSave])
 
-    const recordData = {
-      transcend: transcendRecords,
-      expedition: expeditionRecords,
-      sanctuary: sanctuaryRecords,
-      transcendDouble,
-      expeditionDouble,
-      sanctuaryDouble
-    }
-    const recordKey = `dungeonRecords_${characterId}_${selectedDate}`
-    localStorage.setItem(recordKey, JSON.stringify(recordData))
-  }, [characterId, selectedDate, canEdit, transcendRecords, expeditionRecords, sanctuaryRecords, transcendDouble, expeditionDouble, sanctuaryDouble])
-
-  // 총 키나 변경 시 부모에게 알림
+  // 선택 정보 변경 시 DB 저장
   useEffect(() => {
-    if (onTotalKinaChange) {
-      const totalKina =
-        transcendRecords.reduce((sum, r) => sum + (r.kina || 0), 0) +
-        expeditionRecords.reduce((sum, r) => sum + (r.kina || 0), 0) +
-        sanctuaryRecords.reduce((sum, r) => sum + (r.kina || 0), 0)
-      onTotalKinaChange(totalKina)
-    }
-  }, [transcendRecords, expeditionRecords, sanctuaryRecords, onTotalKinaChange])
+    if (!characterId || !selectionsLoadedRef.current) return
+    saveSelectionsToDatabase()
+  }, [characterId, transcendBoss, transcendTier, expeditionCategory, expeditionBoss, sanctuaryBoss, saveSelectionsToDatabase])
 
-  // 캐릭터별 보스/단계 선택 불러오기
+  // DB에 키나 정보 저장 (content-records API)
   useEffect(() => {
-    selectionsLoadedRef.current = false
+    if (!characterId || !getAuthHeader || isLoadingRef.current) return
 
-    if (!characterId) {
-      selectionsLoadedRef.current = true
-      return
-    }
+    const transcendKina = transcendRecords.reduce((sum, r) => sum + (r.kina || 0), 0)
+    const expeditionKina = expeditionRecords.reduce((sum, r) => sum + (r.kina || 0), 0)
+    const sanctuaryKina = sanctuaryRecords.reduce((sum, r) => sum + (r.kina || 0), 0)
 
-    const selectionsKey = `dungeonSelections_${characterId}`
-    const savedSelections = localStorage.getItem(selectionsKey)
-
-    if (savedSelections) {
+    const saveToContentRecords = async (contentType: string, kina: number, count: number) => {
       try {
-        const parsed = JSON.parse(savedSelections)
-        if (parsed.transcendBoss) setTranscendBoss(parsed.transcendBoss)
-        if (parsed.transcendTier) setTranscendTier(parsed.transcendTier)
-        if (parsed.expeditionCategory) setExpeditionCategory(parsed.expeditionCategory)
-        if (parsed.expeditionBoss) setExpeditionBoss(parsed.expeditionBoss)
-        if (parsed.sanctuaryBoss) setSanctuaryBoss(parsed.sanctuaryBoss)
-      } catch (e) {
-        console.error('Failed to parse dungeon selections:', e)
+        await fetch('/api/ledger/content-records', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify({
+            characterId,
+            date: selectedDate,
+            content_type: contentType,
+            dungeon_tier: contentType,
+            max_count: count,
+            completion_count: count,
+            is_double: false,
+            base_kina: count > 0 ? Math.round(kina / count) : 0
+          })
+        })
+      } catch (err) {
+        console.error(`Failed to save ${contentType} to content-records:`, err)
       }
     }
 
-    setTimeout(() => {
-      selectionsLoadedRef.current = true
-    }, 100)
-  }, [characterId])
+    saveToContentRecords('transcend', transcendKina, transcendRecords.length)
+    saveToContentRecords('expedition', expeditionKina, expeditionRecords.length)
+    saveToContentRecords('sanctuary', sanctuaryKina, sanctuaryRecords.length)
+  }, [transcendRecords, expeditionRecords, sanctuaryRecords, characterId, selectedDate, getAuthHeader])
 
-  // 캐릭터별 보스/단계 선택 저장
+  // 컴포넌트 언마운트 시 타임아웃 정리
   useEffect(() => {
-    if (!characterId || !selectionsLoadedRef.current) return
-
-    // 선택값이 비어있으면 저장하지 않음
-    if (!transcendBoss && !expeditionBoss && !sanctuaryBoss) return
-
-    const selectionsData = {
-      transcendBoss,
-      transcendTier,
-      expeditionCategory,
-      expeditionBoss,
-      sanctuaryBoss
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
     }
-    const selectionsKey = `dungeonSelections_${characterId}`
-    localStorage.setItem(selectionsKey, JSON.stringify(selectionsData))
-  }, [characterId, transcendBoss, transcendTier, expeditionCategory, expeditionBoss, sanctuaryBoss])
+  }, [])
 
   // 던전 데이터 로드
   useEffect(() => {
@@ -291,58 +379,43 @@ export default function DungeonContentSection({
           sanctuary: sanctuaryData
         })
 
-        // 캐릭터별 저장된 선택값이 있는지 확인
-        let savedSelections: Record<string, string | number> | null = null
-        if (characterId) {
-          const selectionsKey = `dungeonSelections_${characterId}`
-          const saved = localStorage.getItem(selectionsKey)
-          if (saved) {
-            try {
-              savedSelections = JSON.parse(saved)
-            } catch (e) {
-              console.error('Failed to parse saved selections:', e)
+        // DB에서 선택값을 불러온 후 없으면 기본값 설정
+        setTimeout(() => {
+          if (transcendData.bosses.length > 0 && !transcendBoss) {
+            setTranscendBoss(transcendData.bosses[0].id)
+          }
+          if (expeditionData.categories.length > 0 && !expeditionCategory) {
+            setExpeditionCategory(expeditionData.categories[0].id)
+            if (expeditionData.categories[0].bosses.length > 0 && !expeditionBoss) {
+              setExpeditionBoss(expeditionData.categories[0].bosses[0].id)
             }
           }
-        }
-
-        // 초기 선택값 설정 (저장된 값이 없을 때만 기본값 설정)
-        if (transcendData.bosses.length > 0 && !savedSelections?.transcendBoss) {
-          setTranscendBoss(transcendData.bosses[0].id)
-        }
-        if (expeditionData.categories.length > 0 && !savedSelections?.expeditionCategory) {
-          setExpeditionCategory(expeditionData.categories[0].id)
-          if (expeditionData.categories[0].bosses.length > 0 && !savedSelections?.expeditionBoss) {
-            setExpeditionBoss(expeditionData.categories[0].bosses[0].id)
+          if (sanctuaryData.categories.length > 0 && sanctuaryData.categories[0].bosses.length > 0 && !sanctuaryBoss) {
+            setSanctuaryBoss(sanctuaryData.categories[0].bosses[0].id)
           }
-        }
-        if (sanctuaryData.categories.length > 0 && sanctuaryData.categories[0].bosses.length > 0 && !savedSelections?.sanctuaryBoss) {
-          setSanctuaryBoss(sanctuaryData.categories[0].bosses[0].id)
-        }
+        }, 200)
       } catch (error) {
         console.error('Failed to load dungeon data:', error)
       }
     }
 
     fetchData()
-  }, [characterId])
+  }, [])
 
   // 초월 기록 추가
   const handleAddTranscendRecord = (record: Omit<ContentRecord, 'id'>) => {
     setTranscendRecords(prev => {
-      // 같은 조합 찾기
       const existing = prev.find(
         r => r.bossName === record.bossName && r.tier === record.tier
       )
 
       if (existing) {
-        // 누적
         return prev.map(r =>
           r.id === existing.id
             ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
             : r
         )
       } else {
-        // 새로 추가
         return [...prev, { ...record, id: Date.now().toString() }]
       }
     })
@@ -356,20 +429,17 @@ export default function DungeonContentSection({
   // 원정 기록 추가
   const handleAddExpeditionRecord = (record: Omit<ContentRecord, 'id'>) => {
     setExpeditionRecords(prev => {
-      // 같은 조합 찾기
       const existing = prev.find(
         r => r.bossName === record.bossName && r.category === record.category
       )
 
       if (existing) {
-        // 누적
         return prev.map(r =>
           r.id === existing.id
             ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
             : r
         )
       } else {
-        // 새로 추가
         return [...prev, { ...record, id: Date.now().toString() }]
       }
     })
@@ -392,18 +462,15 @@ export default function DungeonContentSection({
   // 성역 기록 추가
   const handleAddSanctuaryRecord = (record: Omit<ContentRecord, 'id'>) => {
     setSanctuaryRecords(prev => {
-      // 같은 조합 찾기
       const existing = prev.find(r => r.bossName === record.bossName)
 
       if (existing) {
-        // 누적
         return prev.map(r =>
           r.id === existing.id
             ? { ...r, count: r.count + record.count, kina: r.kina + record.kina }
             : r
         )
       } else {
-        // 새로 추가
         return [...prev, { ...record, id: Date.now().toString() }]
       }
     })
@@ -414,14 +481,13 @@ export default function DungeonContentSection({
     setSanctuaryRecords(prev => prev.filter(r => r.id !== recordId))
   }
 
-  // 카드 접기/펼치기 토글
+  // 카드 접기/펼치기 토글 (UI 상태라 localStorage 유지)
   const toggleCardCollapse = (cardId: string) => {
     setCollapsedCards(prev => {
       const newState = {
         ...prev,
         [cardId]: !prev[cardId]
       }
-      // localStorage에 저장
       if (typeof window !== 'undefined') {
         localStorage.setItem('dungeonCardsCollapsed', JSON.stringify(newState))
       }

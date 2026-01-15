@@ -36,6 +36,21 @@ async function getOrCreateUserByDeviceId(device_id: string) {
   return newUser
 }
 
+// 게임 날짜 계산 (새벽 5시 기준, KST 한국 시간 기준)
+function getGameDate(date: Date = new Date()): string {
+  // KST(한국 시간) 기준으로 계산 (UTC + 9시간)
+  const kstOffset = 9 * 60 * 60 * 1000
+  const kst = new Date(date.getTime() + kstOffset)
+  const hour = kst.getUTCHours()
+
+  // 새벽 5시 이전이면 전날로 처리
+  if (hour < 5) {
+    kst.setUTCDate(kst.getUTCDate() - 1)
+  }
+
+  return kst.toISOString().split('T')[0]
+}
+
 // 인증된 유저 또는 device_id 유저 조회
 async function getUserFromRequest(request: NextRequest) {
   const supabase = getSupabase()
@@ -101,7 +116,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
-  const today = date || new Date().toISOString().split('T')[0]
+  const today = date || getGameDate(new Date())
 
   try {
     if (type === 'daily') {
@@ -122,14 +137,47 @@ export async function GET(request: NextRequest) {
 async function getDailyStats(characterId: string, date: string) {
   const supabase = getSupabase()
 
-  // 컨텐츠 수입
-  const { data: contentRecords } = await supabase
+  // 던전 타입 (중복 계산 방지용 - dungeonIncome에서 별도 계산)
+  const dungeonTypes = ['transcend', 'expedition', 'sanctuary']
+
+  // 컨텐츠 수입 (던전 타입 제외 - 중복 방지)
+  const { data: contentRecords, error: contentError } = await supabase
     .from('ledger_content_records')
-    .select('total_kina')
-    .eq('ledger_character_id', characterId)
+    .select('total_kina, content_type')
+    .eq('character_id', characterId)
     .eq('record_date', date)
 
-  const contentIncome = contentRecords?.reduce((sum, r) => sum + (r.total_kina || 0), 0) || 0
+  console.log(`[Stats] getDailyStats - characterId: ${characterId}, date: ${date}`)
+  console.log(`[Stats] contentRecords:`, contentRecords, contentError)
+
+  // 던전 타입 제외한 컨텐츠만 합산
+  const contentIncome = contentRecords
+    ?.filter(r => !dungeonTypes.includes(r.content_type))
+    .reduce((sum, r) => sum + (r.total_kina || 0), 0) || 0
+
+  // 던전 수입 (초월, 원정대, 성역)
+  const { data: dungeonRecord } = await supabase
+    .from('ledger_dungeon_records')
+    .select('transcend_records, expedition_records, sanctuary_records')
+    .eq('character_id', characterId)
+    .eq('record_date', date)
+    .single()
+
+  let dungeonIncome = 0
+  if (dungeonRecord) {
+    // 초월 키나 합산
+    if (dungeonRecord.transcend_records && Array.isArray(dungeonRecord.transcend_records)) {
+      dungeonIncome += dungeonRecord.transcend_records.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+    }
+    // 원정대 키나 합산
+    if (dungeonRecord.expedition_records && Array.isArray(dungeonRecord.expedition_records)) {
+      dungeonIncome += dungeonRecord.expedition_records.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+    }
+    // 성역 키나 합산
+    if (dungeonRecord.sanctuary_records && Array.isArray(dungeonRecord.sanctuary_records)) {
+      dungeonIncome += dungeonRecord.sanctuary_records.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+    }
+  }
 
   // 아이템 판매 수입 (해당 날짜에 판매된 것)
   const { data: soldItems } = await supabase
@@ -145,13 +193,17 @@ async function getDailyStats(characterId: string, date: string) {
   return NextResponse.json({
     date,
     contentIncome,
+    dungeonIncome,
     itemIncome,
-    totalIncome: contentIncome + itemIncome
+    totalIncome: contentIncome + dungeonIncome + itemIncome
   })
 }
 
 async function getWeeklyStats(characterId: string, date: string) {
   const supabase = getSupabase()
+
+  // 던전 타입 (중복 계산 방지용)
+  const dungeonTypes = ['transcend', 'expedition', 'sanctuary']
 
   // 주의 시작일 계산 (월요일 기준)
   const d = new Date(date)
@@ -160,47 +212,79 @@ async function getWeeklyStats(characterId: string, date: string) {
   const startDate = new Date(d.setDate(diff)).toISOString().split('T')[0]
   const endDate = new Date(d.setDate(d.getDate() + 6)).toISOString().split('T')[0]
 
-  // 주간 컨텐츠 수입
+  console.log(`[Stats] getWeeklyStats - characterId: ${characterId}, date: ${date}, startDate: ${startDate}, endDate: ${endDate}`)
+
+  // 주간 컨텐츠 수입 (던전 타입 제외)
   const { data: contentRecords } = await supabase
     .from('ledger_content_records')
-    .select('record_date, total_kina')
-    .eq('ledger_character_id', characterId)
+    .select('record_date, total_kina, content_type')
+    .eq('character_id', characterId)
+    .gte('record_date', startDate)
+    .lte('record_date', endDate)
+
+  // 주간 던전 수입 (초월, 원정대, 성역)
+  const { data: dungeonRecords } = await supabase
+    .from('ledger_dungeon_records')
+    .select('record_date, transcend_records, expedition_records, sanctuary_records')
+    .eq('character_id', characterId)
     .gte('record_date', startDate)
     .lte('record_date', endDate)
 
   // 주간 아이템 판매 수입
   const { data: soldItems } = await supabase
     .from('ledger_items')
-    .select('sold_price, updated_at')
+    .select('sold_price, updated_at, item_name')
     .eq('ledger_character_id', characterId)
     .not('sold_price', 'is', null)
     .gte('updated_at', `${startDate}T00:00:00`)
     .lte('updated_at', `${endDate}T23:59:59`)
 
+  console.log(`[Stats] getWeeklyStats - contentRecords:`, contentRecords?.length, 'dungeonRecords:', dungeonRecords?.length, 'soldItems:', soldItems?.length)
+
   // 일별 데이터 집계
-  const dailyMap = new Map<string, { contentIncome: number; itemIncome: number }>()
+  const dailyMap = new Map<string, { contentIncome: number; dungeonIncome: number; itemIncome: number }>()
 
   // 7일간의 빈 데이터 초기화
   for (let i = 0; i < 7; i++) {
     const dateKey = new Date(new Date(startDate).getTime() + i * 24 * 60 * 60 * 1000)
       .toISOString().split('T')[0]
-    dailyMap.set(dateKey, { contentIncome: 0, itemIncome: 0 })
+    dailyMap.set(dateKey, { contentIncome: 0, dungeonIncome: 0, itemIncome: 0 })
   }
 
-  // 컨텐츠 수입 집계
+  // 컨텐츠 수입 집계 (던전 타입 제외)
   contentRecords?.forEach(r => {
+    if (dungeonTypes.includes(r.content_type)) return // 던전 타입 제외
     const existing = dailyMap.get(r.record_date)
     if (existing) {
       existing.contentIncome += r.total_kina || 0
     }
   })
 
+  // 던전 수입 집계
+  dungeonRecords?.forEach(r => {
+    const existing = dailyMap.get(r.record_date)
+    if (existing) {
+      // 초월 키나 합산
+      if (r.transcend_records && Array.isArray(r.transcend_records)) {
+        existing.dungeonIncome += r.transcend_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+      // 원정대 키나 합산
+      if (r.expedition_records && Array.isArray(r.expedition_records)) {
+        existing.dungeonIncome += r.expedition_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+      // 성역 키나 합산
+      if (r.sanctuary_records && Array.isArray(r.sanctuary_records)) {
+        existing.dungeonIncome += r.sanctuary_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+    }
+  })
+
   // 아이템 판매 수입 집계
-  soldItems?.forEach(i => {
-    const itemDate = i.updated_at.split('T')[0]
+  soldItems?.forEach(r => {
+    const itemDate = r.updated_at.split('T')[0]
     const existing = dailyMap.get(itemDate)
     if (existing) {
-      existing.itemIncome += i.sold_price || 0
+      existing.itemIncome += r.sold_price || 0
     }
   })
 
@@ -208,8 +292,9 @@ async function getWeeklyStats(characterId: string, date: string) {
   const dailyData = Array.from(dailyMap.entries()).map(([dateKey, data]) => ({
     date: dateKey,
     contentIncome: data.contentIncome,
+    dungeonIncome: data.dungeonIncome,
     itemIncome: data.itemIncome,
-    totalIncome: data.contentIncome + data.itemIncome
+    totalIncome: data.contentIncome + data.dungeonIncome + data.itemIncome
   }))
 
   const totalIncome = dailyData.reduce((sum, d) => sum + d.totalIncome, 0)
@@ -231,16 +316,27 @@ async function getWeeklyStats(characterId: string, date: string) {
 async function getMonthlyStats(characterId: string, date: string) {
   const supabase = getSupabase()
 
+  // 던전 타입 (중복 계산 방지용)
+  const dungeonTypes = ['transcend', 'expedition', 'sanctuary']
+
   // 이번 달 시작일과 끝일 계산
   const d = new Date(date)
   const startDate = new Date(d.getFullYear(), d.getMonth(), 1).toISOString().split('T')[0]
   const endDate = new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().split('T')[0]
 
-  // 월간 컨텐츠 수입
+  // 월간 컨텐츠 수입 (던전 타입 제외)
   const { data: contentRecords } = await supabase
     .from('ledger_content_records')
-    .select('record_date, total_kina')
-    .eq('ledger_character_id', characterId)
+    .select('record_date, total_kina, content_type')
+    .eq('character_id', characterId)
+    .gte('record_date', startDate)
+    .lte('record_date', endDate)
+
+  // 월간 던전 수입 (초월, 원정대, 성역)
+  const { data: dungeonRecords } = await supabase
+    .from('ledger_dungeon_records')
+    .select('record_date, transcend_records, expedition_records, sanctuary_records')
+    .eq('character_id', characterId)
     .gte('record_date', startDate)
     .lte('record_date', endDate)
 
@@ -254,29 +350,49 @@ async function getMonthlyStats(characterId: string, date: string) {
     .lte('updated_at', `${endDate}T23:59:59`)
 
   // 일별 데이터 집계
-  const dailyMap = new Map<string, { contentIncome: number; itemIncome: number }>()
+  const dailyMap = new Map<string, { contentIncome: number; dungeonIncome: number; itemIncome: number }>()
 
   // 해당 월의 모든 날짜 초기화
   const daysInMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
   for (let i = 1; i <= daysInMonth; i++) {
     const dateKey = new Date(d.getFullYear(), d.getMonth(), i).toISOString().split('T')[0]
-    dailyMap.set(dateKey, { contentIncome: 0, itemIncome: 0 })
+    dailyMap.set(dateKey, { contentIncome: 0, dungeonIncome: 0, itemIncome: 0 })
   }
 
-  // 컨텐츠 수입 집계
+  // 컨텐츠 수입 집계 (던전 타입 제외)
   contentRecords?.forEach(r => {
+    if (dungeonTypes.includes(r.content_type)) return // 던전 타입 제외
     const existing = dailyMap.get(r.record_date)
     if (existing) {
       existing.contentIncome += r.total_kina || 0
     }
   })
 
+  // 던전 수입 집계
+  dungeonRecords?.forEach(r => {
+    const existing = dailyMap.get(r.record_date)
+    if (existing) {
+      // 초월 키나 합산
+      if (r.transcend_records && Array.isArray(r.transcend_records)) {
+        existing.dungeonIncome += r.transcend_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+      // 원정대 키나 합산
+      if (r.expedition_records && Array.isArray(r.expedition_records)) {
+        existing.dungeonIncome += r.expedition_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+      // 성역 키나 합산
+      if (r.sanctuary_records && Array.isArray(r.sanctuary_records)) {
+        existing.dungeonIncome += r.sanctuary_records.reduce((sum: number, rec: any) => sum + (rec.kina || 0), 0)
+      }
+    }
+  })
+
   // 아이템 판매 수입 집계
-  soldItems?.forEach(i => {
-    const itemDate = i.updated_at.split('T')[0]
+  soldItems?.forEach(r => {
+    const itemDate = r.updated_at.split('T')[0]
     const existing = dailyMap.get(itemDate)
     if (existing) {
-      existing.itemIncome += i.sold_price || 0
+      existing.itemIncome += r.sold_price || 0
     }
   })
 
@@ -284,8 +400,9 @@ async function getMonthlyStats(characterId: string, date: string) {
   const dailyData = Array.from(dailyMap.entries()).map(([dateKey, data]) => ({
     date: dateKey,
     contentIncome: data.contentIncome,
+    dungeonIncome: data.dungeonIncome,
     itemIncome: data.itemIncome,
-    totalIncome: data.contentIncome + data.itemIncome
+    totalIncome: data.contentIncome + data.dungeonIncome + data.itemIncome
   }))
 
   const totalIncome = dailyData.reduce((sum, d) => sum + d.totalIncome, 0)
@@ -309,6 +426,8 @@ async function getMonthlyStats(characterId: string, date: string) {
 async function getSummaryStats(characterId: string, today: string) {
   const supabase = getSupabase()
 
+  console.log(`[Stats] getSummaryStats - characterId: ${characterId}, today: ${today}`)
+
   // 오늘 수입
   const dailyResult = await getDailyStats(characterId, today)
   const dailyData = await dailyResult.json()
@@ -320,6 +439,8 @@ async function getSummaryStats(characterId: string, today: string) {
   // 월간 수입
   const monthlyResult = await getMonthlyStats(characterId, today)
   const monthlyData = await monthlyResult.json()
+
+  console.log(`[Stats] getSummaryStats result - daily: ${dailyData.totalIncome}, weekly: ${weeklyData.totalIncome}, monthly: ${monthlyData.totalIncome}`)
 
   // 미판매 아이템 수
   const { data: unsoldItems } = await supabase
