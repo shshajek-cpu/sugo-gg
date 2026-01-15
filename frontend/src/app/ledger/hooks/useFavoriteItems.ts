@@ -41,7 +41,7 @@ export function useFavoriteItems({ getAuthHeader, isReady, characterId }: UseFav
     fetchFavorites()
   }, [fetchFavorites])
 
-  const addFavorite = async (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => {
+  const addFavorite = async (itemId: string, itemName: string, itemGrade: string, itemCategory: string, iconUrl?: string) => {
     if (!isReady || !characterId) return null
 
     try {
@@ -56,7 +56,8 @@ export function useFavoriteItems({ getAuthHeader, isReady, characterId }: UseFav
           item_id: itemId,
           item_name: itemName,
           item_grade: itemGrade,
-          item_category: itemCategory
+          item_category: itemCategory,
+          icon_url: iconUrl || null
         })
       })
 

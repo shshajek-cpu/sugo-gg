@@ -4,10 +4,20 @@ import { useState, useEffect, useMemo } from 'react'
 import { getWeekKey, getGameDate } from '../utils/dateUtils'
 import styles from './CalendarModal.module.css'
 
+// 아이템 타입 (판매 정보 포함)
+interface LedgerItem {
+  id: string
+  sold_date?: string
+  sold_price?: number | null
+  total_price: number
+  is_sold: boolean
+}
+
 interface CalendarModalProps {
   isOpen: boolean
   currentDate: string
   characterId: string | null
+  items?: LedgerItem[]
   onClose: () => void
   onSelectDate: (date: string) => void
 }
@@ -16,6 +26,7 @@ export default function CalendarModal({
   isOpen,
   currentDate,
   characterId,
+  items = [],
   onClose,
   onSelectDate
 }: CalendarModalProps) {
@@ -101,6 +112,102 @@ export default function CalendarModal({
     if (localStorage.getItem(dungeonKey)) return true
 
     return false
+  }
+
+  // 날짜별 아이템 판매 수입 계산
+  const getItemSalesIncomeForDate = (dateStr: string): number => {
+    return items
+      .filter(item => {
+        if (!item.is_sold || !item.sold_date) return false
+        const soldDateStr = item.sold_date.split('T')[0]
+        return soldDateStr === dateStr
+      })
+      .reduce((sum, item) => sum + (item.sold_price || item.total_price || 0), 0)
+  }
+
+  // 날짜별 던전 컨텐츠 수입 계산 (localStorage에서)
+  const getDungeonIncomeForDate = (dateStr: string): number => {
+    if (!characterId) return 0
+
+    const storageKey = `dungeonRecords_${characterId}_${dateStr}`
+    const savedData = localStorage.getItem(storageKey)
+
+    if (!savedData) return 0
+
+    try {
+      const parsed = JSON.parse(savedData)
+      let totalKina = 0
+
+      // 초월 기록 합산
+      if (parsed.transcend && Array.isArray(parsed.transcend)) {
+        totalKina += parsed.transcend.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+      }
+      // 원정 기록 합산
+      if (parsed.expedition && Array.isArray(parsed.expedition)) {
+        totalKina += parsed.expedition.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+      }
+      // 성역(루드라) 기록 합산
+      if (parsed.sanctuary && Array.isArray(parsed.sanctuary)) {
+        totalKina += parsed.sanctuary.reduce((sum: number, r: any) => sum + (r.kina || 0), 0)
+      }
+
+      return totalKina
+    } catch (e) {
+      return 0
+    }
+  }
+
+  // 날짜별 일일 컨텐츠 수입 계산 (localStorage에서)
+  const getDailyContentIncomeForDate = (dateStr: string): number => {
+    if (!characterId) return 0
+
+    const storageKey = `dailyContent_${characterId}_${dateStr}`
+    const savedData = localStorage.getItem(storageKey)
+
+    if (!savedData) return 0
+
+    try {
+      const parsed = JSON.parse(savedData)
+      let totalKina = 0
+
+      // 각 컨텐츠의 키나 합산
+      Object.values(parsed).forEach((content: any) => {
+        if (content && typeof content.earnedKina === 'number') {
+          totalKina += content.earnedKina
+        }
+      })
+
+      return totalKina
+    } catch (e) {
+      return 0
+    }
+  }
+
+  // 날짜별 총 수입 계산
+  const getTotalIncomeForDate = (dateStr: string): { contentIncome: number; itemIncome: number; total: number } => {
+    const dungeonIncome = getDungeonIncomeForDate(dateStr)
+    const dailyIncome = getDailyContentIncomeForDate(dateStr)
+    const itemIncome = getItemSalesIncomeForDate(dateStr)
+
+    return {
+      contentIncome: dungeonIncome + dailyIncome,
+      itemIncome,
+      total: dungeonIncome + dailyIncome + itemIncome
+    }
+  }
+
+  // 선택된 날짜의 수입 정보
+  const selectedDateIncome = useMemo(() => {
+    return getTotalIncomeForDate(selectedDate)
+  }, [selectedDate, items, characterId])
+
+  // 날짜에 아이템 판매가 있는지 확인
+  const hasItemSalesForDate = (dateStr: string): boolean => {
+    return items.some(item => {
+      if (!item.is_sold || !item.sold_date) return false
+      const soldDateStr = item.sold_date.split('T')[0]
+      return soldDateStr === dateStr
+    })
   }
 
   // 달력 데이터 생성
@@ -223,6 +330,7 @@ export default function CalendarModal({
             const isToday = dateStr === todayStr
             const isSelected = dateStr === selectedDate
             const hasRecord = hasRecordForDate(dateStr)
+            const hasItemSales = hasItemSalesForDate(dateStr)
             const dayOfWeek = (index) % 7
             // 미래 날짜 체크 (실제 오늘 날짜 기준)
             const isFuture = dateStr > realTodayStr
@@ -237,17 +345,46 @@ export default function CalendarModal({
                 disabled={isFuture}
               >
                 <span className={styles.dayNumber}>{day}</span>
-                {hasRecord && <span className={styles.recordDot} />}
+                <div className={styles.dotContainer}>
+                  {hasRecord && <span className={styles.recordDot} />}
+                  {hasItemSales && <span className={styles.itemDot} />}
+                </div>
               </button>
             )
           })}
         </div>
 
-        {/* 선택된 날짜 표시 */}
-        <div className={styles.selectedInfo}>
-          선택: {selectedDate}
-          {hasRecordForDate(selectedDate) && (
-            <span className={styles.hasRecordBadge}>기록 있음</span>
+        {/* 선택된 날짜 수입 정보 */}
+        <div className={styles.incomeInfo}>
+          <div className={styles.incomeHeader}>
+            <span className={styles.incomeDate}>{selectedDate}</span>
+            {(hasRecordForDate(selectedDate) || hasItemSalesForDate(selectedDate)) && (
+              <span className={styles.hasRecordBadge}>기록 있음</span>
+            )}
+          </div>
+          {selectedDateIncome.total > 0 ? (
+            <div className={styles.incomeDetails}>
+              <div className={styles.incomeRow}>
+                <span className={styles.incomeLabel}>컨텐츠 수입</span>
+                <span className={styles.incomeValue}>
+                  {selectedDateIncome.contentIncome.toLocaleString()} 키나
+                </span>
+              </div>
+              <div className={styles.incomeRow}>
+                <span className={styles.incomeLabel}>아이템 판매</span>
+                <span className={styles.incomeValueItem}>
+                  {selectedDateIncome.itemIncome.toLocaleString()} 키나
+                </span>
+              </div>
+              <div className={styles.incomeTotal}>
+                <span className={styles.incomeTotalLabel}>총 수입</span>
+                <span className={styles.incomeTotalValue}>
+                  {selectedDateIncome.total.toLocaleString()} 키나
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className={styles.noIncome}>수입 기록이 없습니다</div>
           )}
         </div>
 

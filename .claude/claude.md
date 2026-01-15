@@ -232,12 +232,59 @@ const stats = await getStats(id)
      localStorage.setItem('user-data', JSON.stringify(data))
      ```
 
+## Supabase Project Configuration
+
+**CRITICAL: 반드시 `mnbngmdjiszyowfvnzhk` Supabase 프로젝트만 사용**
+
+이 프로젝트는 단일 Supabase 인스턴스를 사용합니다:
+
+| 항목 | 값 |
+|------|---|
+| Project ID | `mnbngmdjiszyowfvnzhk` |
+| URL | `https://mnbngmdjiszyowfvnzhk.supabase.co` |
+| Dashboard | Supabase Dashboard에서 해당 프로젝트 선택 |
+
+### 주의사항
+
+1. **다른 Supabase 프로젝트 사용 금지**
+   - `edwtbiujwjprydmahwhh` 등 다른 프로젝트 ID 사용 절대 금지
+   - API 라우트 생성 시 반드시 올바른 URL/Key 확인
+
+2. **API 라우트 작성 시 필수 패턴**
+   ```typescript
+   // ✅ GOOD: 올바른 프로젝트 (mnbngmdjiszyowfvnzhk)
+   const SUPABASE_URL = 'https://mnbngmdjiszyowfvnzhk.supabase.co'
+   const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uYm5nbWRqaXN6eW93ZnZuemhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5OTY0ODAsImV4cCI6MjA4MjU3MjQ4MH0.AIvvGxd_iQKpQDbmOBoe4yAmii1IpB92Pp7Scs8Lz7U'
+
+   // ❌ BAD: 잘못된 프로젝트 (다른 ID)
+   const SUPABASE_URL = 'https://edwtbiujwjprydmahwhh.supabase.co'  // 절대 사용 금지
+   ```
+
+3. **Ledger API 인증 방식**
+   - Google 로그인은 현재 비활성화 (다른 Supabase 프로젝트 사용 중)
+   - 모든 ledger API는 `device_id`를 우선 사용
+   - `X-Device-ID` 헤더를 Bearer 토큰보다 먼저 확인
+
+   ```typescript
+   // API 라우트에서 인증 처리 패턴
+   async function getUserFromRequest(request: Request) {
+     // 1. device_id 우선 확인
+     const device_id = request.headers.get('X-Device-ID') || request.headers.get('x-device-id')
+     if (device_id) {
+       return getOrCreateUserByDeviceId(device_id)
+     }
+
+     // 2. Bearer 토큰은 폴백으로만 사용
+     // ...
+   }
+   ```
+
 ## Environment Variables
 
 Frontend `.env.local`:
 ```
-NEXT_PUBLIC_SUPABASE_URL=<supabase-url>
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+NEXT_PUBLIC_SUPABASE_URL=https://mnbngmdjiszyowfvnzhk.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uYm5nbWRqaXN6eW93ZnZuemhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5OTY0ODAsImV4cCI6MjA4MjU3MjQ4MH0.AIvvGxd_iQKpQDbmOBoe4yAmii1IpB92Pp7Scs8Lz7U
 ```
 
 ## CSS Theme

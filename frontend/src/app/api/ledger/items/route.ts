@@ -37,10 +37,17 @@ async function getOrCreateUserByDeviceId(device_id: string) {
 }
 
 // 인증된 유저 또는 device_id 유저 조회
+// 주의: Google 로그인은 현재 비활성화 - device_id 우선 사용
 async function getUserFromRequest(request: NextRequest) {
   const supabase = getSupabase()
 
-  // 1. Bearer 토큰으로 인증 확인
+  // 1. device_id로 먼저 조회 (우선순위)
+  const device_id = request.headers.get('X-Device-ID') || request.headers.get('x-device-id')
+  if (device_id) {
+    return getOrCreateUserByDeviceId(device_id)
+  }
+
+  // 2. Bearer 토큰으로 인증 확인 (폴백)
   const authHeader = request.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
@@ -77,12 +84,6 @@ async function getUserFromRequest(request: NextRequest) {
 
       if (ledgerUser) return ledgerUser
     }
-  }
-
-  // 2. device_id로 조회 (폴백)
-  const device_id = request.headers.get('X-Device-ID') || request.headers.get('x-device-id')
-  if (device_id) {
-    return getOrCreateUserByDeviceId(device_id)
   }
 
   return null
@@ -197,24 +198,40 @@ export async function POST(request: NextRequest) {
     const finalTotalPrice = total_price !== undefined ? total_price : finalQuantity * finalUnitPrice
 
     const supabase = getSupabase()
-    const { data, error } = await supabase
+
+    // icon_url 컬럼이 없을 수 있으므로 fallback 처리
+    const insertDataWithIcon = {
+      ledger_character_id: characterId,
+      item_id,
+      item_name,
+      item_category,
+      item_grade,
+      quantity: finalQuantity,
+      unit_price: finalUnitPrice,
+      total_price: finalTotalPrice,
+      obtained_date: new Date().toISOString().split('T')[0],
+      source_content,
+      icon_url
+    }
+
+    let result = await supabase
       .from('ledger_items')
-      .insert({
-        ledger_character_id: characterId,
-        item_id,
-        item_name,
-        item_category,
-        item_grade,
-        quantity: finalQuantity,
-        unit_price: finalUnitPrice,
-        total_price: finalTotalPrice,
-        obtained_date: new Date().toISOString().split('T')[0],
-        source_content,
-        icon_url
-      })
+      .insert(insertDataWithIcon)
       .select()
       .single()
 
+    // icon_url 컬럼이 없으면 제외하고 다시 시도
+    if (result.error && result.error.message.includes('icon_url')) {
+      console.log('[API ledger/items] icon_url column not found, retrying without it')
+      const { icon_url: _, ...insertDataWithoutIcon } = insertDataWithIcon
+      result = await supabase
+        .from('ledger_items')
+        .insert(insertDataWithoutIcon)
+        .select()
+        .single()
+    }
+
+    const { data, error } = result
     if (error) throw error
     return NextResponse.json(data)
   } catch (e: any) {

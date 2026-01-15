@@ -41,28 +41,53 @@ export function useLedgerCharacters({ getAuthHeader, isReady }: UseLedgerCharact
   }, [fetchCharacters])
 
   const addCharacter = async (character: CreateCharacterRequest) => {
-    if (!isReady) return null
+    // isReady가 false여도 시도 (로딩 중일 수 있음)
+    const headers = getAuthHeader()
+
+    console.log('[useLedgerCharacters] addCharacter 시작:', {
+      character,
+      headers: Object.keys(headers),
+      isReady
+    })
+
+    // 인증 헤더가 없으면 에러
+    if (Object.keys(headers).length === 0) {
+      console.error('[useLedgerCharacters] No auth headers available')
+      setError('인증 정보를 불러오는 중입니다. 잠시 후 다시 시도해주세요.')
+      return null
+    }
 
     try {
       const res = await fetch('/api/ledger/characters', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...getAuthHeader()
+          ...headers
         },
         body: JSON.stringify(character)
       })
 
+      console.log('[useLedgerCharacters] API 응답:', res.status, res.statusText)
+
       if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.error || 'Failed to add character')
+        let errorMessage = `HTTP ${res.status}: ${res.statusText}`
+        try {
+          const errorData = await res.json()
+          errorMessage = errorData.error || errorMessage
+        } catch {
+          // JSON 파싱 실패 무시
+        }
+        throw new Error(errorMessage)
       }
 
       const newCharacter = await res.json()
+      console.log('[useLedgerCharacters] 캐릭터 추가 성공:', newCharacter)
       setCharacters(prev => [...prev, newCharacter])
       return newCharacter
     } catch (e: any) {
-      setError(e.message)
+      const errorMsg = e?.message || String(e) || '캐릭터 추가에 실패했습니다'
+      console.error('[useLedgerCharacters] addCharacter error:', errorMsg, e)
+      setError(errorMsg)
       return null
     }
   }

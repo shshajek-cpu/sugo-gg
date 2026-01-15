@@ -27,64 +27,50 @@ export function useDeviceId() {
     if (isAuthLoading) return
 
     const initUser = async () => {
-      // If authenticated with Google, use auth token
-      if (user && session) {
-        setIsAuthenticated(true)
-        setDeviceId(null) // Don't need device_id when authenticated
-
-        // Initialize auth user in ledger system
-        try {
-          await fetch('/api/ledger/auth-init', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`
-            }
-          })
-        } catch (e) {
-          console.error('Auth init error:', e)
-        }
-
-        setIsLoading(false)
-        return
-      }
-
-      // Fall back to device_id for anonymous users
-      setIsAuthenticated(false)
+      // 항상 device_id 사용 (Google 로그인 여부와 관계없이)
+      // ledger API는 mnbngmdjiszyowfvnzhk 프로젝트를 사용하므로
+      // 다른 Supabase 프로젝트의 Google 토큰은 작동하지 않음
       let id = localStorage.getItem(DEVICE_ID_KEY)
 
       if (!id) {
         id = crypto.randomUUID()
         localStorage.setItem(DEVICE_ID_KEY, id)
+        console.log('[useDeviceId] 새 device_id 생성:', id)
       }
 
       setDeviceId(id)
+      setIsAuthenticated(false) // ledger에서는 항상 device_id 사용
       setIsLoading(false)
 
-      // Initialize device user
+      console.log('[useDeviceId] device_id 초기화 완료:', id.substring(0, 8) + '...')
+
+      // Initialize device user (비동기로 실행, 실패해도 계속 진행)
       fetch('/api/ledger/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device_id: id })
-      }).catch(console.error)
+      }).catch(e => {
+        console.warn('[useDeviceId] Init API warning (무시해도 됨):', e)
+      })
     }
 
     initUser()
-  }, [user, session, isAuthLoading])
+  }, [isAuthLoading])
 
-  // Return access token for authenticated requests
+  // Return auth headers for requests
+  // 주의: Google 로그인은 다른 Supabase 프로젝트(edwtbiujwjprydmahwhh)를 사용하므로
+  // ledger API(mnbngmdjiszyowfvnzhk)에서는 항상 device_id를 사용
   const getAuthHeader = useCallback((): Record<string, string> => {
-    if (isAuthenticated && session && user) {
-      return {
-        'Authorization': `Bearer ${session.access_token}`,
-        'X-User-ID': user.id
-      }
+    // 항상 device_id 사용 (Google 로그인 여부와 관계없이)
+    const storedDeviceId = localStorage.getItem(DEVICE_ID_KEY)
+    if (storedDeviceId) {
+      return { 'X-Device-ID': storedDeviceId }
     }
     if (deviceId) {
       return { 'X-Device-ID': deviceId }
     }
     return {}
-  }, [isAuthenticated, session, deviceId, user])
+  }, [deviceId])
 
   return {
     deviceId,

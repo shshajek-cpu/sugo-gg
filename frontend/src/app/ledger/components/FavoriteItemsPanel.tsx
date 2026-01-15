@@ -2,12 +2,22 @@
 
 import styles from './FavoriteItemsPanel.module.css'
 
+// 등급별 테두리 색상
+const GRADE_BORDER_COLORS: Record<string, string> = {
+  'common': '#9CA3AF',
+  'rare': '#60A5FA',
+  'heroic': '#A78BFA',
+  'legendary': '#FBBF24',
+  'ultimate': '#F472B6'
+}
+
 export interface FavoriteItem {
   id: string
   item_id: string
   item_name: string
   item_grade: string
   item_category: string
+  icon_url?: string
   display_order: number
 }
 
@@ -57,24 +67,40 @@ export default function FavoriteItemsPanel({ favorites, onSelectFavorite, onRemo
       ) : (
         <div className={styles.grid}>
           {favorites.map((favorite) => (
-            <div
-              key={favorite.id}
-              className={styles.favoriteCard}
-              onClick={() => onSelectFavorite(favorite)}
-              title={`${favorite.item_name} 추가`}
-            >
-              <div className={styles.favoriteIcon}>💎</div>
-              <div className={styles.favoriteName}>{favorite.item_name}</div>
-              <div className={`${styles.favoriteGrade} ${getGradeClass(favorite.item_grade)}`}>
-                {favorite.item_grade}
-              </div>
-              <button
-                className={styles.removeBtn}
-                onClick={(e) => handleRemove(e, favorite.id)}
-                title="즐겨찾기 해제"
+            <div key={favorite.id} className={styles.favoriteWrapper}>
+              <div
+                className={styles.favoriteCard}
+                onClick={() => onSelectFavorite(favorite)}
+                title={`${favorite.item_name} 추가`}
               >
-                ×
-              </button>
+                {favorite.icon_url ? (
+                  <img
+                    src={favorite.icon_url}
+                    alt={favorite.item_name}
+                    className={styles.favoriteImage}
+                    style={{ borderColor: GRADE_BORDER_COLORS[favorite.item_grade.toLowerCase()] || '#9CA3AF' }}
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none'
+                      const placeholder = (e.target as HTMLImageElement).nextElementSibling
+                      if (placeholder) (placeholder as HTMLElement).style.display = 'flex'
+                    }}
+                  />
+                ) : null}
+                <div
+                  className={styles.favoriteIcon}
+                  style={{ display: favorite.icon_url ? 'none' : 'flex' }}
+                >
+                  💎
+                </div>
+                <button
+                  className={styles.removeBtn}
+                  onClick={(e) => handleRemove(e, favorite.id)}
+                  title="즐겨찾기 해제"
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.favoriteName}>{favorite.item_name}</div>
             </div>
           ))}
         </div>

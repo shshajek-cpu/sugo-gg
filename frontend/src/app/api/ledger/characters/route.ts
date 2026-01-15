@@ -39,10 +39,18 @@ async function getOrCreateUserByDeviceId(device_id: string) {
 }
 
 // 인증된 유저 또는 device_id 유저 조회
+// 주의: Google 로그인은 현재 비활성화 - device_id 우선 사용
 async function getUserFromRequest(request: Request) {
   const supabase = getSupabase()
 
-  // 1. Bearer 토큰으로 인증 확인
+  // 1. device_id로 먼저 조회 (우선순위) - 대소문자 모두 지원
+  const device_id = request.headers.get('X-Device-ID') || request.headers.get('x-device-id')
+  if (device_id) {
+    console.log('[API] Using device_id auth:', device_id.substring(0, 8) + '...')
+    return getOrCreateUserByDeviceId(device_id)
+  }
+
+  // 2. Bearer 토큰으로 인증 확인 (폴백 - 현재 Supabase 프로젝트 불일치로 작동 안함)
   const authHeader = request.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
@@ -82,12 +90,7 @@ async function getUserFromRequest(request: Request) {
     }
   }
 
-  // 2. device_id로 조회 (폴백)
-  const device_id = request.headers.get('x-device-id')
-  if (device_id) {
-    return getOrCreateUserByDeviceId(device_id)
-  }
-
+  console.log('[API] No auth headers found')
   return null
 }
 
@@ -186,13 +189,22 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
+    console.log('[API] POST /api/ledger/characters 시작')
+
     const user = await getUserFromRequest(request)
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    if (!user) {
+      console.log('[API] 인증 실패 - user 없음')
+      return NextResponse.json({ error: '인증이 필요합니다. 페이지를 새로고침 후 다시 시도해주세요.' }, { status: 401 })
+    }
+
+    console.log('[API] 인증 성공 - user_id:', user.id)
 
     const body = await request.json()
     const { name, class_name, server_name, is_main, profile_image, character_id, race, item_level } = body
 
-    if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    if (!name) {
+      return NextResponse.json({ error: '캐릭터 이름이 필요합니다' }, { status: 400 })
+    }
 
     const supabase = getSupabase()
     const { data, error } = await supabase
@@ -213,11 +225,13 @@ export async function POST(request: Request) {
 
     if (error) {
         console.error('[API] Insert failed:', error)
-        throw error
+        return NextResponse.json({ error: error.message || '캐릭터 저장에 실패했습니다' }, { status: 500 })
     }
+
+    console.log('[API] 캐릭터 추가 성공:', data.id)
     return NextResponse.json(data)
   } catch (e: any) {
       console.error('[API] Create character error:', e)
-      return NextResponse.json({ error: e.message }, { status: 500 })
+      return NextResponse.json({ error: e?.message || '캐릭터 추가 중 오류가 발생했습니다' }, { status: 500 })
   }
 }

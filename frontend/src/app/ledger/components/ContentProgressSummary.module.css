@@ -1,0 +1,164 @@
+/* 컨텐츠 진행 현황 스타일 */
+
+.section {
+  background: #1b1b1e;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #a5a8b4;
+}
+
+/* 컨텐츠 그룹 */
+.contentGroup {
+  background: #212227;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.contentGroup:last-child {
+  margin-bottom: 0;
+}
+
+.groupHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.groupIcon {
+  color: #fbdb51;
+}
+
+.groupTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  flex: 1;
+}
+
+.groupSummary {
+  font-size: 13px;
+  color: #fbdb51;
+  font-weight: 600;
+}
+
+/* 진행률 목록 */
+.progressList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.progressRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progressInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+}
+
+.progressName {
+  font-size: 13px;
+  color: #cfd1d7;
+  min-width: 80px;
+}
+
+.progressCount {
+  font-size: 12px;
+  color: #a5a8b4;
+  min-width: 50px;
+}
+
+.progressComplete {
+  color: #56c288;
+}
+
+.progressBarContainer {
+  flex: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #fbdb51 0%, #fbbf24 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progressBarComplete {
+  background: linear-gradient(90deg, #56c288 0%, #34d399 100%);
+}
+
+.progressPercent {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cfd1d7;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .progressRow {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .progressInfo {
+    width: 100%;
+    justify-content: space-between;
+    min-width: auto;
+  }
+
+  .progressBarContainer {
+    flex: 1;
+    order: 1;
+  }
+
+  .progressPercent {
+    order: 2;
+  }
+
+  .groupHeader {
+    flex-wrap: wrap;
+  }
+
+  .groupSummary {
+    width: 100%;
+    margin-top: 8px;
+  }
+}

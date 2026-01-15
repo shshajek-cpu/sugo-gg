@@ -1,0 +1,283 @@
+/* 캐릭터별 현황 테이블 스타일 */
+
+.section {
+  background: #1b1b1e;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #ffffff;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.subtitle {
+  font-size: 12px;
+  color: #a5a8b4;
+}
+
+.characterList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.characterCard {
+  background: #212227;
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.characterCard:hover {
+  background: #27282e;
+}
+
+.characterHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  cursor: pointer;
+}
+
+.characterInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 180px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.avatarPlaceholder {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #161618;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #a5a8b4;
+  font-size: 18px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.characterDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.characterName {
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.characterMeta {
+  font-size: 12px;
+  color: #a5a8b4;
+}
+
+.statsRow {
+  display: flex;
+  gap: 20px;
+  flex: 1;
+  justify-content: flex-end;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 60px;
+}
+
+.statLabel {
+  font-size: 11px;
+  color: #848999;
+}
+
+.statValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fbdb51;
+}
+
+.statValueNeutral {
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.statValueSuccess {
+  font-size: 14px;
+  font-weight: 600;
+  color: #56c288;
+}
+
+.expandBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #161618;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #a5a8b4;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.expandBtn:hover {
+  border-color: #fbdb51;
+  color: #fbdb51;
+}
+
+/* 컨텐츠 진행 섹션 */
+.contentSection {
+  padding: 0 16px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.contentGroup {
+  margin-top: 16px;
+}
+
+.contentGroupTitle {
+  font-size: 13px;
+  font-weight: 600;
+  color: #a5a8b4;
+  margin: 0 0 12px 0;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 8px;
+}
+
+.contentCell {
+  background: #161618;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.contentName {
+  font-size: 11px;
+  color: #a5a8b4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.contentProgress {
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.contentProgressBar {
+  height: 100%;
+  background: #fbdb51;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.contentCount {
+  font-size: 12px;
+  font-weight: 600;
+  color: #cfd1d7;
+}
+
+.contentComplete {
+  color: #56c288;
+}
+
+/* 빈 상태 */
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #a5a8b4;
+}
+
+.emptyIcon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: 14px;
+  margin: 0;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .characterHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .characterInfo {
+    width: 100%;
+  }
+
+  .statsRow {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .expandBtn {
+    position: absolute;
+    right: 16px;
+    top: 16px;
+  }
+
+  .characterCard {
+    position: relative;
+  }
+
+  .contentGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .contentGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat {
+    min-width: 50px;
+  }
+}

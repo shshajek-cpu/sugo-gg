@@ -1,28 +1,42 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { Search } from 'lucide-react'
 import EnhancedItemCard, { EnhancedLedgerItem } from './EnhancedItemCard'
 import FavoriteItemsPanel, { FavoriteItem } from './FavoriteItemsPanel'
 import ItemRegisterModal from './ItemRegisterModal'
 import styles from './ItemManagementTab.module.css'
 
-// 공식 API 등급 색상
+// 등급 색상 (즐겨찾기와 동일하게 통일)
 const GRADE_COLORS: Record<string, string> = {
-  'Epic': '#7E3DCF',
-  'Unique': '#FFB84D',
-  'Legend': '#FB9800',
+  // 공식 API 등급
+  'Epic': '#A78BFA',
+  'Unique': '#FBBF24',
+  'Legend': '#F472B6',
   'Rare': '#60A5FA',
-  'Common': '#9CA3AF'
+  'Common': '#9CA3AF',
+  // 로컬 등급
+  'heroic': '#A78BFA',
+  'legendary': '#FBBF24',
+  'ultimate': '#F472B6',
+  'rare': '#60A5FA',
+  'common': '#9CA3AF'
 }
 
-// 공식 API 등급 -> 로컬 등급 변환
+// 공식 API 등급 -> 로컬 등급 변환 (이미 로컬 형식이면 그대로 유지)
 const GRADE_TO_LOCAL: Record<string, string> = {
+  // 공식 API 등급
   'Epic': 'heroic',
   'Unique': 'legendary',
   'Legend': 'ultimate',
   'Rare': 'rare',
-  'Common': 'common'
+  'Common': 'common',
+  // 로컬 등급 (자기 자신으로 매핑)
+  'heroic': 'heroic',
+  'legendary': 'legendary',
+  'ultimate': 'ultimate',
+  'rare': 'rare',
+  'common': 'common'
 }
 
 // 카테고리 이름 -> 로컬 카테고리 타입 변환
@@ -114,7 +128,7 @@ interface ItemManagementTabProps {
   onSellItem: (id: string, soldPrice: number) => Promise<void>
   onUnsellItem: (id: string) => Promise<void>
   onDeleteItem: (id: string) => Promise<void>
-  onToggleFavorite: (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => Promise<void>
+  onToggleFavorite: (itemId: string, itemName: string, itemGrade: string, itemCategory: string, iconUrl?: string) => Promise<void>
   onSelectFavorite: (favorite: FavoriteItem) => void
   onRemoveFavorite: (id: string) => Promise<void>
 }
@@ -139,6 +153,50 @@ export default function ItemManagementTab({
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<SearchResultItem[]>([])
   const [showSearchResults, setShowSearchResults] = useState(false)
+  const [recentSearches, setRecentSearches] = useState<SearchResultItem[]>([])
+
+  // 검색 컨테이너 ref (외부 클릭 감지용)
+  const searchContainerRef = useRef<HTMLDivElement>(null)
+
+  // 최근 검색 로드 (localStorage)
+  useEffect(() => {
+    const saved = localStorage.getItem('recentItemSearches')
+    if (saved) {
+      try {
+        setRecentSearches(JSON.parse(saved))
+      } catch (e) {
+        console.error('Failed to load recent searches:', e)
+      }
+    }
+  }, [])
+
+  // 검색 리스트 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        searchContainerRef.current &&
+        !searchContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSearchResults(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
+  // 최근 검색에 추가
+  const addToRecentSearches = (item: SearchResultItem) => {
+    setRecentSearches(prev => {
+      // 중복 제거 후 맨 앞에 추가
+      const filtered = prev.filter(i => i.id !== item.id)
+      const updated = [item, ...filtered].slice(0, 10) // 최대 10개
+      localStorage.setItem('recentItemSearches', JSON.stringify(updated))
+      return updated
+    })
+  }
 
   // 필터 상태
   const [slotFilter, setSlotFilter] = useState('all')
@@ -226,6 +284,7 @@ export default function ItemManagementTab({
   // 검색 결과 아이템 클릭
   const handleSearchItemClick = (item: SearchResultItem) => {
     console.log('[DEBUG] handleSearchItemClick called:', item)
+    addToRecentSearches(item) // 최근 검색에 추가
     setSelectedSearchItem(item)
     setShowRegisterModal(true)
     setShowSearchResults(false)
@@ -274,7 +333,7 @@ export default function ItemManagementTab({
     // 공식 API 등급/카테고리를 로컬 형식으로 변환
     const localGrade = GRADE_TO_LOCAL[item.grade] || 'common'
     const localCategory = getCategoryType(item.category)
-    await onToggleFavorite(item.id, item.name, localGrade, localCategory)
+    await onToggleFavorite(item.id, item.name, localGrade, localCategory, item.icon_url)
   }
 
   // 필터링된 아이템 (등록된 아이템 목록)
@@ -343,6 +402,67 @@ export default function ItemManagementTab({
 
   const unsoldCount = filteredItems.filter(i => !i.is_sold).length
 
+  // 날짜 포맷 함수
+  const formatDateLabel = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const today = new Date()
+    const yesterday = new Date(today)
+    yesterday.setDate(yesterday.getDate() - 1)
+
+    const dateOnly = dateStr.split('T')[0]
+    const todayStr = today.toISOString().split('T')[0]
+    const yesterdayStr = yesterday.toISOString().split('T')[0]
+
+    if (dateOnly === todayStr) return '오늘'
+    if (dateOnly === yesterdayStr) return '어제'
+
+    const month = date.getMonth() + 1
+    const day = date.getDate()
+    return `${month}월 ${day}일`
+  }
+
+  // 날짜별 그룹화 함수
+  const groupByDate = (itemList: typeof items, dateField: 'obtained_date' | 'sold_date') => {
+    const groups: Record<string, typeof items> = {}
+
+    itemList.forEach(item => {
+      const dateValue = dateField === 'sold_date' ? item.sold_date : item.obtained_date
+      const dateKey = dateValue ? dateValue.split('T')[0] : 'unknown'
+
+      if (!groups[dateKey]) {
+        groups[dateKey] = []
+      }
+      groups[dateKey].push(item)
+    })
+
+    // 날짜 내림차순 정렬 (최신순)
+    const sortedKeys = Object.keys(groups).sort((a, b) => b.localeCompare(a))
+    return sortedKeys.map(key => ({
+      date: key,
+      label: key === 'unknown' ? '날짜 미정' : formatDateLabel(key),
+      items: groups[key],
+      totalPrice: groups[key].reduce((sum, i) => sum + i.total_price, 0)
+    }))
+  }
+
+  // 미판매 아이템 날짜별 그룹화 (등록일 기준)
+  const unsoldByDate = groupByDate(
+    filteredItems.filter(i => !i.is_sold),
+    'obtained_date'
+  )
+
+  // 판매완료 아이템 날짜별 그룹화 (판매일 기준)
+  const soldByDate = groupByDate(
+    filteredItems.filter(i => i.is_sold),
+    'sold_date'
+  )
+
+  // 오늘 판매 수입 계산
+  const todayStr = new Date().toISOString().split('T')[0]
+  const todaySoldIncome = soldItems
+    .filter(i => i.sold_date?.split('T')[0] === todayStr)
+    .reduce((sum, i) => sum + i.total_price, 0)
+
   return (
     <div>
       <div className={styles.container}>
@@ -372,7 +492,7 @@ export default function ItemManagementTab({
             </div>
 
             {/* 검색바 */}
-            <div className={styles.searchContainer}>
+            <div className={styles.searchContainer} ref={searchContainerRef}>
               <input
                 type="text"
                 placeholder={isLoadingItems ? "아이템 로딩 중..." : "아이템 이름 검색..."}
@@ -396,12 +516,20 @@ export default function ItemManagementTab({
                   }
                 }}
                 onFocus={() => {
-                  // 포커스 시 슬롯 필터에 맞는 전체 목록 표시
-                  if (!searchQuery.trim()) {
-                    const baseItems = slotFilter === 'all'
-                      ? allItems.slice(0, 20)
-                      : allItems.filter(item => item.slotPos === parseInt(slotFilter)).slice(0, 20)
-                    setSearchResults(baseItems)
+                  // 포커스 시 검색 결과 또는 최근 검색 표시
+                  if (searchQuery.trim()) {
+                    // 검색어가 있으면 해당 검색어로 필터링된 결과 표시
+                    const query = searchQuery.toLowerCase()
+                    const filtered = allItems.filter(item =>
+                      item.name.toLowerCase().includes(query)
+                    )
+                    if (filtered.length > 0) {
+                      setSearchResults(filtered)
+                      setShowSearchResults(true)
+                    }
+                  } else if (recentSearches.length > 0) {
+                    // 검색어가 없으면 최근 검색 표시
+                    setSearchResults(recentSearches)
                     setShowSearchResults(true)
                   }
                 }}
@@ -415,11 +543,27 @@ export default function ItemManagementTab({
               >
                 <Search size={18} />
               </button>
-            </div>
 
-            {/* 검색 결과 리스트 */}
-            {showSearchResults && searchResults.length > 0 && (
+              {/* 검색 결과 리스트 */}
+              {showSearchResults && searchResults.length > 0 && (
               <div className={styles.searchResults}>
+                {/* 최근 검색 헤더 */}
+                {!searchQuery.trim() && recentSearches.length > 0 && (
+                  <div className={styles.recentSearchHeader}>
+                    <span>최근 검색</span>
+                    <button
+                      className={styles.clearRecentBtn}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setRecentSearches([])
+                        localStorage.removeItem('recentItemSearches')
+                        setShowSearchResults(false)
+                      }}
+                    >
+                      전체 삭제
+                    </button>
+                  </div>
+                )}
                 {searchResults.slice(0, 15).map((item) => (
                   <div
                     key={item.id}
@@ -459,11 +603,12 @@ export default function ItemManagementTab({
                   </div>
                 ))}
               </div>
-            )}
+              )}
 
-            {showSearchResults && searchResults.length === 0 && !isLoadingItems && (
-              <div className={styles.searchNoResults}>검색 결과가 없습니다</div>
-            )}
+              {showSearchResults && searchResults.length === 0 && !isLoadingItems && (
+                <div className={styles.searchNoResults}>검색 결과가 없습니다</div>
+              )}
+            </div>
           </div>
 
           {/* 일괄 처리 버튼 */}
@@ -483,8 +628,8 @@ export default function ItemManagementTab({
             </div>
           )}
 
-          {/* 4열 그리드 아이템 목록 */}
-          <div className={styles.itemGrid}>
+          {/* 날짜별 아이템 목록 */}
+          <div className={styles.dateGroupContainer}>
             {filteredItems.length === 0 ? (
               <div className={styles.emptyState}>
                 <div className={styles.emptyIcon}>📦</div>
@@ -492,19 +637,81 @@ export default function ItemManagementTab({
                 <div className={styles.emptyHint}>아이템을 검색하여 등록하세요</div>
               </div>
             ) : (
-              filteredItems.map((item) => (
-                <EnhancedItemCard
-                  key={item.id}
-                  item={item}
-                  isSelected={selectedItems.has(item.id)}
-                  onSelect={() => toggleSelectItem(item.id)}
-                  onUpdate={onUpdateItem}
-                  onSell={onSellItem}
-                  onUnsell={onUnsellItem}
-                  onDelete={onDeleteItem}
-                  onToggleFavorite={onToggleFavorite}
-                />
-              ))
+              <>
+                {/* 미판매 아이템 섹션 */}
+                {(statusFilter === 'all' || statusFilter === 'unsold') && unsoldByDate.length > 0 && (
+                  <div className={styles.statusSection}>
+                    <div className={styles.statusHeader}>
+                      <span className={styles.statusIcon}>📦</span>
+                      <span className={styles.statusTitle}>미판매 아이템</span>
+                      <span className={styles.statusTotal}>{totalUnsold.toLocaleString()} 키나</span>
+                    </div>
+
+                    {unsoldByDate.map(group => (
+                      <div key={group.date} className={styles.dateSection}>
+                        <div className={styles.dateHeader}>
+                          <span className={styles.dateIcon}>📅</span>
+                          <span className={styles.dateLabel}>{group.label}</span>
+                          <span className={styles.dateCount}>{group.items.length}개</span>
+                          <span className={styles.datePrice}>{group.totalPrice.toLocaleString()} 키나</span>
+                        </div>
+                        <div className={styles.itemGrid}>
+                          {group.items.map((item) => (
+                            <EnhancedItemCard
+                              key={item.id}
+                              item={item}
+                              isSelected={selectedItems.has(item.id)}
+                              onSelect={() => toggleSelectItem(item.id)}
+                              onUpdate={onUpdateItem}
+                              onSell={onSellItem}
+                              onUnsell={onUnsellItem}
+                              onDelete={onDeleteItem}
+                              onToggleFavorite={onToggleFavorite}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* 판매완료 아이템 섹션 */}
+                {(statusFilter === 'all' || statusFilter === 'sold') && soldByDate.length > 0 && (
+                  <div className={styles.statusSection}>
+                    <div className={`${styles.statusHeader} ${styles.soldHeader}`}>
+                      <span className={styles.statusIcon}>✅</span>
+                      <span className={styles.statusTitle}>판매완료</span>
+                      <span className={styles.statusTotal}>+{totalSold.toLocaleString()} 키나</span>
+                    </div>
+
+                    {soldByDate.map(group => (
+                      <div key={group.date} className={`${styles.dateSection} ${styles.soldSection}`}>
+                        <div className={styles.dateHeader}>
+                          <span className={styles.dateIcon}>💰</span>
+                          <span className={styles.dateLabel}>{group.label} 판매</span>
+                          <span className={styles.dateCount}>{group.items.length}개</span>
+                          <span className={styles.datePriceSold}>+{group.totalPrice.toLocaleString()} 키나</span>
+                        </div>
+                        <div className={styles.itemGrid}>
+                          {group.items.map((item) => (
+                            <EnhancedItemCard
+                              key={item.id}
+                              item={item}
+                              isSelected={selectedItems.has(item.id)}
+                              onSelect={() => toggleSelectItem(item.id)}
+                              onUpdate={onUpdateItem}
+                              onSell={onSellItem}
+                              onUnsell={onUnsellItem}
+                              onDelete={onDeleteItem}
+                              onToggleFavorite={onToggleFavorite}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -513,7 +720,18 @@ export default function ItemManagementTab({
         <div className={styles.rightPanel}>
           <FavoriteItemsPanel
             favorites={favorites}
-            onSelectFavorite={onSelectFavorite}
+            onSelectFavorite={(favorite) => {
+              // 즐겨찾기 아이템을 SearchResultItem 형식으로 변환하여 모달 표시
+              const searchItem: SearchResultItem = {
+                id: favorite.item_id,
+                name: favorite.item_name,
+                grade: favorite.item_grade,
+                category: favorite.item_category,
+                icon_url: favorite.icon_url
+              }
+              setSelectedSearchItem(searchItem)
+              setShowRegisterModal(true)
+            }}
             onRemoveFavorite={onRemoveFavorite}
           />
         </div>
@@ -524,16 +742,16 @@ export default function ItemManagementTab({
         <div className={styles.summaryTitle}>💰 아이템 판매 통계</div>
         <div className={styles.summaryGrid}>
           <div className={styles.summaryItem}>
-            <div className={styles.summaryLabel}>판매 완료</div>
-            <div className={styles.summaryValue}>{totalSold.toLocaleString()} 키나</div>
+            <div className={styles.summaryLabel}>오늘 수입</div>
+            <div className={`${styles.summaryValue} ${styles.todayIncome}`}>+{todaySoldIncome.toLocaleString()} 키나</div>
           </div>
           <div className={styles.summaryItem}>
-            <div className={styles.summaryLabel}>미판매 아이템</div>
-            <div className={styles.summaryValue}>{unsoldItems.length}개</div>
+            <div className={styles.summaryLabel}>총 판매 수입</div>
+            <div className={styles.summaryValue}>+{totalSold.toLocaleString()} 키나</div>
           </div>
           <div className={styles.summaryItem}>
-            <div className={styles.summaryLabel}>미판매 총액</div>
-            <div className={styles.summaryValue}>{totalUnsold.toLocaleString()} 키나</div>
+            <div className={styles.summaryLabel}>미판매</div>
+            <div className={styles.summaryValue}>{unsoldItems.length}개 / {totalUnsold.toLocaleString()} 키나</div>
           </div>
         </div>
       </div>

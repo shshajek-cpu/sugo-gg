@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const SUPABASE_URL = 'https://edwtbiujwjprydmahwhh.supabase.co'
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVkd3RiaXVqd2pwcnlkbWFod2hoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc1MDUyMjAsImV4cCI6MjA4MzA4MTIyMH0.3VFxIsL6t25u_BIvpcX4_ylTf3bzorbivGUMIbOejGo'
+// 주의: mnbngmdjiszyowfvnzhk 프로젝트만 사용
+const SUPABASE_URL = 'https://mnbngmdjiszyowfvnzhk.supabase.co'
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1uYm5nbWRqaXN6eW93ZnZuemhrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY5OTY0ODAsImV4cCI6MjA4MjU3MjQ4MH0.AIvvGxd_iQKpQDbmOBoe4yAmii1IpB92Pp7Scs8Lz7U'
 
 function getSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL
@@ -11,10 +12,22 @@ function getSupabase() {
 }
 
 // 인증된 유저 또는 device_id 유저 조회
+// 주의: Google 로그인은 현재 비활성화 - device_id 우선 사용
 async function getUserFromRequest(request: Request) {
   const supabase = getSupabase()
 
-  // 1. Bearer 토큰으로 인증 확인
+  // 1. device_id로 먼저 조회 (우선순위)
+  const device_id = request.headers.get('X-Device-ID') || request.headers.get('x-device-id')
+  if (device_id) {
+    const { data: existingUser } = await supabase
+      .from('ledger_users')
+      .select('id')
+      .eq('device_id', device_id)
+      .single()
+    return existingUser
+  }
+
+  // 2. Bearer 토큰으로 인증 확인 (폴백)
   const authHeader = request.headers.get('Authorization')
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7)
@@ -45,18 +58,6 @@ async function getUserFromRequest(request: Request) {
 
       if (ledgerUser) return ledgerUser
     }
-  }
-
-  // 2. device_id로 조회 (폴백)
-  const device_id = request.headers.get('x-device-id')
-  if (device_id) {
-    const { data: existingUser } = await supabase
-      .from('ledger_users')
-      .select('id')
-      .eq('device_id', device_id)
-      .single()
-
-    return existingUser
   }
 
   return null

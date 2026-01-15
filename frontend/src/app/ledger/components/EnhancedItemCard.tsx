@@ -14,6 +14,7 @@ export interface EnhancedLedgerItem {
   total_price: number
   is_sold: boolean
   sold_date?: string
+  obtained_date?: string
   is_favorite?: boolean
   icon_url?: string
 }
@@ -29,17 +30,18 @@ interface EnhancedItemCardProps {
   onToggleFavorite: (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => Promise<void>
 }
 
+// 등급 색상 (즐겨찾기와 동일하게 통일)
 const GRADE_COLORS: Record<string, string> = {
   common: '#9CA3AF',
   rare: '#60A5FA',
-  heroic: '#7E3DCF',
+  heroic: '#A78BFA',
   legendary: '#FBBF24',
-  ultimate: '#FB9800',
+  ultimate: '#F472B6',
   Common: '#9CA3AF',
   Rare: '#60A5FA',
-  Epic: '#7E3DCF',
+  Epic: '#A78BFA',
   Unique: '#FBBF24',
-  Legend: '#FB9800'
+  Legend: '#F472B6'
 }
 
 export default function EnhancedItemCard({
@@ -79,7 +81,8 @@ export default function EnhancedItemCard({
     setEditUnitPrice(item.unit_price)
   }, [item.quantity, item.unit_price])
 
-  const getGradeColor = (grade: string) => {
+  const getGradeColor = (grade: string | undefined | null) => {
+    if (!grade) return '#9CA3AF'
     return GRADE_COLORS[grade] || GRADE_COLORS[grade.toLowerCase()] || '#9CA3AF'
   }
 

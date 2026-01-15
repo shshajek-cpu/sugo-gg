@@ -697,12 +697,12 @@ export default function LedgerPage() {
   }
 
   // 즐겨찾기 토글 핸들러
-  const handleToggleFavorite = async (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => {
+  const handleToggleFavorite = async (itemId: string, itemName: string, itemGrade: string, itemCategory: string, iconUrl?: string) => {
     const favoriteId = favorites.find(f => f.item_id === itemId)?.id
     if (favoriteId) {
       await removeFavorite(favoriteId)
     } else {
-      await addFavorite(itemId, itemName, itemGrade, itemCategory)
+      await addFavorite(itemId, itemName, itemGrade, itemCategory, iconUrl)
     }
   }
 
@@ -930,6 +930,7 @@ export default function LedgerPage() {
           unsoldItemCount={dashboardStats.unsoldItemCount}
           unsoldItemsByGrade={dashboardStats.unsoldItemsByGrade}
           onCharacterClick={setActiveTab}
+          getAuthHeader={getAuthHeader}
         />
       )}
 
@@ -1023,7 +1024,9 @@ export default function LedgerPage() {
                 unit_price: item.unit_price || 0,
                 total_price: item.total_price || 0,
                 is_sold: item.sold_price !== null,
-                is_favorite: isFavorite(item.item_id || '')
+                is_favorite: isFavorite(item.item_id || ''),
+                obtained_date: item.obtained_date,
+                sold_date: item.sold_date || undefined
               }))}
               favorites={favorites}
               onAddItem={async (itemData) => {
@@ -1067,6 +1070,13 @@ export default function LedgerPage() {
         isOpen={showDateModal}
         currentDate={selectedDate}
         characterId={selectedCharacterId}
+        items={items.map(item => ({
+          id: item.id,
+          sold_date: item.sold_date || undefined,
+          sold_price: item.sold_price,
+          total_price: item.total_price || 0,
+          is_sold: item.sold_price !== null
+        }))}
         onClose={() => setShowDateModal(false)}
         onSelectDate={setSelectedDate}
       />

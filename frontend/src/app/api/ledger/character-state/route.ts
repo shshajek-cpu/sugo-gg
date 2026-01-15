@@ -17,11 +17,23 @@ function getSupabase(): SupabaseClient {
 }
 
 // 사용자 인증 헬퍼 함수
+// 주의: Google 로그인은 현재 비활성화 - device_id 우선 사용
 async function getUserFromRequest(request: Request) {
   const db = getSupabase()
+  const deviceIdHeader = request.headers.get('x-device-id') || request.headers.get('X-Device-ID')
   const authHeader = request.headers.get('authorization')
-  const deviceIdHeader = request.headers.get('x-device-id')
 
+  // 1. device_id 우선 사용
+  if (deviceIdHeader) {
+    const { data } = await db
+      .from('ledger_users')
+      .select('id')
+      .eq('device_id', deviceIdHeader)
+      .single()
+    return data
+  }
+
+  // 2. Bearer 토큰 폴백
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.substring(7)
     const { data: { user }, error } = await db.auth.getUser(token)
@@ -33,15 +45,6 @@ async function getUserFromRequest(request: Request) {
         .single()
       return data
     }
-  }
-
-  if (deviceIdHeader) {
-    const { data } = await db
-      .from('ledger_users')
-      .select('id')
-      .eq('device_id', deviceIdHeader)
-      .single()
-    return data
   }
 
   return null
