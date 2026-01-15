@@ -3,10 +3,9 @@
   border: 2px solid rgba(250, 204, 21, 0.2);
   border-radius: 12px;
   padding: 16px;
-  height: fit-content;
-  max-height: calc(100vh - 400px);
   display: flex;
   flex-direction: column;
+  height: 100%;
 }
 
 .header {
@@ -204,6 +203,7 @@
   }
 
   .panel {
-    max-height: none;
+    height: auto;
+    min-height: auto;
   }
 }

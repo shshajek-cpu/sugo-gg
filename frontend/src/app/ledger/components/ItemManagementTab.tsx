@@ -112,6 +112,7 @@ interface ItemManagementTabProps {
   onAddItem: (item: any) => Promise<void>
   onUpdateItem: (id: string, data: Partial<EnhancedLedgerItem>) => Promise<void>
   onSellItem: (id: string, soldPrice: number) => Promise<void>
+  onUnsellItem: (id: string) => Promise<void>
   onDeleteItem: (id: string) => Promise<void>
   onToggleFavorite: (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => Promise<void>
   onSelectFavorite: (favorite: FavoriteItem) => void
@@ -124,6 +125,7 @@ export default function ItemManagementTab({
   onAddItem,
   onUpdateItem,
   onSellItem,
+  onUnsellItem,
   onDeleteItem,
   onToggleFavorite,
   onSelectFavorite,
@@ -498,6 +500,7 @@ export default function ItemManagementTab({
                   onSelect={() => toggleSelectItem(item.id)}
                   onUpdate={onUpdateItem}
                   onSell={onSellItem}
+                  onUnsell={onUnsellItem}
                   onDelete={onDeleteItem}
                   onToggleFavorite={onToggleFavorite}
                 />

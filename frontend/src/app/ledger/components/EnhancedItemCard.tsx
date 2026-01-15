@@ -24,6 +24,7 @@ interface EnhancedItemCardProps {
   onSelect?: () => void
   onUpdate: (id: string, data: Partial<EnhancedLedgerItem>) => Promise<void>
   onSell: (id: string, soldPrice: number) => Promise<void>
+  onUnsell: (id: string) => Promise<void>
   onDelete: (id: string) => Promise<void>
   onToggleFavorite: (itemId: string, itemName: string, itemGrade: string, itemCategory: string) => Promise<void>
 }
@@ -47,6 +48,7 @@ export default function EnhancedItemCard({
   onSelect,
   onUpdate,
   onSell,
+  onUnsell,
   onDelete,
   onToggleFavorite
 }: EnhancedItemCardProps) {
@@ -129,6 +131,18 @@ export default function EnhancedItemCard({
     }
   }
 
+  const handleUnsell = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (confirm(`"${item.item_name}" 판매완료를 취소하시겠습니까?`)) {
+      setIsUpdating(true)
+      try {
+        await onUnsell(item.id)
+      } finally {
+        setIsUpdating(false)
+      }
+    }
+  }
+
   const handleCheckboxClick = (e: React.MouseEvent) => {
     e.stopPropagation()
     onSelect?.()
@@ -140,6 +154,18 @@ export default function EnhancedItemCard({
       className={`${styles.card} ${item.is_sold ? styles.cardSold : ''} ${isSelected ? styles.cardSelected : ''}`}
       onClick={handleCardClick}
     >
+      {/* 판매취소 버튼 (판매완료 아이템만) */}
+      {item.is_sold && (
+        <button
+          className={styles.unsellBtn}
+          onClick={handleUnsell}
+          disabled={isUpdating}
+          title="판매취소"
+        >
+          ×
+        </button>
+      )}
+
       {/* 선택 체크박스 (미판매만) */}
       {!item.is_sold && onSelect ? (
         <div className={styles.selectCheckbox} onClick={handleCheckboxClick}>

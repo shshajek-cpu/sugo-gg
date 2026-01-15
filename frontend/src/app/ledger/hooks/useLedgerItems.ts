@@ -143,6 +143,36 @@ export function useLedgerItems({ getAuthHeader, isReady, characterId }: UseLedge
     }
   }
 
+  const unsellItem = async (id: string) => {
+    if (!isReady) return null
+
+    try {
+      const res = await fetch('/api/ledger/items', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeader()
+        },
+        body: JSON.stringify({
+          id,
+          sold_price: null,
+          sold_date: null
+        })
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to unsell item')
+      }
+
+      const updated = await res.json()
+      setItems(prev => prev.map(i => i.id === id ? updated : i))
+      return updated
+    } catch (e: any) {
+      setError(e.message)
+      return null
+    }
+  }
+
   const deleteItem = async (id: string) => {
     if (!isReady) return false
 
@@ -184,6 +214,7 @@ export function useLedgerItems({ getAuthHeader, isReady, characterId }: UseLedge
     addItem,
     updateItem,
     sellItem,
+    unsellItem,
     deleteItem,
     totalSoldIncome,
     refetch: fetchItems

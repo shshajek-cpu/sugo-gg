@@ -501,6 +501,7 @@ export default function LedgerPage() {
     addItem,
     updateItem,
     sellItem,
+    unsellItem,
     deleteItem,
     totalSoldIncome
   } = useLedgerItems({
@@ -1034,6 +1035,9 @@ export default function LedgerPage() {
               onSellItem={async (id, soldPrice) => {
                 await sellItem(id, soldPrice)
               }}
+              onUnsellItem={async (id) => {
+                await unsellItem(id)
+              }}
               onDeleteItem={async (id) => { await deleteItem(id) }}
               onToggleFavorite={handleToggleFavorite}
               onSelectFavorite={handleSelectFavorite}
@@ -1101,8 +1105,8 @@ export default function LedgerPage() {
       {/* 하단 네비게이션 바 (캐릭터 선택 시에만 표시) */}
       {activeTab !== 'dashboard' && selectedCharacterId && (
         <BottomNavBar
-          todayIncome={selectedDateIncome.dailyIncome + dungeonKina}
-          weeklyIncome={selectedDateIncome.weeklyIncome + dungeonKina}
+          todayIncome={selectedDateIncome.dailyIncome + dungeonKina + totalSoldIncome}
+          weeklyIncome={selectedDateIncome.weeklyIncome + dungeonKina + totalSoldIncome}
           selectedDate={selectedDate}
           onDateClick={() => setShowDateModal(true)}
           onChargeClick={() => setShowChargePopup(true)}
