@@ -132,119 +132,123 @@ export default function DashboardSummary({
       const charStatuses: CharacterStatus[] = []
       const allDailyIncomes: DailyIncome[] = []
       const allItems: any[] = []
+      let totalMonthlyIncome = 0
 
-      // 캐릭터별 데이터 로드
-      for (const char of characters) {
-        // 캐릭터 상태 로드
+      // 캐릭터별 데이터 로드 (병렬 처리)
+      const charDataPromises = characters.map(async (char) => {
         try {
-          const stateRes = await fetch(`/api/ledger/character-state?characterId=${char.id}`, {
-            headers: authHeaders
-          })
-          const stateData = stateRes.ok ? await stateRes.json() : {}
+          // 병렬로 데이터 요청
+          const [itemsRes, statsRes, weeklyStatsRes] = await Promise.all([
+            fetch(`/api/ledger/items?characterId=${char.id}`, { headers: authHeaders }),
+            fetch(`/api/ledger/stats?characterId=${char.id}&type=summary`, { headers: authHeaders }),
+            fetch(`/api/ledger/stats?characterId=${char.id}&type=weekly`, { headers: authHeaders })
+          ])
 
-          // 아이템 로드
-          const itemsRes = await fetch(`/api/ledger/items?characterId=${char.id}`, {
-            headers: authHeaders
-          })
           const itemsData = itemsRes.ok ? await itemsRes.json() : []
-          allItems.push(...itemsData.map((item: any) => ({
-            ...item,
-            characterId: char.id,
-            characterName: char.name
-          })))
-
-          // 통계 로드
-          const statsRes = await fetch(`/api/ledger/stats?characterId=${char.id}&type=summary`, {
-            headers: authHeaders
-          })
           const statsData = statsRes.ok ? await statsRes.json() : {}
+          const weeklyStatsData = weeklyStatsRes.ok ? await weeklyStatsRes.json() : { dailyData: [] }
 
-          // 컨텐츠 진행률 계산
-          const weeklyProgressForChar = WEEKLY_CONTENT_DEFS.map(def => {
-            let current = 0
-            // localStorage에서 주간 데이터 읽기 (실제 구현에서는 API로 대체)
-            if (typeof window !== 'undefined') {
-              const weekKey = getWeekKey(new Date())
-              const storageKey = `weeklyOrders_${char.id}_${weekKey}`
-              const saved = localStorage.getItem(storageKey)
-              if (saved) {
-                try {
-                  const parsed = JSON.parse(saved)
-                  if (def.id === 'weekly_order') current = parsed.weeklyOrderCount || 0
-                  else if (def.id === 'abyss_order') current = parsed.abyssOrderCount || 0
-                  else if (def.id === 'shugo') current = 14 - (parsed.shugoTickets?.base || 14)
-                } catch (e) {}
-              }
-
-              // 던전 기록에서 진행률 가져오기
-              const dungeonKey = `dungeonRecords_${char.id}_${new Date().toISOString().split('T')[0]}`
-              const dungeonSaved = localStorage.getItem(dungeonKey)
-              if (dungeonSaved) {
-                try {
-                  const parsed = JSON.parse(dungeonSaved)
-                  if (def.id === 'transcend') current = parsed.transcend?.length || 0
-                  else if (def.id === 'expedition') current = parsed.expedition?.length || 0
-                  else if (def.id === 'sanctuary') current = parsed.sanctuary?.length || 0
-                } catch (e) {}
-              }
-
-              // 사명 데이터
-              if (def.id === 'mission') {
-                const missionKey = `mission_${char.id}_${getGameDate(new Date())}`
-                const missionSaved = localStorage.getItem(missionKey)
-                current = missionSaved ? parseInt(missionSaved, 10) || 0 : 0
-              }
-            }
-
-            return { id: def.id, name: def.name, current, max: def.maxPerChar }
-          })
-
-          const dailyProgressForChar = DAILY_CONTENT_DEFS.map(def => {
-            let current = 0
-            // 실제 구현에서는 API/localStorage에서 읽어옴
-            if (typeof window !== 'undefined') {
-              const dailyKey = `dailyContent_${char.id}_${new Date().toISOString().split('T')[0]}`
-              const saved = localStorage.getItem(dailyKey)
-              if (saved) {
-                try {
-                  const parsed = JSON.parse(saved)
-                  const contentData = parsed[def.id]
-                  if (contentData) current = contentData.completionCount || 0
-                } catch (e) {}
-              }
-            }
-            return { id: def.id, name: def.name, current, max: def.maxPerChar }
-          })
-
-          const sellingCount = itemsData.filter((i: any) => i.sold_price === null).length
-          const soldCount = itemsData.filter((i: any) => i.sold_price !== null).length
-
-          charStatuses.push({
-            character: char,
-            todayIncome: statsData.todayIncome || char.todayIncome || 0,
-            weeklyIncome: statsData.weeklyIncome || char.weeklyIncome || 0,
-            sellingItemCount: sellingCount,
-            soldItemCount: soldCount,
-            weeklyContents: weeklyProgressForChar,
-            dailyContents: dailyProgressForChar
-          })
-
+          return { char, itemsData, statsData, weeklyStatsData }
         } catch (e) {
           console.error('Error loading character data:', char.id, e)
-          charStatuses.push({
-            character: char,
-            todayIncome: char.todayIncome || 0,
-            weeklyIncome: char.weeklyIncome || 0,
-            sellingItemCount: 0,
-            soldItemCount: 0,
-            weeklyContents: WEEKLY_CONTENT_DEFS.map(def => ({
-              id: def.id, name: def.name, current: 0, max: def.maxPerChar
-            })),
-            dailyContents: DAILY_CONTENT_DEFS.map(def => ({
-              id: def.id, name: def.name, current: 0, max: def.maxPerChar
-            }))
+          return { char, itemsData: [], statsData: {}, weeklyStatsData: { dailyData: [] } }
+        }
+      })
+
+      const charDataResults = await Promise.all(charDataPromises)
+
+      // 결과 처리
+      for (const { char, itemsData, statsData, weeklyStatsData } of charDataResults) {
+        // 아이템 데이터 수집
+        allItems.push(...itemsData.map((item: any) => ({
+          ...item,
+          characterId: char.id,
+          characterName: char.name
+        })))
+
+        // 월간 수입 합산
+        totalMonthlyIncome += statsData.monthlyIncome || 0
+
+        // 일별 수익 데이터 수집 (그래프용)
+        if (weeklyStatsData.dailyData) {
+          weeklyStatsData.dailyData.forEach((day: any) => {
+            allDailyIncomes.push({
+              date: day.date,
+              characterId: char.id,
+              characterName: char.name,
+              income: day.totalIncome || 0
+            })
           })
         }
+
+        // 컨텐츠 진행률 계산
+        const weeklyProgressForChar = WEEKLY_CONTENT_DEFS.map(def => {
+          let current = 0
+          // localStorage에서 주간 데이터 읽기
+          if (typeof window !== 'undefined') {
+            const weekKey = getWeekKey(new Date())
+            const storageKey = `weeklyOrders_${char.id}_${weekKey}`
+            const saved = localStorage.getItem(storageKey)
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved)
+                if (def.id === 'weekly_order') current = parsed.weeklyOrderCount || 0
+                else if (def.id === 'abyss_order') current = parsed.abyssOrderCount || 0
+                else if (def.id === 'shugo') current = 14 - (parsed.shugoTickets?.base || 14)
+              } catch (e) {}
+            }
+
+            // 던전 기록에서 진행률 가져오기
+            const dungeonKey = `dungeonRecords_${char.id}_${new Date().toISOString().split('T')[0]}`
+            const dungeonSaved = localStorage.getItem(dungeonKey)
+            if (dungeonSaved) {
+              try {
+                const parsed = JSON.parse(dungeonSaved)
+                if (def.id === 'transcend') current = parsed.transcend?.length || 0
+                else if (def.id === 'expedition') current = parsed.expedition?.length || 0
+                else if (def.id === 'sanctuary') current = parsed.sanctuary?.length || 0
+              } catch (e) {}
+            }
+
+            // 사명 데이터
+            if (def.id === 'mission') {
+              const missionKey = `mission_${char.id}_${getGameDate(new Date())}`
+              const missionSaved = localStorage.getItem(missionKey)
+              current = missionSaved ? parseInt(missionSaved, 10) || 0 : 0
+            }
+          }
+
+          return { id: def.id, name: def.name, current, max: def.maxPerChar }
+        })
+
+        const dailyProgressForChar = DAILY_CONTENT_DEFS.map(def => {
+          let current = 0
+          if (typeof window !== 'undefined') {
+            const dailyKey = `dailyContent_${char.id}_${new Date().toISOString().split('T')[0]}`
+            const saved = localStorage.getItem(dailyKey)
+            if (saved) {
+              try {
+                const parsed = JSON.parse(saved)
+                const contentData = parsed[def.id]
+                if (contentData) current = contentData.completionCount || 0
+              } catch (e) {}
+            }
+          }
+          return { id: def.id, name: def.name, current, max: def.maxPerChar }
+        })
+
+        const sellingCount = itemsData.filter((i: any) => i.sold_price === null).length
+        const soldCount = itemsData.filter((i: any) => i.sold_price !== null).length
+
+        charStatuses.push({
+          character: char,
+          todayIncome: statsData.todayIncome || char.todayIncome || 0,
+          weeklyIncome: statsData.weeklyIncome || char.weeklyIncome || 0,
+          sellingItemCount: sellingCount,
+          soldItemCount: soldCount,
+          weeklyContents: weeklyProgressForChar,
+          dailyContents: dailyProgressForChar
+        })
       }
 
       setCharacterStatuses(charStatuses)
@@ -325,36 +329,9 @@ export default function DashboardSummary({
       setWeeklyContents(weeklyTotal)
       setDailyContents(dailyTotal)
 
-      // 수익 그래프용 일별 데이터 - 실제 API에서 가져옴
-      const incomes: DailyIncome[] = []
-      let monthlyTotal = 0
-
-      // 각 캐릭터별로 주간 통계 가져오기
-      for (const char of characters) {
-        try {
-          const statsRes = await fetch(`/api/ledger/stats?characterId=${char.id}&type=weekly`, {
-            headers: authHeaders
-          })
-          if (statsRes.ok) {
-            const weeklyStats = await statsRes.json()
-            // 일별 데이터 추가
-            weeklyStats.dailyData?.forEach((day: any) => {
-              incomes.push({
-                date: day.date,
-                characterId: char.id,
-                characterName: char.name,
-                income: day.totalIncome || 0
-              })
-            })
-            monthlyTotal += weeklyStats.totalIncome || 0
-          }
-        } catch (e) {
-          console.error('Error fetching weekly stats for', char.name, e)
-        }
-      }
-
-      setDailyIncomes(incomes)
-      setMonthlyIncome(monthlyTotal)
+      // 수익 그래프용 일별 데이터 설정
+      setDailyIncomes(allDailyIncomes)
+      setMonthlyIncome(totalMonthlyIncome)
 
     } catch (error) {
       console.error('Error loading dashboard data:', error)
