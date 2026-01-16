@@ -17,8 +17,8 @@ import { MainCharacter, MAIN_CHARACTER_KEY } from '@/app/components/SearchBar'
 import { aggregateStats } from '@/lib/statsAggregator'
 import { calculateCombatPowerFromStats } from '@/lib/combatPower'
 
-// 임시 비활성화 플래그
-const DISABLED = true;
+// 임시 비활성화 플래그 (메뉴에서만 숨김, 페이지는 접근 가능)
+const DISABLED = false;
 
 function DisabledPage() {
     return (

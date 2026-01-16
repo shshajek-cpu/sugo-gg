@@ -15,8 +15,8 @@ import CreatePartyModal from './components/CreatePartyModal'
 import PartyDebugPanel from './components/PartyDebugPanel'
 import styles from './page.module.css'
 
-// 임시 비활성화 플래그
-const DISABLED = true;
+// 임시 비활성화 플래그 (메뉴에서만 숨김, 페이지는 접근 가능)
+const DISABLED = false;
 
 type TabType = 'all' | 'my'
 

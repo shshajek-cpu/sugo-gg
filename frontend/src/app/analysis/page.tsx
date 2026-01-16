@@ -4,8 +4,8 @@ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import PartyAnalysisResult from '@/app/components/analysis/PartyAnalysisResult';
 import { usePartyScanner, CropRegion, OcrMode } from '@/hooks/usePartyScanner';
 
-// 임시 비활성화 플래그
-const DISABLED = true;
+// 임시 비활성화 플래그 (메뉴에서만 숨김, 페이지는 접근 가능)
+const DISABLED = false;
 
 export default function AnalysisPage() {
     // 페이지 비활성화
