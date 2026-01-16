@@ -81,9 +81,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                                     { name: '홈', path: '/' },
                                     { name: '랭킹', path: '/ranking' },
                                     { name: '아이템', path: '/item' },
-                                    { name: '캐릭터비교', path: '/compare' },
-                                    { name: '파티분석', path: '/analysis' },
-                                    { name: '파티찾기', path: '/party' },
+                                    // { name: '캐릭터비교', path: '/compare' },  // 임시 비활성화
+                                    // { name: '파티분석', path: '/analysis' },   // 임시 비활성화
+                                    // { name: '파티찾기', path: '/party' },      // 임시 비활성화
                                     // { name: '미니게임', path: '/minigame' },
                                     { name: '가계부', path: '/ledger' }
                                 ].map(item => {
