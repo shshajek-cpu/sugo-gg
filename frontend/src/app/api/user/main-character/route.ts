@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
         .from('ledger_users')
         .insert({
           auth_user_id: user.id,
+          google_user_id: user.id,  // 제약 조건 충족을 위해 google_user_id도 설정
+          google_email: user.email,
           created_at: new Date().toISOString(),
           last_seen_at: new Date().toISOString()
         })
