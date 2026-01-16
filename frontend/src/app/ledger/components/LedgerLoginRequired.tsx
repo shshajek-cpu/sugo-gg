@@ -42,7 +42,7 @@ export default function LedgerLoginRequired({ onLogin, isLoading }: LedgerLoginR
 
         <h2 className={styles.title}>로그인이 필요합니다</h2>
         <p className={styles.description}>
-          가계부 기능을 사용하려면<br />
+          숙제&가계부 기능을 사용하려면<br />
           Google 로그인이 필요합니다.
         </p>
 
@@ -79,7 +79,7 @@ export default function LedgerLoginRequired({ onLogin, isLoading }: LedgerLoginR
         </button>
 
         <div className={styles.divider}>
-          <span>가계부 기능</span>
+          <span>주요 기능</span>
         </div>
 
         <ul className={styles.features}>

@@ -833,7 +833,7 @@ export default function LedgerPage() {
       <header className={styles.header}>
         <h1 className={styles.title}>
           <Wallet size={24} style={{ marginRight: 8 }} />
-          가계부
+          숙제&가계부
         </h1>
         <p className={styles.subtitle}>
           캐릭터별 수입을 관리하고 추적하세요
