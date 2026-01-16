@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Wallet } from 'lucide-react'
+import { Wallet, HelpCircle, X } from 'lucide-react'
 import {
   useDeviceId,
   useLedgerCharacters,
@@ -102,6 +102,7 @@ export default function LedgerPage() {
   const [showAddItemModal, setShowAddItemModal] = useState(false)
   const [showDateModal, setShowDateModal] = useState(false)
   const [showMainCharacterModal, setShowMainCharacterModal] = useState(false)
+  const [showGuideModal, setShowGuideModal] = useState(false)
   const [showChargePopup, setShowChargePopup] = useState(false)
 
   // 선택한 날짜의 수입 (하단 네비게이션 바용)
@@ -831,10 +832,19 @@ export default function LedgerPage() {
     <div className={styles.container}>
       {/* 헤더 */}
       <header className={styles.header}>
-        <h1 className={styles.title}>
-          <Wallet size={24} style={{ marginRight: 8 }} />
-          숙제&가계부
-        </h1>
+        <div className={styles.headerTop}>
+          <h1 className={styles.title}>
+            <Wallet size={24} style={{ marginRight: 8 }} />
+            숙제&가계부
+          </h1>
+          <button
+            className={styles.guideButton}
+            onClick={() => setShowGuideModal(true)}
+          >
+            <HelpCircle size={16} />
+            이용 가이드
+          </button>
+        </div>
         <p className={styles.subtitle}>
           캐릭터별 수입을 관리하고 추적하세요
         </p>
@@ -1061,6 +1071,81 @@ export default function LedgerPage() {
           onDateClick={() => setShowDateModal(true)}
           onChargeClick={() => setShowChargePopup(true)}
         />
+      )}
+
+      {/* 이용 가이드 모달 */}
+      {showGuideModal && (
+        <div className={styles.guideModalOverlay} onClick={() => setShowGuideModal(false)}>
+          <div className={styles.guideModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.guideModalHeader}>
+              <h2>숙제&가계부 이용 가이드</h2>
+              <button onClick={() => setShowGuideModal(false)} className={styles.guideCloseButton}>
+                <X size={20} />
+              </button>
+            </div>
+            <div className={styles.guideModalContent}>
+              <div className={styles.guideSection}>
+                <h3>시작하기 전에</h3>
+                <ul>
+                  <li><strong>PC 환경 권장</strong>: 숙제&가계부는 PC 환경에 최적화되어 있습니다.</li>
+                  <li><strong>Google 로그인 필수</strong>: 데이터 저장 및 동기화를 위해 Google 로그인이 필요합니다.</li>
+                </ul>
+              </div>
+
+              <div className={styles.guideSection}>
+                <h3>1단계: 캐릭터 등록</h3>
+                <ol>
+                  <li>하단의 <strong>[+ 캐릭터]</strong> 버튼 클릭</li>
+                  <li>서버, 종족 선택 후 캐릭터명 검색</li>
+                  <li>검색 결과에서 내 캐릭터 선택하여 등록</li>
+                </ol>
+              </div>
+
+              <div className={styles.guideSection}>
+                <h3>2단계: 인게임 동기화 (중요!)</h3>
+                <p className={styles.guideHighlight}>
+                  처음 사용 시 반드시 인게임 상태와 동기화해야 합니다.
+                </p>
+                <ol>
+                  <li>등록한 캐릭터 탭 선택</li>
+                  <li>하단의 <strong>[설정&충전]</strong> 버튼 클릭</li>
+                  <li>현재 인게임에서 확인한 <strong>잔여 횟수</strong>를 입력</li>
+                  <li><strong>[가계부에 적용하기]</strong> 버튼 클릭</li>
+                </ol>
+              </div>
+
+              <div className={styles.guideSection}>
+                <h3>3단계: 컨텐츠 클리어 체크</h3>
+                <ul>
+                  <li>컨텐츠 카드를 <strong>클릭</strong>하면 클리어 횟수가 증가합니다.</li>
+                  <li>충전권 사용 시: <strong>[설정&충전]</strong>에서 보너스 횟수를 추가하세요.</li>
+                </ul>
+              </div>
+
+              <div className={styles.guideSection}>
+                <h3>4단계: 아이템 수입 관리</h3>
+                <ol>
+                  <li><strong>아이템</strong> 서브탭으로 이동</li>
+                  <li><strong>[+ 아이템]</strong> 버튼 클릭</li>
+                  <li>아이템 정보 입력 후 등록</li>
+                  <li>판매 완료 시 가격 입력하여 상태 변경</li>
+                </ol>
+              </div>
+
+              <div className={styles.guideSection}>
+                <h3>자주 묻는 질문</h3>
+                <div className={styles.guideFaq}>
+                  <p><strong>Q: 컨텐츠 횟수가 실제와 다른데요?</strong></p>
+                  <p>A: [설정&충전] 버튼을 눌러 현재 인게임 상태로 동기화하세요.</p>
+                </div>
+                <div className={styles.guideFaq}>
+                  <p><strong>Q: 주간 리셋은 언제인가요?</strong></p>
+                  <p>A: 매주 수요일 새벽 5시입니다.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
