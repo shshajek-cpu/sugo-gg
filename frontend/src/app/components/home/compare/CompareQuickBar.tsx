@@ -93,7 +93,7 @@ export default function CompareQuickBar() {
                         style={{
                             background: 'rgba(17, 19, 24, 0.95)',
                             backdropFilter: 'blur(10px)',
-                            border: '1px solid var(--brand-red-muted)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
                             borderRadius: '50%',
                             width: '48px',
                             height: '48px',
@@ -128,7 +128,7 @@ export default function CompareQuickBar() {
                         padding: '1rem',
                         background: 'rgba(17, 19, 24, 0.95)',
                         backdropFilter: 'blur(10px)',
-                        border: '1px solid var(--brand-red-muted)',
+                        border: '1px solid rgba(245, 158, 11, 0.3)',
                         boxShadow: '0 4px 20px rgba(0,0,0,0.4)'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>

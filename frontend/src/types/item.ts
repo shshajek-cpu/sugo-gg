@@ -164,7 +164,7 @@ export type ItemGrade =
     | 'Rare'
     | 'Common'
 
-// 슬롯 포지션 맵
+// 슬롯 포지션 맵 (게임 실제 데이터 기준)
 export const SLOT_POS_MAP: Record<number, string> = {
     1: '주무기',
     2: '보조무기',
@@ -174,13 +174,13 @@ export const SLOT_POS_MAP: Record<number, string> = {
     6: '장갑',
     7: '각반',
     8: '장화',
-    9: '목걸이',
-    10: '귀걸이1',
-    11: '귀걸이2',
-    12: '반지1',
-    13: '반지2',
-    15: '팔찌2',
-    16: '팔찌1',
+    10: '목걸이',
+    11: '귀걸이1',
+    12: '귀걸이2',
+    13: '반지1',
+    14: '반지2',
+    15: '팔찌1',
+    16: '팔찌2',
     17: '허리띠',
     19: '망토',
     22: '아뮬렛',
@@ -193,12 +193,12 @@ export const SLOT_POS_MAP: Record<number, string> = {
     45: '아르카나5',
 }
 
-// 슬롯 카테고리 분류
+// 슬롯 카테고리 분류 (게임 실제 데이터 기준)
 export const SLOT_CATEGORIES: Record<ItemCategory, number[]> = {
     weapon: [1],
     subweapon: [2],
     armor: [3, 4, 5, 6, 7, 8, 17, 19],
-    accessory: [9, 10, 11, 12, 13, 15, 16, 22],
+    accessory: [10, 11, 12, 13, 14, 15, 16, 22],
     rune: [23, 24],
     arcana: [41, 42, 43, 44, 45]
 }
@@ -207,19 +207,51 @@ export const SLOT_CATEGORIES: Record<ItemCategory, number[]> = {
 export const SLOT_GROUPS = [
     { name: '무기', slots: [1, 2] },
     { name: '방어구', slots: [3, 4, 5, 6, 7, 8, 17, 19] },
-    { name: '장신구', slots: [9, 10, 11, 12, 13, 15, 16, 22] },
+    { name: '장신구', slots: [10, 11, 12, 13, 14, 15, 16, 22] },
     { name: '룬', slots: [23, 24] }
 ]
 
-// 등급 색상
+// 등급 색상 (DB 등급값 기준 + 공식 사이트 색상)
+// Common(일반) - 회색, Rare(레어) - 파랑, Epic(에픽) - 보라
+// Unique(유니크) - 노랑, Legend(전설) - 주황, Special(특수) - 초록
 export const GRADE_COLORS: Record<string, string> = {
-    'Mythic': '#09CE9F',
-    'Legendary': '#FB9800',
-    'Unique': '#FFB84D',
-    'Epic': '#7E3DCF',
-    'Fabled': '#EE6C2A',
-    'Rare': '#3B82F6',
-    'Common': '#9CA3AF'
+    // DB에서 사용하는 등급명
+    'Common': '#9CA3AF',      // 일반 - 회색
+    'Rare': '#3B82F6',        // 레어 - 파랑
+    'Epic': '#A855F7',        // 에픽 - 보라
+    'Unique': '#FACC15',      // 유니크 - 노랑
+    'Legend': '#F97316',      // 전설 - 주황
+    'Special': '#22C55E',     // 특수 - 초록
+    // 하위 호환용 (다른 표기)
+    'Mythic': '#14B8A6',      // 신화 - 청록
+    'Legendary': '#F97316',   // 전설 (Legend와 동일)
+    'Fabled': '#EE6C2A',      // 페이블드 - 주황
+}
+
+// 등급 우선순위 (높을수록 좋음)
+export const GRADE_PRIORITY: Record<string, number> = {
+    'Mythic': 7,
+    'Legend': 6,
+    'Legendary': 6,
+    'Unique': 5,
+    'Epic': 4,
+    'Fabled': 3,
+    'Rare': 2,
+    'Special': 1,
+    'Common': 0,
+}
+
+// 등급 한글명
+export const GRADE_LABELS: Record<string, string> = {
+    'Common': '일반',
+    'Rare': '레어',
+    'Epic': '에픽',
+    'Unique': '유니크',
+    'Legend': '전설',
+    'Legendary': '전설',
+    'Special': '특수',
+    'Mythic': '신화',
+    'Fabled': '페이블드',
 }
 
 // 티어 색상

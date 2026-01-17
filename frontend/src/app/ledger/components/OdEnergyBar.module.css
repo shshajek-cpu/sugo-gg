@@ -11,7 +11,7 @@
 }
 
 .container:hover {
-  border-color: rgba(250, 204, 21, 0.3);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .icon {
@@ -27,7 +27,7 @@
 .energyAmount {
   font-size: 17px;
   font-weight: 700;
-  color: #FACC15;
+  color: #f59e0b;
   font-family: 'Rajdhani', sans-serif;
   white-space: nowrap;
 }

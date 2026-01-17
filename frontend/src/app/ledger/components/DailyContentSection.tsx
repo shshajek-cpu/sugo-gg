@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useMemo, useCallback } from 'react'
+import { useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import DailyContentCard from './DailyContentCard'
 import { useDailyContent } from '../hooks/useDailyContent'
 import { isEditable } from '../utils/dateUtils'
@@ -37,7 +37,7 @@ interface DailyContentSectionProps {
   onInitialSyncComplete?: () => void
 }
 
-export default function DailyContentSection({
+function DailyContentSection({
   characterId,
   selectedDate,
   getAuthHeader,
@@ -225,3 +225,6 @@ export default function DailyContentSection({
     </section>
   )
 }
+
+// React.memo를 적용하여 props가 변경되지 않으면 리렌더링 방지
+export default memo(DailyContentSection)

@@ -316,142 +316,142 @@ export default function ContentCard({
       {/* 우측 컨텐츠 영역 */}
       {!collapsed && (
         <div className={styles.contentSection}>
-        {/* 접기 버튼 (우측 상단) */}
-        {onToggleCollapse && (
-          <button className={styles.collapseBtn} onClick={onToggleCollapse}>
-            ▲
-          </button>
-        )}
-
-        {/* 컨트롤 영역 */}
-        <div className={styles.controls}>
-          <span className={styles.contentTitle}>{title}</span>
-
-          {/* 오드 에너지 토글 */}
-          <button
-            className={`${styles.oddToggle} ${isDoubleReward ? styles.oddToggleActive : ''} ${isShaking && !isDoubleReward ? styles.oddShake : ''}`}
-            onClick={handleDoubleToggle}
-          >
-            <Image src="/메달/오드.png" alt="오드" width={21} height={21} />
-            <span>오드에너지 2배 사용</span>
-          </button>
-
-          {/* 카테고리 선택 (원정만) */}
-          {categoryOptions && onCategoryChange && (
-            <select
-              className={styles.select}
-              value={selectedCategory}
-              onChange={(e) => onCategoryChange(e.target.value)}
-            >
-              {categoryOptions.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+          {/* 접기 버튼 (우측 상단) */}
+          {onToggleCollapse && (
+            <button className={styles.collapseBtn} onClick={onToggleCollapse}>
+              ▲
+            </button>
           )}
 
-          {/* 보스 선택 */}
-          <select
-            className={styles.select}
-            value={selectedBoss}
-            onChange={(e) => onBossChange(e.target.value)}
-          >
-            {bossOptions.map(boss => (
-              <option key={boss.id} value={boss.id}>{boss.name}</option>
-            ))}
-          </select>
+          {/* 컨트롤 영역 */}
+          <div className={styles.controls}>
+            <span className={styles.contentTitle}>{title}</span>
 
-          {/* 단계 선택 (초월만) */}
-          {tierOptions && onTierChange && (
-            <select
-              className={styles.select}
-              value={selectedTier}
-              onChange={(e) => onTierChange(Number(e.target.value))}
-            >
-              {tierOptions.map(tier => (
-                <option key={tier.tier} value={tier.tier}>{tier.tier}단계</option>
-              ))}
-            </select>
-          )}
-
-          {/* 완료 횟수 */}
-          <span className={styles.countLabel}>완료횟수:</span>
-          <div className={styles.countControl}>
+            {/* 오드 에너지 토글 */}
             <button
-              className={styles.countBtn}
-              onClick={() => setCompletionCount(Math.max(1, completionCount - 1))}
-              disabled={readOnly}
+              className={`${styles.oddToggle} ${isDoubleReward ? styles.oddToggleActive : ''} ${isShaking && !isDoubleReward ? styles.oddShake : ''}`}
+              onClick={handleDoubleToggle}
             >
-              −
+              <Image src="/메달/오드.png" alt="오드" width={21} height={21} />
+              <span>오드에너지 <span style={{ color: '#f59e0b' }}>2</span>배 사용</span>
             </button>
-            <span className={styles.countValue}>{completionCount}</span>
-            <button
-              className={styles.countBtn}
-              onClick={() => setCompletionCount(completionCount + 1)}
-              disabled={readOnly}
-            >
-              +
-            </button>
-          </div>
 
-          {/* 진행 완료 버튼 */}
-          <button
-            className={styles.addBtn}
-            onClick={handleAddRecord}
-            disabled={readOnly}
-            title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
-          >
-            {readOnly ? '열람 전용' : '진행 완료'}
-          </button>
-        </div>
-
-        {/* 기록 영역 */}
-        <div className={styles.recordsSection}>
-          <div className={styles.recordsHeader}>
-            <span>📋 오늘 기록: ({records.length}개)</span>
-            {records.length > 3 && (
-              <button
-                className={styles.expandBtn}
-                onClick={() => setIsExpanded(!isExpanded)}
+            {/* 카테고리 선택 (원정만) */}
+            {categoryOptions && onCategoryChange && (
+              <select
+                className={styles.select}
+                value={selectedCategory}
+                onChange={(e) => onCategoryChange(e.target.value)}
               >
-                {isExpanded ? '접기▲' : '펼치기▼'}
+                {categoryOptions.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            )}
+
+            {/* 보스 선택 */}
+            <select
+              className={styles.select}
+              value={selectedBoss}
+              onChange={(e) => onBossChange(e.target.value)}
+            >
+              {bossOptions.map(boss => (
+                <option key={boss.id} value={boss.id}>{boss.name}</option>
+              ))}
+            </select>
+
+            {/* 단계 선택 (초월만) */}
+            {tierOptions && onTierChange && (
+              <select
+                className={styles.select}
+                value={selectedTier}
+                onChange={(e) => onTierChange(Number(e.target.value))}
+              >
+                {tierOptions.map(tier => (
+                  <option key={tier.tier} value={tier.tier}>{tier.tier}단계</option>
+                ))}
+              </select>
+            )}
+
+            {/* 완료 횟수 */}
+            <span className={styles.countLabel}>완료횟수:</span>
+            <div className={styles.countControl}>
+              <button
+                className={styles.countBtn}
+                onClick={() => setCompletionCount(Math.max(1, completionCount - 1))}
+                disabled={readOnly}
+              >
+                −
               </button>
-            )}
-          </div>
-
-          <div className={`${styles.recordsList} ${isExpanded ? styles.recordsListExpanded : ''}`}>
-            {visibleRecords.length === 0 ? (
-              <div className={styles.noRecords}>기록이 없습니다</div>
-            ) : (
-              visibleRecords.map(record => (
-                <div key={record.id} className={styles.recordItem}>
-                  <span className={styles.recordInfo}>
-                    ✅ {record.bossName}
-                    {record.tier && `-${record.tier}단계`}
-                    {record.category && ` [${record.category}]`}
-                  </span>
-                  <span className={styles.recordCount}>{record.count}회</span>
-                  <span className={styles.recordKina}>{record.kina.toLocaleString()}</span>
-                  {!readOnly && (
-                    <button
-                      className={styles.deleteBtn}
-                      onClick={() => handleDeleteRecord(record.id, record.count, record.usedFromBonus || 0)}
-                      title="기록 삭제"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-
-          {records.length > 0 && (
-            <div className={styles.totalKina}>
-              💰 합계: {totalKina.toLocaleString()}
+              <span className={styles.countValue}>{completionCount}</span>
+              <button
+                className={styles.countBtn}
+                onClick={() => setCompletionCount(completionCount + 1)}
+                disabled={readOnly}
+              >
+                +
+              </button>
             </div>
-          )}
+
+            {/* 진행 완료 버튼 */}
+            <button
+              className={styles.addBtn}
+              onClick={handleAddRecord}
+              disabled={readOnly}
+              title={readOnly ? '과거 기록은 수정할 수 없습니다' : undefined}
+            >
+              {readOnly ? '열람 전용' : '진행 완료'}
+            </button>
+          </div>
+
+          {/* 기록 영역 */}
+          <div className={styles.recordsSection}>
+            <div className={styles.recordsHeader}>
+              <span>📋 오늘 기록: ({records.length}개)</span>
+              {records.length > 3 && (
+                <button
+                  className={styles.expandBtn}
+                  onClick={() => setIsExpanded(!isExpanded)}
+                >
+                  {isExpanded ? '접기▲' : '펼치기▼'}
+                </button>
+              )}
+            </div>
+
+            <div className={`${styles.recordsList} ${isExpanded ? styles.recordsListExpanded : ''}`}>
+              {visibleRecords.length === 0 ? (
+                <div className={styles.noRecords}>기록이 없습니다</div>
+              ) : (
+                visibleRecords.map(record => (
+                  <div key={record.id} className={styles.recordItem}>
+                    <span className={styles.recordInfo}>
+                      ✅ {record.bossName}
+                      {record.tier && `-${record.tier}단계`}
+                      {record.category && ` [${record.category}]`}
+                    </span>
+                    <span className={styles.recordCount}>{record.count}회</span>
+                    <span className={styles.recordKina}>{record.kina.toLocaleString()}</span>
+                    {!readOnly && (
+                      <button
+                        className={styles.deleteBtn}
+                        onClick={() => handleDeleteRecord(record.id, record.count, record.usedFromBonus || 0)}
+                        title="기록 삭제"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            {records.length > 0 && (
+              <div className={styles.totalKina}>
+                💰 합계: {totalKina.toLocaleString()}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
       )}
 
       {/* 접힌 상태일 때 제목 영역 */}

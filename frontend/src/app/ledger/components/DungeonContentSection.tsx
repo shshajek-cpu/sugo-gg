@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import ContentCard from './ContentCard'
 import OdEnergyBar from './OdEnergyBar'
 import { getWeekKey, isEditable } from '../utils/dateUtils'
@@ -76,7 +76,7 @@ interface DungeonContentSectionProps {
   onTotalKinaChange?: (totalKina: number) => void
 }
 
-export default function DungeonContentSection({
+function DungeonContentSection({
   characterId,
   selectedDate,
   getAuthHeader,
@@ -417,11 +417,11 @@ export default function DungeonContentSection({
         return prev.map(r =>
           r.id === existing.id
             ? {
-                ...r,
-                count: r.count + record.count,
-                kina: r.kina + record.kina,
-                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
-              }
+              ...r,
+              count: r.count + record.count,
+              kina: r.kina + record.kina,
+              usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+            }
             : r
         )
       } else {
@@ -446,11 +446,11 @@ export default function DungeonContentSection({
         return prev.map(r =>
           r.id === existing.id
             ? {
-                ...r,
-                count: r.count + record.count,
-                kina: r.kina + record.kina,
-                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
-              }
+              ...r,
+              count: r.count + record.count,
+              kina: r.kina + record.kina,
+              usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+            }
             : r
         )
       } else {
@@ -482,11 +482,11 @@ export default function DungeonContentSection({
         return prev.map(r =>
           r.id === existing.id
             ? {
-                ...r,
-                count: r.count + record.count,
-                kina: r.kina + record.kina,
-                usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
-              }
+              ...r,
+              count: r.count + record.count,
+              kina: r.kina + record.kina,
+              usedFromBonus: (r.usedFromBonus || 0) + (record.usedFromBonus || 0)
+            }
             : r
         )
       } else {
@@ -532,7 +532,6 @@ export default function DungeonContentSection({
           ticketEnergy={odEnergy.ticketEnergy}
           maxTimeEnergy={840}
           maxTicketEnergy={2000}
-          nextChargeIn={odEnergy.nextChargeIn}
         />
       </div>
 
@@ -638,3 +637,6 @@ export default function DungeonContentSection({
     </section>
   )
 }
+
+// React.memo를 적용하여 props가 변경되지 않으면 리렌더링 방지
+export default memo(DungeonContentSection)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react'
 import ProgressBar from './ProgressBar'
 import ShugoFestaCard from './ShugoFestaCard'
 import AbyssHallwayCard from './AbyssHallwayCard'
@@ -23,7 +23,7 @@ const DEFAULT_ABYSS_REGIONS = [
   { id: 'sulfur_tree', name: '유황나무섬', enabled: false }
 ]
 
-export default function WeeklyContentSection({ characterId, selectedDate, shugoInitialSync, onShugoSyncComplete, shugoBonusCharge, onShugoBonusChargeComplete }: WeeklyContentSectionProps) {
+function WeeklyContentSection({ characterId, selectedDate, shugoInitialSync, onShugoSyncComplete, shugoBonusCharge, onShugoBonusChargeComplete }: WeeklyContentSectionProps) {
   const { getAuthHeader } = useDeviceId()
 
   const log = (message: string, data?: any) => {
@@ -319,3 +319,6 @@ export default function WeeklyContentSection({ characterId, selectedDate, shugoI
     </section>
   )
 }
+
+// React.memo를 적용하여 props가 변경되지 않으면 리렌더링 방지
+export default memo(WeeklyContentSection)

@@ -1,31 +1,48 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OCR Worker</title>
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 </head>
+
 <body style="margin: 0; padding: 20px; font-family: sans-serif; background: #1a1a1a; color: #fff;">
     <div id="status">OCR 모델 로딩 중...</div>
     <script>
         let worker = null;
+        let currentLang = 'kor+eng';
         let isReady = false;
 
         // 부모 창에 메시지 전송
         function sendToParent(type, data) {
             if (window.parent !== window) {
-                window.parent.postMessage({ type, ...data }, '*');
+                window.parent.postMessage({ type, data }, '*');
             }
         }
 
         // OCR 초기화
-        async function initOcr() {
+        async function initOcr(lang = 'kor+eng') {
             try {
-                sendToParent('status', { message: 'Tesseract 로딩 중...' });
-                document.getElementById('status').textContent = 'Tesseract 로딩 중...';
+                // 이미 worker가 있고 언어가 같다면 재사용 (단, 상태가 ready일 때만)
+                if (worker && currentLang === lang && isReady) {
+                    return;
+                }
 
-                worker = await Tesseract.createWorker('kor+eng', 1, {
+                // 언어가 바뀌면 기존 워커 종료
+                if (worker) {
+                    await worker.terminate();
+                    worker = null;
+                    isReady = false;
+                }
+
+                currentLang = lang;
+                sendToParent('status', { message: `Tesseract 로딩 중 (${lang})...` });
+                document.getElementById('status').textContent = `Tesseract 로딩 중 (${lang})...`;
+
+                // Tesseract v5 createWorker
+                worker = await Tesseract.createWorker(lang, 1, {
                     logger: m => {
                         if (m.status === 'recognizing text') {
                             const progress = Math.round(m.progress * 100);
@@ -37,34 +54,51 @@
                 isReady = true;
                 sendToParent('ready', { success: true });
                 document.getElementById('status').textContent = 'OCR 준비 완료';
-                console.log('[OCR Worker] Tesseract 로드 완료');
+                console.log(`[OCR Worker] Tesseract 로드 완료 (${lang})`);
             } catch (err) {
                 console.error('[OCR Worker] 초기화 실패:', err);
                 document.getElementById('status').textContent = '초기화 실패: ' + err.message;
                 sendToParent('error', { message: err.message });
+                isReady = false;
             }
         }
 
         // 이미지 OCR 수행
-        async function processImage(imageData) {
+        async function processImage(data) {
+            // data = { image: string, psm: string, lang: string }
+            const { image, psm, lang } = data;
+
+            // 언어 변경 감지 및 초기화
+            if (lang && lang !== currentLang) {
+                await initOcr(lang);
+            }
+
             if (!worker || !isReady) {
                 sendToParent('error', { message: 'OCR이 준비되지 않았습니다' });
                 return;
             }
 
             try {
+                // PSM 설정 check
+                // Tesseract PSM enums: https://github.com/naptha/tesseract.js/blob/master/docs/api.md#psm-page-segmentation-mode
+                if (psm) {
+                    await worker.setParameters({
+                        tessedit_pageseg_mode: psm,
+                    });
+                }
+
                 sendToParent('status', { message: '텍스트 인식 중...' });
                 const startTime = performance.now();
 
-                const result = await worker.recognize(imageData);
+                const result = await worker.recognize(image);
                 const endTime = performance.now();
 
                 // Tesseract 결과를 표준 형식으로 변환
                 const texts = result.data.lines.map(line => ({
                     text: line.text.trim(),
-                    confidence: line.confidence / 100,
+                    confidence: line.confidence,
                     box: [[line.bbox.x0, line.bbox.y0], [line.bbox.x1, line.bbox.y0],
-                          [line.bbox.x1, line.bbox.y1], [line.bbox.x0, line.bbox.y1]]
+                    [line.bbox.x1, line.bbox.y1], [line.bbox.x0, line.bbox.y1]]
                 })).filter(t => t.text.length > 0);
 
                 sendToParent('result', {
@@ -84,20 +118,17 @@
 
             switch (type) {
                 case 'init':
-                    if (!isReady) {
-                        await initOcr();
-                    } else {
-                        sendToParent('ready', { success: true });
-                    }
+                    await initOcr(data?.lang);
                     break;
                 case 'process':
-                    await processImage(data);
+                    await processImage(data); // data contains {image, psm, lang}
                     break;
             }
         });
 
-        // 자동 초기화
-        initOcr();
+        // 자동 초기화 (기본값)
+        initOcr('kor+eng');
     </script>
 </body>
+
 </html>

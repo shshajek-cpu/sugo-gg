@@ -29,11 +29,12 @@ interface ImageSlot {
 const STAT_CATEGORIES = [
     { id: 'basic', name: '기본 스탯' },
     { id: 'damage', name: '피해/판정' },
-    { id: 'pvp', name: 'PVP/PVE' }
+    { id: 'pvp', name: 'PVP/PVE' },
+    { id: 'special', name: '특수/자원' }
 ]
 
 export default function StatCapturePage() {
-    // 3개 이미지 슬롯 상태
+    // 4개 이미지 슬롯 상태 (특수/자원 추가됨)
     const [imageSlots, setImageSlots] = useState<ImageSlot[]>(
         STAT_CATEGORIES.map(cat => ({
             id: cat.id,
@@ -268,7 +269,16 @@ export default function StatCapturePage() {
         'PVE 공격력', 'PVE 방어력', 'PVE 피해 증폭', 'PVE 피해 내성',
         'PVE 명중', 'PVE 회피',
         // 보스 스탯
-        '보스 공격력', '보스 방어력', '보스 피해 증폭', '보스 피해 내성'
+        '보스 공격력', '보스 방어력', '보스 피해 증폭', '보스 피해 내성',
+        // 특수 스탯
+        '질주 속도', '비행 속도', '탑승물 지상 이동 속도', '탑승물 질주 행동력 소모', '탑승물 질주 행동력 소...',
+        '치유 증폭', '받는 치유량', '재사용 시간', '적대치 획득량',
+        // 자원 스탯
+        '행동력', '비행력',
+        '전투 생명력 자연 회복', '비전투 생명력 자연 회복', '생명력 물약 회복 증가', '생명력 물약 회복',
+        '전투 정신력 자연 회복', '비전투 정신력 자연 회복', '정신력 소모량', '정신력 획득 증가',
+        '전투 행동력 자연 회복', '비전투 행동력 자연 회복',
+        '전투 비행력 자연 회복', '비전투 비행력 자연 회복'
     ]
 
     // 스탯 파싱 (2열 레이아웃 대응)
@@ -303,7 +313,8 @@ export default function StatCapturePage() {
                 if (remaining.startsWith(statName)) {
                     // 스탯명 뒤의 값 추출
                     const afterName = remaining.substring(statName.length).trim()
-                    const valueMatch = afterName.match(/^([\d,]+\.?\d*%?)/)
+                    // 음수 및 백분율 지원 정규식 (-9%, 100, 5.9% 등)
+                    const valueMatch = afterName.match(/^([-]?[\d,]+\.?\d*%?)/)
 
                     if (valueMatch) {
                         const value = valueMatch[1].replace(/,/g, '')

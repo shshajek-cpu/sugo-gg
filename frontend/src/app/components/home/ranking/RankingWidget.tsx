@@ -149,9 +149,9 @@ export default function RankingWidget() {
                             style={{
                                 padding: '0.3rem 0.5rem', fontSize: 'calc(0.7rem + 2px)',
                                 borderRadius: '4px', cursor: 'pointer',
-                                border: selectedClass === cls ? '1px solid var(--brand-red-main)' : '1px solid rgba(255,255,255,0.1)',
-                                background: selectedClass === cls ? 'rgba(var(--brand-red-rgb), 0.2)' : 'transparent',
-                                color: selectedClass === cls ? 'var(--brand-red-main)' : 'var(--text-secondary)',
+                                border: selectedClass === cls ? '1px solid #f59e0b' : '1px solid rgba(255,255,255,0.1)',
+                                background: selectedClass === cls ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                                color: selectedClass === cls ? '#f59e0b' : 'var(--text-secondary)',
                                 fontWeight: selectedClass === cls ? 'bold' : 'normal',
                                 transition: 'all 0.2s'
                             }}
@@ -162,9 +162,9 @@ export default function RankingWidget() {
                 </div>
                 {/* Class Ranking List */}
                 <div style={{
-                    fontSize: 'calc(0.75rem + 2px)', fontWeight: 'bold', color: 'var(--brand-red-main)',
+                    fontSize: 'calc(0.75rem + 2px)', fontWeight: 'bold', color: '#f59e0b',
                     marginBottom: '0.5rem', padding: '0.25rem 0',
-                    borderBottom: '1px solid rgba(var(--brand-red-rgb), 0.3)'
+                    borderBottom: '1px solid rgba(245, 158, 11, 0.3)'
                 }}>{selectedClass} 전투력 랭킹</div>
                 <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
                     {classData.length === 0 ? (
@@ -186,7 +186,7 @@ export default function RankingWidget() {
         }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <h2 style={{
-                    fontSize: 'calc(0.85rem + 2px)', fontWeight: 'bold', color: '#9CA3AF',
+                    fontSize: 'calc(0.85rem + 2px)', fontWeight: 'bold', color: '#f59e0b',
                     letterSpacing: '-0.02em', margin: 0
                 }}>실시간 전투력 랭킹</h2>
                 <Link href="/ranking" style={{ fontSize: 'calc(0.75rem + 2px)', color: 'var(--text-secondary)', textDecoration: 'none' }}>
@@ -312,7 +312,7 @@ function RankingMiniItem({ character, rank, raceColor, showClass, showServer }: 
 
                 {/* HITON Score */}
                 <div style={{
-                    fontSize: 'calc(0.75rem + 2px)', fontWeight: 'bold', color: 'var(--brand-red-main)',
+                    fontSize: 'calc(0.75rem + 2px)', fontWeight: 'bold', color: '#f59e0b',
                     flexShrink: 0
                 }}>
                     {(character.noa_score || character.hiton_score || 0).toLocaleString()}

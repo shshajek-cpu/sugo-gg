@@ -4,7 +4,8 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 24px 16px;
-  padding-bottom: 120px; /* 하단 네비게이션 바 공간 확보 */
+  padding-bottom: 120px;
+  /* 하단 네비게이션 바 공간 확보 */
   min-height: 100vh;
   background: #161618;
 }
@@ -39,7 +40,8 @@
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   align-items: center;
-  margin-bottom: 0; /* 키나 수급 현황이 margin-top으로 간격 조정 */
+  margin-bottom: 0;
+  /* 키나 수급 현황이 margin-top으로 간격 조정 */
 }
 
 .tab {
@@ -65,9 +67,9 @@
 }
 
 .tabActive {
-  background: rgba(251, 219, 81, 0.1);
-  border-color: #fbdb51;
-  color: #fbdb51;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .tabAdd {
@@ -75,8 +77,8 @@
 }
 
 .tabAdd:hover {
-  border-color: #fbdb51;
-  color: #fbdb51;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .tabAvatar {
@@ -132,7 +134,7 @@
 }
 
 .tabActive .tabMeta {
-  color: rgba(251, 219, 81, 0.7);
+  color: rgba(245, 158, 11, 0.7);
 }
 
 .hidden {
@@ -194,7 +196,7 @@
 .kinaValue {
   font-size: 24px;
   font-weight: 700;
-  color: #fbdb51;
+  color: var(--primary);
 }
 
 .kinaDetail {
@@ -238,11 +240,11 @@
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background: rgba(251, 219, 81, 0.1);
+  background: rgba(245, 158, 11, 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fbdb51;
+  color: var(--primary);
   flex-shrink: 0;
 }
 
@@ -267,7 +269,7 @@
 
 .contentCountInput:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .tierSelect {
@@ -283,7 +285,7 @@
 
 .tierSelect:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .counterGroup {
@@ -308,8 +310,8 @@
 }
 
 .counterBtn:hover {
-  border-color: #fbdb51;
-  color: #fbdb51;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .counterBtn:disabled {
@@ -333,8 +335,8 @@
 }
 
 .badgeCompleted {
-  background: #fbdb51;
-  border-color: #fbdb51;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .doubleBtn {
@@ -350,21 +352,21 @@
 }
 
 .doubleBtn:hover {
-  border-color: #fbdb51;
-  color: #fbdb51;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .doubleBtnActive {
-  background: rgba(251, 219, 81, 0.2);
-  border-color: #fbdb51;
-  color: #fbdb51;
+  background: rgba(245, 158, 11, 0.2);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .contentKina {
   margin-left: auto;
   font-size: 14px;
   font-weight: 600;
-  color: #fbdb51;
+  color: var(--primary);
   min-width: 100px;
   text-align: right;
 }
@@ -386,7 +388,7 @@
 .contentTotalValue {
   font-size: 18px;
   font-weight: 700;
-  color: #fbdb51;
+  color: var(--primary);
 }
 
 /* 아이템 획득 목록 */
@@ -409,14 +411,14 @@
 }
 
 .filterBtn:hover {
-  border-color: #fbdb51;
-  color: #fbdb51;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .filterBtnActive {
-  background: rgba(251, 219, 81, 0.1);
-  border-color: #fbdb51;
-  color: #fbdb51;
+  background: rgba(245, 158, 11, 0.1);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .searchInput {
@@ -433,7 +435,7 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .searchInput::placeholder {
@@ -493,11 +495,30 @@
   font-weight: 500;
 }
 
-.gradeCommon { background: rgba(156, 163, 175, 0.2); color: #9CA3AF; }
-.gradeRare { background: rgba(96, 165, 250, 0.2); color: #60A5FA; }
-.gradeHeroic { background: rgba(167, 139, 250, 0.2); color: #A78BFA; }
-.gradeLegendary { background: rgba(251, 191, 36, 0.2); color: #FBBF24; }
-.gradeUltimate { background: rgba(244, 114, 182, 0.2); color: #F472B6; }
+.gradeCommon {
+  background: rgba(156, 163, 175, 0.2);
+  color: #9CA3AF;
+}
+
+.gradeRare {
+  background: rgba(96, 165, 250, 0.2);
+  color: #60A5FA;
+}
+
+.gradeHeroic {
+  background: rgba(167, 139, 250, 0.2);
+  color: #A78BFA;
+}
+
+.gradeLegendary {
+  background: rgba(251, 191, 36, 0.2);
+  color: #FBBF24;
+}
+
+.gradeUltimate {
+  background: rgba(244, 114, 182, 0.2);
+  color: #F472B6;
+}
 
 .itemCategory {
   color: #a5a8b4;
@@ -531,13 +552,13 @@
 
 .saleInput:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .saleBtn {
   padding: 6px 12px;
   border-radius: 4px;
-  background: #fbdb51;
+  background: var(--primary);
   border: none;
   color: #000000;
   font-size: 13px;
@@ -590,8 +611,8 @@
 }
 
 .addItemBtn:hover {
-  border-color: #fbdb51;
-  color: #fbdb51;
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 /* 차트 섹션 */
@@ -710,7 +731,7 @@
 
 .formInput:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .formSelect {
@@ -727,7 +748,7 @@
 
 .formSelect:focus {
   outline: none;
-  border-color: #fbdb51;
+  border-color: var(--primary);
 }
 
 .searchResults {
@@ -785,7 +806,7 @@
   flex: 1;
   padding: 12px;
   border-radius: 8px;
-  background: #fbdb51;
+  background: var(--primary);
   border: none;
   color: #000000;
   font-size: 14px;

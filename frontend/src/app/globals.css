@@ -1,35 +1,35 @@
 :root {
   /* Brand Constants */
-  --brand-red-main: #D92B4B;
-  --brand-red-dark: #A63348;
-  --brand-red-muted: #A65D6A;
-  --brand-black: #0C0C0D;
+  --brand-orange: #F59E0B;
+  --brand-yellow: #fbdb51;
   --brand-white: #F2F2F2;
+  --brand-red-main: #D92B4B;
 
-  /* Theme Mapping */
-  --bg-main: var(--brand-black);
-  --bg-secondary: #0F1116;
-  /* Slight variation for cards */
-  --bg-hover: #1A1D24;
+  /* Theme Mapping - 가계부 스타일 */
+  --bg-main: #161618;
+  --bg-secondary: #1e1c26;
+  --bg-card: linear-gradient(135deg, rgba(30, 28, 38, 0.95) 0%, rgba(20, 18, 28, 0.95) 100%);
+  --bg-hover: #252330;
 
-  /* PRIMARY: Reverted to Yellow to preserve equipment/skill text colors */
+  /* PRIMARY: Amber (Brand Main) */
   --primary: #F59E0B;
   --primary-hover: #D97706;
-  --primary-text: #FFFFFF;
+  --primary-text: #000000;
 
-  /* BRAND PRIMARY: Use this for new Design System components */
-  --brand-primary: var(--brand-red-main);
-  --brand-primary-hover: var(--brand-red-dark);
+  /* BRAND PRIMARY: 주황색 (로고용) */
+  --brand-primary: var(--brand-orange);
+  --brand-primary-hover: #D97706;
 
-  --accent-highlight: var(--brand-red-main);
+  --accent-highlight: var(--brand-yellow);
 
-  /* TEXT: Reverted to slightly softer white to match legacy */
-  --text-main: #E5E7EB;
-  --text-secondary: #9CA3AF;
+  /* TEXT */
+  --text-main: #ffffff;
+  --text-secondary: #a5a8b4;
   --text-disabled: #4B5563;
 
-  --border: #1F2937;
-  --border-light: #374151;
+  /* BORDER: 보라빛 테두리 */
+  --border: rgba(150, 100, 200, 0.15);
+  --border-light: rgba(150, 100, 200, 0.25);
 
   --success: #10B981;
   --danger: #EF4444;
@@ -341,7 +341,7 @@ tr:hover td {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(12, 12, 13, 0.95);
+  background: rgba(22, 22, 24, 0.95);
   border-bottom: 1px solid var(--border);
   backdrop-filter: blur(10px);
 }
@@ -465,7 +465,7 @@ tr:hover td {
   position: relative;
   z-index: 50;
   background: var(--bg-main);
-  background-image: radial-gradient(circle at 50% 0%, rgba(217, 43, 75, 0.08) 0%, transparent 50%);
+  background-image: radial-gradient(circle at 50% 0%, rgba(150, 100, 200, 0.08) 0%, transparent 50%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 

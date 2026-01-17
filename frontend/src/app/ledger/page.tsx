@@ -172,46 +172,8 @@ export default function LedgerPage() {
 
   // ============================================
   // 자동 충전은 Supabase pg_cron으로 처리됨
-  // 프론트엔드는 UI 타이머 표시만 담당
+  // 타이머 UI는 OdEnergyBar 컴포넌트 내부에서 자체 관리
   // ============================================
-
-  // 오드 에너지 타이머 업데이트 (1초마다) - UI 표시용
-  useEffect(() => {
-    const updateOdEnergyTimer = () => {
-      const now = new Date()
-      const currentHour = now.getHours()
-      const currentMinute = now.getMinutes()
-      const currentSecond = now.getSeconds()
-
-      // 충전 시간: 2, 5, 8, 11, 14, 17, 20, 23
-      const chargeHours = [2, 5, 8, 11, 14, 17, 20, 23]
-
-      // 다음 충전 시간 찾기
-      let nextChargeHour = chargeHours.find(h => h > currentHour)
-
-      if (nextChargeHour === undefined) {
-        // 오늘의 모든 충전 시간이 지났으면 내일 2시
-        nextChargeHour = 24 + 2 // 내일 2시
-      }
-
-      // 다음 충전까지 남은 시간 (초)
-      const hoursUntil = nextChargeHour - currentHour
-      const minutesUntil = 60 - currentMinute - 1
-      const secondsUntil = 60 - currentSecond
-
-      const totalSeconds = (hoursUntil - 1) * 3600 + minutesUntil * 60 + secondsUntil
-
-      setOdEnergy(prev => ({
-        ...prev,
-        nextChargeIn: totalSeconds
-      }))
-    }
-
-    updateOdEnergyTimer() // 즉시 한번 실행
-    const interval = setInterval(updateOdEnergyTimer, 1000)
-
-    return () => clearInterval(interval)
-  }, [])
 
   // 오늘 날짜
   const today = new Date().toISOString().split('T')[0]

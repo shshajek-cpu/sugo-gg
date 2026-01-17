@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { TrendingUp, Calendar, CalendarDays } from 'lucide-react'
 import { LedgerCharacter, ItemGrade } from '@/types/ledger'
 import CharacterStatusTable from './CharacterStatusTable'
@@ -161,7 +161,7 @@ function getNextChargeSeconds(chargeType: ChargeType, lastChargeTime?: string): 
   }
 }
 
-export default function DashboardSummary({
+function DashboardSummary({
   characters,
   totalTodayIncome,
   totalWeeklyIncome,
@@ -536,3 +536,6 @@ export default function DashboardSummary({
     </>
   )
 }
+
+// React.memo를 적용하여 props가 변경되지 않으면 리렌더링 방지
+export default memo(DashboardSummary)

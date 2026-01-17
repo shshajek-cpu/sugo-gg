@@ -62,9 +62,9 @@
 .completeBtn {
   padding: 3px 8px;
   border-radius: 4px;
-  border: 1px solid rgba(251, 191, 36, 0.3);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   background: rgba(26, 29, 36, 0.95);
-  color: #fbbf24;
+  color: #f59e0b;
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -74,8 +74,8 @@
 }
 
 .completeBtn:hover:not(:disabled) {
-  border-color: #fbbf24;
-  background: rgba(251, 191, 36, 0.1);
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
   transform: scale(1.05);
 }
 
@@ -112,17 +112,17 @@
 }
 
 .segment.filled {
-  background: #fbbf24;
+  background: #f59e0b;
   box-shadow:
-    0 0 10px rgba(251, 191, 36, 0.8),
-    0 0 20px rgba(251, 191, 36, 0.4),
-    inset 0 0 10px rgba(251, 191, 36, 0.3);
+    0 0 10px rgba(245, 158, 11, 0.8),
+    0 0 20px rgba(245, 158, 11, 0.4),
+    inset 0 0 10px rgba(245, 158, 11, 0.3);
   animation: glow 2s ease-in-out infinite;
 }
 
 .segment.empty {
   background: rgba(26, 29, 36, 0.8);
-  border: 1px solid rgba(251, 191, 36, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
 /* 완료된 카드의 세그먼트를 회색으로 */
@@ -141,17 +141,20 @@
 }
 
 @keyframes glow {
-  0%, 100% {
+
+  0%,
+  100% {
     box-shadow:
-      0 0 10px rgba(251, 191, 36, 0.8),
-      0 0 20px rgba(251, 191, 36, 0.4),
-      inset 0 0 10px rgba(251, 191, 36, 0.3);
+      0 0 10px rgba(245, 158, 11, 0.8),
+      0 0 20px rgba(245, 158, 11, 0.4),
+      inset 0 0 10px rgba(245, 158, 11, 0.3);
   }
+
   50% {
     box-shadow:
-      0 0 15px rgba(251, 191, 36, 1),
-      0 0 30px rgba(251, 191, 36, 0.6),
-      inset 0 0 15px rgba(251, 191, 36, 0.5);
+      0 0 15px rgba(245, 158, 11, 1),
+      0 0 30px rgba(245, 158, 11, 0.6),
+      inset 0 0 15px rgba(245, 158, 11, 0.5);
   }
 }
 
@@ -179,7 +182,7 @@
 }
 
 .btn:hover:not(:disabled) {
-  border-color: #fbbf24;
+  border-color: #f59e0b;
   transform: scale(1.05);
 }
 

@@ -16,6 +16,7 @@
   padding: 1.5px;
   background: linear-gradient(135deg, var(--card-color), transparent);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0.4;
@@ -158,9 +159,9 @@
 
 .bonusText {
   font-size: 16px;
-  color: #FACC15;
+  color: #f59e0b;
   margin-left: 4px;
-  text-shadow: 0 0 8px rgba(250, 204, 21, 0.6);
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
   font-weight: 600;
 }
 
@@ -251,10 +252,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     opacity: 1;
   }
+
   50% {
     transform: scale(1.1);
     opacity: 0.8;
@@ -286,6 +290,7 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+
   100% {
     opacity: 0;
     transform: translateY(-42px) scale(0);

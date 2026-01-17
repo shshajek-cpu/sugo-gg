@@ -14,7 +14,6 @@ export default function RankingLayoutClient({
 
     const tabs = [
         { name: 'HITON 전투력', path: '/ranking/noa' },
-        { name: '게임 내 전투력', path: '/ranking/cp' },
         { name: '콘텐츠 랭킹', path: '/ranking/content' },
     ]
 

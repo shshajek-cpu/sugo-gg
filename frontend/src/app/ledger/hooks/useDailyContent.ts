@@ -18,10 +18,10 @@ const DEFAULT_DAILY_CONTENTS: Omit<DailyContent, 'completionCount'>[] = [
     icon: '',
     maxCount: 7,  // 수요일 05:00 주간 리셋
     baseReward: 0,  // 키나 보상 없음
-    color: '#facc15',
-    colorLight: '#fde047',
-    colorDark: '#eab308',
-    colorGlow: 'rgba(250, 204, 21, 0.5)',
+    color: '#f59e0b',
+    colorLight: '#fbbf24',
+    colorDark: '#d97706',
+    colorGlow: 'rgba(245, 158, 11, 0.5)',
     imageUrl: '/메달/주간컨텐츠/일일던전.png',
     resetType: 'weekly'
   },

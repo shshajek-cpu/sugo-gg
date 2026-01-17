@@ -18,7 +18,7 @@
 }
 
 .card:hover {
-  border-color: rgba(250, 204, 21, 0.3);
+  border-color: rgba(245, 158, 11, 0.3);
 }
 
 .header {
@@ -49,22 +49,19 @@
 
 .image {
   object-fit: contain;
-  filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6))
-          drop-shadow(0 0 16px rgba(250, 204, 21, 0.4))
-          drop-shadow(0 0 24px rgba(250, 204, 21, 0.2));
+  filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 16px rgba(245, 158, 11, 0.4)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.2));
   animation: neonPulse 2s ease-in-out infinite;
 }
 
 @keyframes neonPulse {
-  0%, 100% {
-    filter: drop-shadow(0 0 8px rgba(250, 204, 21, 0.6))
-            drop-shadow(0 0 16px rgba(250, 204, 21, 0.4))
-            drop-shadow(0 0 24px rgba(250, 204, 21, 0.2));
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 16px rgba(245, 158, 11, 0.4)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.2));
   }
+
   50% {
-    filter: drop-shadow(0 0 12px rgba(250, 204, 21, 0.8))
-            drop-shadow(0 0 24px rgba(250, 204, 21, 0.6))
-            drop-shadow(0 0 36px rgba(250, 204, 21, 0.4));
+    filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.8)) drop-shadow(0 0 24px rgba(245, 158, 11, 0.6)) drop-shadow(0 0 36px rgba(245, 158, 11, 0.4));
   }
 }
 
@@ -72,11 +69,11 @@
 .timer {
   font-size: 18px;
   font-weight: 700;
-  color: #facc15;
+  color: #f59e0b;
   text-shadow:
-    0 0 10px rgba(250, 204, 21, 0.8),
-    0 0 20px rgba(250, 204, 21, 0.5),
-    0 0 30px rgba(250, 204, 21, 0.3);
+    0 0 10px rgba(245, 158, 11, 0.8),
+    0 0 20px rgba(245, 158, 11, 0.5),
+    0 0 30px rgba(245, 158, 11, 0.3);
   font-family: 'Rajdhani', monospace;
   letter-spacing: 1px;
   line-height: 1.2;
@@ -98,7 +95,7 @@
 }
 
 .bonusTicket {
-  color: #facc15;
+  color: #f59e0b;
   font-weight: 700;
 }
 
@@ -107,7 +104,7 @@
   right: 12px;
   bottom: 12px;
   font-size: 12px;
-  color: #facc15;
+  color: #f59e0b;
   font-weight: 700;
   transition: transform 0.2s;
   pointer-events: none;
@@ -121,7 +118,7 @@
   right: 0;
   margin-top: 8px;
   background: linear-gradient(135deg, rgba(26, 29, 36, 0.98) 0%, rgba(15, 17, 21, 0.98) 100%);
-  border: 1.5px solid rgba(250, 204, 21, 0.3);
+  border: 1.5px solid rgba(245, 158, 11, 0.3);
   border-radius: 12px;
   padding: 16px;
   z-index: 100;
@@ -168,7 +165,7 @@
 
 .infoValue {
   font-size: 14px;
-  color: #FACC15;
+  color: #f59e0b;
   font-weight: 700;
   font-family: 'Rajdhani', sans-serif;
 }
@@ -219,7 +216,7 @@
 }
 
 .bonusText {
-  color: #facc15;
+  color: #f59e0b;
   font-size: 12px;
 }
 

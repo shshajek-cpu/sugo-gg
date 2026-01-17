@@ -123,7 +123,7 @@ export default function ServerStatsDashboard() {
                                     <div style={{
                                         width: `${cls.percent}%`,
                                         height: '100%',
-                                        background: 'var(--brand-red-muted)',
+                                        background: 'rgba(245, 158, 11, 0.8)',
                                         transition: 'width 0.5s'
                                     }} />
                                 </div>
