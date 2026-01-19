@@ -291,7 +291,7 @@ async function cacheSearchResults(supabase: any, results: any[]) {
         .in('character_id', characterIds)
 
     // DB의 character_id도 정규화하여 매핑
-    const existingMap = new Map(
+    const existingMap = new Map<string, { character_id: string; item_level: number | null; noa_score: number | null }>(
         existingData?.map((d: any) => [normalizeCharacterId(d.character_id), d]) || []
     )
 

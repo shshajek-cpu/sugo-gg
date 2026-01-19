@@ -134,9 +134,9 @@ export function clearAllCache() {
  * @example clearCacheByPattern('character-') // character-로 시작하는 모든 캐시 삭제
  */
 export function clearCacheByPattern(pattern: string) {
-  for (const key of globalCache.keys()) {
+  Array.from(globalCache.keys()).forEach(key => {
     if (key.startsWith(pattern)) {
       globalCache.delete(key)
     }
-  }
+  })
 }

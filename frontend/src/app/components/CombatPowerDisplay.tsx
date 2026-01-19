@@ -188,22 +188,22 @@ export default function CombatPowerDisplay({
               <div style={{ marginBottom: '0.5rem', padding: '0.5rem', background: '#1F2937', borderRadius: '4px' }}>
                 <div style={{ color: '#10B981', marginBottom: '0.25rem' }}>추출된 스탯 (전투력 계산용) - 퍼센트만 사용</div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem' }}>
-                  <div>공격력: {combatStats.공격력}</div>
-                  <div>추가공격력: {combatStats.추가공격력}</div>
-                  <div>공격력증가: +{combatStats.공격력증가}%</div>
-                  <div>보스공격력: {combatStats.보스공격력}</div>
-                  <div>PVE공격력: {combatStats.PVE공격력}</div>
-                  <div style={{ color: '#F59E0B' }}>피해증폭: +{combatStats.피해증폭}%</div>
-                  <div style={{ color: '#F59E0B' }}>PVE피해증폭: +{combatStats.PVE피해증폭}%</div>
-                  <div style={{ color: '#F59E0B' }}>보스피해증폭: +{combatStats.보스피해증폭}%</div>
-                  <div style={{ color: '#F59E0B' }}>무기피해증폭: +{combatStats.무기피해증폭}%</div>
-                  <div>치명타: {combatStats.치명타}</div>
-                  <div>정확: {combatStats.정확}</div>
-                  <div style={{ color: '#F59E0B' }}>치명타피해증폭: +{combatStats.치명타피해증폭}%</div>
-                  <div style={{ color: '#F59E0B' }}>전투속도: +{combatStats.전투속도}%</div>
-                  <div style={{ color: '#F59E0B' }}>재사용감소: +{combatStats.재사용감소}%</div>
-                  <div style={{ color: '#F59E0B' }}>강타: +{combatStats.강타}%</div>
-                  <div style={{ color: '#F59E0B' }}>다단히트: +{combatStats.다단히트}%</div>
+                  <div>공격력: {combatStats.attackPower}</div>
+                  <div>PVE공격력: {combatStats.pveAttackPower}</div>
+                  <div>공격력증가: +{combatStats.attackIncrease}%</div>
+                  <div>보스공격력: {combatStats.bossAttackPower}</div>
+                  <div>PVP공격력: {combatStats.pvpAttackPower}</div>
+                  <div style={{ color: '#F59E0B' }}>피해증폭: +{combatStats.damageAmplification}%</div>
+                  <div style={{ color: '#F59E0B' }}>PVE피해증폭: +{combatStats.pveDamageAmplification}%</div>
+                  <div style={{ color: '#F59E0B' }}>보스피해증폭: +{combatStats.bossDamageAmplification}%</div>
+                  <div style={{ color: '#F59E0B' }}>PVP피해증폭: +{combatStats.pvpDamageAmplification}%</div>
+                  <div>치명타: {combatStats.criticalHit}</div>
+                  <div>정확: {combatStats.accuracy}</div>
+                  <div style={{ color: '#F59E0B' }}>치명타피해증폭: +{combatStats.criticalDamageAmplification}%</div>
+                  <div style={{ color: '#F59E0B' }}>전투속도: +{combatStats.combatSpeed}%</div>
+                  <div style={{ color: '#F59E0B' }}>스킬보너스: +{combatStats.skillBonus}%</div>
+                  <div style={{ color: '#F59E0B' }}>강타: +{combatStats.smash}%</div>
+                  <div style={{ color: '#F59E0B' }}>다단히트: +{combatStats.multiHit}%</div>
                 </div>
               </div>
 

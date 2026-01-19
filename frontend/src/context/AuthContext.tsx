@@ -13,6 +13,8 @@ interface MainCharacter {
   race?: string
   item_level?: number
   hit_score?: number
+  pve_score?: number
+  pvp_score?: number
   imageUrl?: string
 }
 

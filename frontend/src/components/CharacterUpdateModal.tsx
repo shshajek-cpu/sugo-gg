@@ -231,7 +231,7 @@ export default function CharacterUpdateModal({ isOpen, onClose }: CharacterUpdat
           characterName: r.name.replace(/<\/?[^>]+(>|$)/g, ''),
           serverName: r.server,
           serverId: r.server_id || r.serverId || 0,
-          className: r.className || r.class || '',
+          className: r.className || r.job || '',
           level: r.level || 0,
           raceName: r.race || ''
         })

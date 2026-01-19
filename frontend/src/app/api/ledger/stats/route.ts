@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
   }
 
-  const today = date || getGameDate(new Date())
+  const today = date || getGameDate()
 
   try {
     if (type === 'daily') {
