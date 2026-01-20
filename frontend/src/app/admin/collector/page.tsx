@@ -168,7 +168,7 @@ export default function CollectorPage() {
         }
 
         runBatch()
-        const interval = setInterval(runBatch, 3000) // 3초마다 배치 실행
+        const interval = setInterval(runBatch, 2000) // 2초마다 배치 실행 (기존 3초 → 2초)
         return () => clearInterval(interval)
     }, [isBatchRunning])
 
@@ -269,7 +269,7 @@ export default function CollectorPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.8rem', color: isBatchRunning ? '#34D399' : 'var(--text-disabled)' }}>
-                            {isBatchRunning ? '● 처리 중 (10명/3초)' : '○ 대기'}
+                            {isBatchRunning ? '● 처리 중 (15명/2초, ~400명/분)' : '○ 대기'}
                         </span>
                         <DSButton
                             variant={isBatchRunning ? 'danger' : 'primary'}

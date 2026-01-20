@@ -6,7 +6,7 @@ import { aggregateStats, AggregatedStats } from '../../../../lib/statsAggregator
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Vercel serverless timeout (최대 60초)
 
-const BATCH_SIZE = 10 // 한 번에 조회할 캐릭터 수
+const BATCH_SIZE = 15 // 한 번에 조회할 캐릭터 수 (기존 10 → 15)
 
 // 공식 API에서 캐릭터 상세 정보 가져오기
 async function fetchCharacterDetail(characterId: string, serverId: number) {
@@ -122,8 +122,8 @@ export async function GET(request: NextRequest) {
                 results.push({ name: char.name, success: false, error: e.message })
             }
 
-            // Rate Limit 방지 딜레이 (200ms)
-            await new Promise(resolve => setTimeout(resolve, 200))
+            // Rate Limit 방지 딜레이 (100ms)
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
 
         // 남은 캐릭터 수 확인
