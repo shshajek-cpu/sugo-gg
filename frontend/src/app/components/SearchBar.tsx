@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { Search, ChevronDown, X, Star, Check } from 'lucide-react' // Added Check
 import SearchAutocomplete from './SearchAutocomplete'
-import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID } from '../../lib/supabaseApi'
+import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID, SERVER_ID_TO_NAME } from '../../lib/supabaseApi'
 import { useSyncContext } from '../../context/SyncContext'
 import styles from './SearchBar.module.css' // Added CSS module import
 
@@ -15,7 +15,7 @@ interface RecentSearch {
     server: string
     server_id?: number
     race: string
-    noa_score?: number
+    pve_score?: number
     item_level?: number
     imageUrl?: string
     timestamp: number
@@ -136,7 +136,7 @@ export default function SearchBar() {
             server: char.server,
             server_id: char.server_id,
             race: char.race,
-            noa_score: char.noa_score,
+            pve_score: char.pve_score,
             item_level: char.item_level,
             imageUrl: char.imageUrl || char.profileImage,
             timestamp: Date.now()
@@ -514,7 +514,8 @@ export default function SearchBar() {
                                     // 최근 검색어 저장 Logic
                                     addRecentSearch(first)
 
-                                    router.push(`/c/${first.server_id ?? first.server}/${first.name}${query}`)
+                                    const serverName = first.server_id ? SERVER_ID_TO_NAME[first.server_id] : first.server
+                                    router.push(`/c/${serverName}/${first.name}${query}`)
                                     setShowResults(false)
                                 } else {
                                     performHybridSearch(name)

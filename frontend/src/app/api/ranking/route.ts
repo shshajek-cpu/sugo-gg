@@ -61,8 +61,13 @@ export async function GET(request: NextRequest) {
         switch (type) {
             case 'cp':
             case 'hiton':
-                // HITON 전투력 (noa_score) 기준 정렬
-                query = query.order('noa_score', { ascending: false, nullsFirst: false })
+            case 'pve':
+                // PVE 전투력 기준 정렬
+                query = query.order('pve_score', { ascending: false, nullsFirst: false })
+                break
+            case 'pvp':
+                // PVP 전투력 기준 정렬
+                query = query.order('pvp_score', { ascending: false, nullsFirst: false })
                 break
             case 'ap':
                 // 어비스 포인트 기준 정렬
@@ -72,9 +77,8 @@ export async function GET(request: NextRequest) {
                 // 아이템 레벨 기준 정렬
                 query = query.order('item_level', { ascending: false, nullsFirst: false })
                 break
-            case 'noa':
             default:
-                query = query.order('noa_score', { ascending: false, nullsFirst: false })
+                query = query.order('pve_score', { ascending: false, nullsFirst: false })
                 break
         }
 

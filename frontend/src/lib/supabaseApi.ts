@@ -29,7 +29,6 @@ export interface CharacterSearchResult {
     imageUrl?: string
     profileImage?: string // Alias for imageUrl
     item_level?: number // 아이템 레벨
-    noa_score?: number // HITON 전투력 (호환성)
     pve_score?: number // PVE 전투력
     pvp_score?: number // PVP 전투력
     raw?: ExternalCharacterResult
@@ -221,12 +220,12 @@ export const supabaseApi = {
                 })
         }
 
-        // 로컬 DB에서 추가 정보(item_level, noa_score) 조회하여 병합
+        // 로컬 DB에서 추가 정보(item_level, pve_score) 조회하여 병합
         if (allResults.length > 0) {
             try {
                 const characterIds = allResults.map(r => r.characterId).filter(Boolean)
                 if (characterIds.length > 0) {
-                    const localRes = await fetch(`${SUPABASE_PROJECT_URL}/rest/v1/characters?character_id=in.(${characterIds.map(id => `"${id}"`).join(',')})&select=character_id,item_level,noa_score`, {
+                    const localRes = await fetch(`${SUPABASE_PROJECT_URL}/rest/v1/characters?character_id=in.(${characterIds.map(id => `"${id}"`).join(',')})&select=character_id,item_level,pve_score`, {
                         method: 'GET',
                         headers: {
                             'apikey': SUPABASE_ANON_KEY,
@@ -246,7 +245,7 @@ export const supabaseApi = {
                                 return {
                                     ...r,
                                     item_level: local.item_level,
-                                    noa_score: local.noa_score
+                                    pve_score: local.pve_score
                                 }
                             }
                             return r
@@ -319,8 +318,8 @@ export const supabaseApi = {
                 race: item.race_name,
                 imageUrl: item.profile_image ? (item.profile_image.startsWith('http') ? item.profile_image : `https://profileimg.plaync.com${item.profile_image}`) : undefined,
                 item_level: item.item_level,
-                noa_score: item.noa_score,
-                pve_score: item.pve_score || item.noa_score,
+                pve_score: item.pve_score,
+                pve_score: item.pve_score || item.pve_score,
                 pvp_score: item.pvp_score
             }))
         } catch (e) {
@@ -390,34 +389,43 @@ export const supabaseApi = {
     },
 
     /**
-     * Fetch character detail for search enrichment (lightweight).
-     * Returns only essential fields: item_level, className, noa_score
+     * 검색 결과 백그라운드 조회용: characterId로 상세 정보 조회
+     * /api/character 엔드포인트를 호출하여 전투력 계산 + DB 저장까지 수행
      */
     async fetchCharacterDetailForSearch(characterId: string, serverId: number): Promise<{
         item_level?: number
         className?: string
-        noa_score?: number
+        pve_score?: number
+        pvp_score?: number
     } | null> {
         try {
-            const res = await fetch(`${getApiBaseUrl()}/api/character?id=${encodeURIComponent(characterId)}&server=${serverId}`)
-            
+            // /api/character 호출 → 전투력 계산 + DB 저장
+            const baseUrl = getApiBaseUrl()
+            const url = `${baseUrl}/api/character?id=${encodeURIComponent(characterId)}&server=${serverId}`
+
+            const res = await fetch(url)
+
             if (!res.ok) {
-                console.warn(`[fetchCharacterDetailForSearch] Failed for ${characterId}: ${res.status}`)
+                console.warn(`[fetchCharacterDetailForSearch] API failed for ${characterId}: ${res.status}`)
                 return null
             }
 
             const data = await res.json()
-            
-            // Extract essential fields from the response
-            const statList = data.stats?.statList || []
-            const itemLevelStat = statList.find((s: any) => 
+
+            if (!data || !data.profile) {
+                return null
+            }
+
+            // stats에서 아이템레벨 추출
+            const itemLevelStat = data.stats?.statList?.find((s: any) =>
                 s.name === '아이템레벨' || s.type === 'ItemLevel'
             )
 
             return {
                 item_level: itemLevelStat?.value || 0,
-                className: data.profile?.className,
-                noa_score: data.profile?.noa_score || 0
+                className: data.profile.className,
+                pve_score: data.profile.pve_score || 0,
+                pvp_score: data.profile.pvp_score || 0
             }
         } catch (e) {
             console.error('[fetchCharacterDetailForSearch] Error:', e)
