@@ -36,13 +36,45 @@ const DUNGEON_TYPE_ICONS: Record<string, string> = {
   pvp: '🎮'
 }
 
-// 던전 타입별 보스 배경 이미지
-const DUNGEON_BOSS_IMAGES: Record<string, string> = {
-  transcend: '/boss/1.png',
-  expedition: '/boss/2.png',
-  sanctuary: '/boss/3.png',
-  subjugation: '/boss/4.png',
-  pvp: '/boss/5.png'
+// 던전 이름 → 이미지 경로 매핑
+const DUNGEON_IMAGE_MAP: Record<string, string> = {
+  // 초월
+  '데우스의 연구기지': '/메달/초월/데우스 연구기지.png',
+  '데우스 연구기지': '/메달/초월/데우스 연구기지.png',
+  '조각난 아르카나스': '/메달/초월/조각난 아르카니스.png',
+  '조각난 아르카니스': '/메달/초월/조각난 아르카니스.png',
+
+  // 원정
+  '크라오 동굴': '/메달/원정/크라오동굴.png',
+  '크라오동굴': '/메달/원정/크라오동굴.png',
+  '우루구구 협곡': '/메달/원정/우루구구 협곡.png',
+  '불의 신전': '/메달/원정/불의신전.png',
+  '불의신전': '/메달/원정/불의신전.png',
+  '드라웁니르': '/메달/원정/드라웁니르.png',
+  '바크론의 공중섬': '/메달/원정/바크론의 공중섬.png',
+  '사나운 뿔 암굴': '/메달/원정/사나운 뿔암굴.png',
+  '사나운 뿔암굴': '/메달/원정/사나운 뿔암굴.png',
+
+  // 성역
+  '루드라': '/메달/성역/루드라.png',
+
+  // 토벌전
+  '토벌전': '/메달/주간컨텐츠/토벌전.png',
+
+  // PVP
+  '아레나': '/boss/5.png',
+  '전장': '/boss/6.png',
+}
+
+// 던전 이름으로 보스 이미지 경로 반환
+function getBossImagePath(dungeonType: string, dungeonName: string): string {
+  // 직접 매핑된 이미지가 있으면 사용
+  if (DUNGEON_IMAGE_MAP[dungeonName]) {
+    return DUNGEON_IMAGE_MAP[dungeonName]
+  }
+
+  // 기본 이미지
+  return '/boss/1.png'
 }
 
 export default function PartyCard({
@@ -107,7 +139,7 @@ export default function PartyCard({
     })
   }, [party.slots, party.members])
 
-  const bossImage = DUNGEON_BOSS_IMAGES[party.dungeon_type] || '/boss/1.png'
+  const bossImage = getBossImagePath(party.dungeon_type, party.dungeon_name)
 
   return (
     <Link
