@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { Search, ImagePlus, Loader2, Check, X, Edit3, Star, StarOff, Plus, Trash2, ChevronDown, Upload, Eye, Clock, Bug, TrendingUp, TrendingDown, HelpCircle, AlertTriangle } from 'lucide-react'
 import { supabaseApi, CharacterSearchResult, SERVER_NAME_TO_ID } from '@/lib/supabaseApi'
+import { calculateDualCombatPower, CombatStats } from '@/lib/combatPower'
 import styles from './stat-update.module.css'
 
 // 천족 서버 목록
@@ -202,6 +203,41 @@ function getDeviceId(): string {
     localStorage.setItem('device_id', deviceId)
   }
   return deviceId
+}
+
+// OCR 스탯에서 전투력 계산용 스탯 추출
+function extractCombatStatsFromOcr(ocrStats: { name: string; value: string; isPercentage?: boolean }[]): CombatStats {
+  // 스탯 값 파싱 헬퍼
+  const getValue = (names: string[]): number => {
+    for (const name of names) {
+      const stat = ocrStats.find(s => s.name === name)
+      if (stat) {
+        const val = parseFloat(stat.value.replace(/[,%]/g, ''))
+        return isNaN(val) ? 0 : val
+      }
+    }
+    return 0
+  }
+
+  return {
+    attackPower: getValue(['공격력']),
+    attackIncrease: 0, // 기본 스탯에서 계산되므로 OCR에서는 0
+    pveAttackPower: getValue(['PVE 공격력']),
+    bossAttackPower: getValue(['보스 공격력']),
+    pveDamageAmplification: getValue(['PVE 피해 증폭']),
+    bossDamageAmplification: getValue(['보스 피해 증폭']),
+    pvpAttackPower: getValue(['PVP 공격력']),
+    pvpAttackIncrease: 0,
+    pvpDamageAmplification: getValue(['PVP 피해 증폭']),
+    damageAmplification: getValue(['피해 증폭']),
+    criticalHit: getValue(['치명타']),
+    criticalDamageAmplification: getValue(['치명타 피해 증폭']),
+    accuracy: getValue(['명중']),
+    combatSpeed: getValue(['전투 속도']),
+    smash: getValue(['강타']),
+    multiHit: getValue(['다단 히트 적중']),
+    skillBonus: 0
+  }
 }
 
 export default function StatUpdatePage() {
@@ -1294,7 +1330,41 @@ export default function StatUpdatePage() {
         return updated
       })
 
-      addDebugLog('저장 성공!')
+      addDebugLog('OCR 스탯 저장 성공!')
+
+      // 전투력 자동 계산 및 저장
+      try {
+        addDebugLog('전투력 계산 중...')
+
+        // OCR 스탯에서 CombatStats 추출
+        const combatStats = extractCombatStatsFromOcr(allStats)
+        addDebugLog(`추출된 스탯: 공격력=${combatStats.attackPower}, 치명타=${combatStats.criticalHit}`)
+
+        // 전투력 계산
+        const dualPower = calculateDualCombatPower(combatStats)
+        addDebugLog(`계산된 전투력: PVE=${dualPower.pve}, PVP=${dualPower.pvp}`)
+
+        // 전투력 저장
+        addDebugLog(`저장할 characterId: ${selectedCharacter.characterId}`)
+        const saveScoreRes = await fetch('/api/character/save-score', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            characterId: selectedCharacter.characterId,
+            pveScore: dualPower.pve,
+            pvpScore: dualPower.pvp
+          })
+        })
+
+        const saveResult = await saveScoreRes.json()
+        addDebugLog(`전투력 저장 응답 (${saveScoreRes.status}): ${JSON.stringify(saveResult)}`)
+        if (saveResult.warning) {
+          addDebugLog(`⚠️ 경고: ${saveResult.warning}`)
+        }
+      } catch (calcErr) {
+        addDebugLog(`전투력 계산 오류: ${calcErr instanceof Error ? calcErr.message : '알 수 없는 오류'}`)
+      }
+
       setSaveSuccess(true)
       setIsReviewModalOpen(false)
     } catch (err: unknown) {

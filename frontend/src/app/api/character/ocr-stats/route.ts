@@ -66,40 +66,13 @@ export async function GET(request: NextRequest) {
 // POST: OCR 스탯 저장/업데이트
 export async function POST(request: NextRequest) {
   try {
-    // Bearer 토큰 인증 (Google 로그인)
-    const authHeader = request.headers.get('Authorization')
-    console.log('[ocr-stats] POST - authHeader:', authHeader ? `${authHeader.substring(0, 20)}...` : 'missing')
-
-    if (!authHeader?.startsWith('Bearer ')) {
-      console.log('[ocr-stats] POST - Authorization header missing or invalid')
-      return NextResponse.json(
-        { error: 'Authorization required' },
-        { status: 401 }
-      )
-    }
-
-    const token = authHeader.slice(7)
-
-    // Supabase에서 사용자 정보 가져오기
-    const { createClient } = await import('@supabase/supabase-js')
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-
-    if (authError || !user) {
-      return NextResponse.json(
-        { error: 'Invalid or expired token' },
-        { status: 401 }
-      )
-    }
-
-    const userId = user.id
-
     const body = await request.json()
-    const { characterId: rawCharacterId, serverId, characterName, stats } = body as {
+    const { characterId: rawCharacterId, serverId, characterName, stats, deviceId } = body as {
       characterId: string
       serverId?: number
       characterName?: string
       stats: OcrStat[]
+      deviceId?: string
     }
 
     if (!rawCharacterId || !stats || !Array.isArray(stats)) {
@@ -109,16 +82,48 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    let finalUserId: string
+
+    // 인증 방식 1: Bearer 토큰 (Google 로그인)
+    const authHeader = request.headers.get('Authorization')
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.slice(7)
+      const { createClient } = await import('@supabase/supabase-js')
+      const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+
+      if (authError || !user) {
+        return NextResponse.json(
+          { error: 'Invalid or expired token' },
+          { status: 401 }
+        )
+      }
+      finalUserId = user.id
+      console.log('[ocr-stats] POST - Bearer token auth, userId:', finalUserId)
+    }
+    // 인증 방식 2: deviceId (기존 방식 - body 또는 헤더)
+    else if (deviceId || request.headers.get('X-Device-ID')) {
+      finalUserId = deviceId || request.headers.get('X-Device-ID')!
+      console.log('[ocr-stats] POST - deviceId auth:', finalUserId)
+    }
+    // 인증 없음
+    else {
+      return NextResponse.json(
+        { error: 'Authorization required (Bearer token or deviceId)' },
+        { status: 401 }
+      )
+    }
+
     // characterId 정규화: lib/characterId.ts의 공통 함수 사용
     const normalizedId = normalizeCharacterId(rawCharacterId)
 
-    console.log('[ocr-stats] POST - userId:', userId)
+    console.log('[ocr-stats] POST - finalUserId:', finalUserId)
     console.log('[ocr-stats] POST - normalizedId:', normalizedId)
 
     // UPSERT: user_id + character_id로 기존 데이터 업데이트 또는 새로 생성
     // device_id 필드에 user_id 저장 (기존 테이블 스키마 유지)
     const payload = {
-      device_id: userId,
+      device_id: finalUserId,
       character_id: normalizedId,
       server_id: serverId || null,
       character_name: characterName || null,

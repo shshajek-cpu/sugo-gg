@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { normalizeCharacterId } from '../../../../lib/characterId'
 
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json()
-        const { characterId, noaScore, pveScore, pvpScore } = body
+        const { characterId: rawCharacterId, noaScore, pveScore, pvpScore } = body
+        const characterId = normalizeCharacterId(rawCharacterId)
 
         console.log('[save-score] Request body:', JSON.stringify(body))
 
