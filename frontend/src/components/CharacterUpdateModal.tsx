@@ -439,7 +439,18 @@ export default function CharacterUpdateModal({ isOpen, onClose }: CharacterUpdat
             }
 
             const numericVal = parseFloat(finalValue.replace('%', ''))
-            // 속도, 완벽, 재생, 강타, 철벽, 적중 등 소수점이 노락되어 100%를 넘는 경우 보정 (예: 24.2% -> 242%)
+
+            // 보스/피해 증폭/내성 스탯: 보통 10% 미만, 소수점 누락 시 보정 (35% -> 3.5%)
+            const isLowPercentStat = statName.includes('보스') ||
+                                      statName.includes('피해 증폭') ||
+                                      statName.includes('피해 내성') ||
+                                      statName.includes('치명타 피해') ||
+                                      statName.includes('후방 피해')
+            if (isLowPercentStat && numericVal >= 10 && numericVal < 100 && !finalValue.includes('.')) {
+              finalValue = (numericVal / 10).toFixed(1) + '%'
+            }
+
+            // 속도, 완벽, 재생, 강타, 철벽, 적중 등 소수점이 누락되어 100%를 넘는 경우 보정 (예: 242% -> 24.2%)
             if ((statName.includes('속도') || statName.includes('완벽') || statName.includes('재생') || statName.includes('강타') || statName.includes('철벽') || statName.includes('적중')) && numericVal > 100 && !finalValue.includes('.')) {
               finalValue = (numericVal / 10).toFixed(1) + '%'
             }
