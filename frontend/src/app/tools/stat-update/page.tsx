@@ -949,6 +949,16 @@ export default function StatUpdatePage() {
         if (count > bestCount) {
           bestCount = count
           bestValue = value
+        } else if (count === bestCount) {
+          // 동점일 때: 소수점이 있는 값 우선 선택 (OCR 보정된 값)
+          // 예: 35% vs 3.5% 동점 → 3.5% 선택
+          const currentHasDecimal = bestValue.includes('.')
+          const newHasDecimal = value.includes('.')
+          console.log(`[동점 비교] ${statName}: current=${bestValue}(decimal:${currentHasDecimal}), new=${value}(decimal:${newHasDecimal})`)
+          if (!currentHasDecimal && newHasDecimal) {
+            console.log(`[동점 선택] 소수점 있는 값 선택: ${value}`)
+            bestValue = value
+          }
         }
       })
 

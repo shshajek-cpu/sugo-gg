@@ -446,7 +446,11 @@ export default function CharacterUpdateModal({ isOpen, onClose }: CharacterUpdat
                                       statName.includes('피해 내성') ||
                                       statName.includes('치명타 피해') ||
                                       statName.includes('후방 피해')
+
+            console.log('[OCR DEBUG]', { statName, finalValue, numericVal, isLowPercentStat, hasDecimal: finalValue.includes('.') })
+
             if (isLowPercentStat && numericVal >= 10 && numericVal < 100 && !finalValue.includes('.')) {
+              console.log('[OCR DEBUG] Applying /10 correction:', finalValue, '->', (numericVal / 10).toFixed(1) + '%')
               finalValue = (numericVal / 10).toFixed(1) + '%'
             }
 
