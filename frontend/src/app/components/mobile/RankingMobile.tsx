@@ -118,46 +118,7 @@ export default function RankingMobile({ type }: RankingMobileProps) {
 
     return (
         <div className={styles.container}>
-            {/* Header - 일반 배치 */}
-            <header className={styles.header}>
-                <div className={styles.logo}>
-                    <span className={styles.logoSu}>SU</span>
-                    <span className={styles.logoGo}>GO</span>
-                    <span className={styles.logoGg}>.gg</span>
-                </div>
-                <h1 className={styles.pageTitle}>랭킹</h1>
-            </header>
 
-            {/* 메뉴 탭 - 일반 배치 */}
-            <nav className={styles.menuTabs}>
-                <Link href="/" className={styles.menuTab}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-                    </svg>
-                    <span>홈</span>
-                </Link>
-                <Link href="/ranking" className={`${styles.menuTab} ${styles.menuTabActive}`}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M18 20V10M12 20V4M6 20v-6" />
-                    </svg>
-                    <span>랭킹</span>
-                </Link>
-                <Link href="/party" className={styles.menuTab}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                        <circle cx="9" cy="7" r="4" />
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-                    </svg>
-                    <span>파티</span>
-                </Link>
-                <Link href="/ledger/mobile" className={styles.menuTab}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-                    </svg>
-                    <span>가계부</span>
-                </Link>
-            </nav>
 
             {/* 랭킹 타입 탭 */}
             <div className={styles.typeTabs}>

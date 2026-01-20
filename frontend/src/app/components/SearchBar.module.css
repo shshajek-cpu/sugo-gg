@@ -297,3 +297,42 @@
         height: 40px;
     }
 }
+/* Header Variant */
+.headerVariant {
+    width: 100%;
+    margin: 0;
+}
+
+.headerVariant .searchWrapper {
+    height: 40px;
+    padding: 2px 4px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.headerVariant .serverTrigger {
+    height: 32px;
+    padding: 0 10px;
+    font-size: 0.85rem;
+    border-radius: 8px;
+}
+
+.headerVariant .searchInput {
+    font-size: 0.95rem;
+}
+
+.headerVariant .searchButton {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+}
+
+.headerVariant .searchButton svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Hide recent tags in header variant to keep it clean */
+.headerVariant .recentTags {
+    display: none;
+}

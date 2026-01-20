@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import HeroSection from './components/home/HeroSection'
 import Header from './components/shared/Header'
-import MobileHeader from './components/shared/MobileHeader'
+import MobileHeader from './components/mobile/MobileHeader'
 // import DebugPanel from '@/components/DebugPanel'  // 비활성화
 import Footer from '@/components/Footer'
 import { SyncProvider } from '../context/SyncContext'

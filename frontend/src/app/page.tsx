@@ -9,7 +9,7 @@ import ServerStatsDashboard from './components/home/stats/ServerStatsDashboard'
 import RecentCharacterCard from './components/RecentCharacterCard'
 import LiveStreamContainer from './components/live/LiveStreamContainer'
 import OfficialNewsFeed from './components/home/news/OfficialNewsFeed'
-import HomeMobile from './components/home/HomeMobile'
+import HomeMobile from './components/mobile/HomeMobile'
 import { RecentCharacter } from '../types/character'
 import styles from './Home.module.css'
 

@@ -1,0 +1,114 @@
+/* MobileHeader Styles */
+
+.headerContainer {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #000;
+}
+
+/* Header - 일반 배치 */
+.header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.logo {
+    font-weight: 800;
+    font-size: 1.4rem;
+    letter-spacing: -0.5px;
+    font-family: 'Rajdhani', sans-serif;
+    flex-shrink: 0;
+    text-decoration: none;
+}
+
+.logoSu {
+    color: #f59e0b;
+}
+
+.logoGo {
+    color: #fff;
+}
+
+.logoGg {
+    font-size: 0.9rem;
+    color: #6B7280;
+    margin-left: 1px;
+}
+
+.searchWrapper {
+    flex: 1;
+    position: relative;
+}
+
+.searchBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    padding: 10px 14px;
+}
+
+.searchInput {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: #E5E7EB;
+    font-size: 0.9rem;
+    outline: none;
+    min-width: 0; /* Flex item input fix */
+}
+
+.searchInput::placeholder {
+    color: #6B7280;
+}
+
+.autocompleteWrapper {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+/* 메뉴 탭 */
+.menuTabs {
+    display: flex;
+    gap: 4px;
+    padding: 0 16px 16px;
+    background: #000;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.menuTab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 10px;
+    color: #9CA3AF;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.menuTab:hover {
+    background: #1a1a1a;
+}
+
+.menuTabActive {
+    background: rgba(250, 204, 21, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}

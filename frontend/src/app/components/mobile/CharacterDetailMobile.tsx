@@ -121,57 +121,20 @@ export default function CharacterDetailMobile({
 
   return (
     <div className={styles.container}>
-      {/* Header - 일반 배치 */}
-      <header className={styles.header}>
-        <button onClick={handleBack} className={styles.backButton}>
+      {/* Profile Section */}
+      <section className={styles.profileSection} style={{ background: raceGradient }}>
+        <button onClick={handleBack} className={styles.absBackButton}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M19 12H5M12 19l-7-7 7-7" />
           </svg>
         </button>
-        <div className={styles.headerTitle}>
-          <span className={styles.headerName}>{data.name}</span>
-          <span className={styles.headerServer}>{data.server}</span>
-        </div>
-        <button onClick={handleRegister} className={styles.starButton} title="대표 캐릭터로 등록">
+
+        <button onClick={handleRegister} className={styles.absStarButton} title="대표 캐릭터로 등록">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="#FACC15" stroke="#FACC15" strokeWidth="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         </button>
-      </header>
 
-      {/* 메뉴 탭 - 일반 배치 */}
-      <nav className={styles.menuTabs}>
-        <Link href="/" className={styles.menuTab}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          </svg>
-          <span>홈</span>
-        </Link>
-        <Link href="/ranking" className={styles.menuTab}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M18 20V10M12 20V4M6 20v-6" />
-          </svg>
-          <span>랭킹</span>
-        </Link>
-        <Link href="/party" className={styles.menuTab}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-            <circle cx="9" cy="7" r="4" />
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" />
-          </svg>
-          <span>파티</span>
-        </Link>
-        <Link href="/ledger/mobile" className={styles.menuTab}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-          </svg>
-          <span>가계부</span>
-        </Link>
-      </nav>
-
-      {/* Profile Section */}
-      <section className={styles.profileSection} style={{ background: raceGradient }}>
         <div className={styles.profileImageWrapper}>
           {data.character_image_url ? (
             <Image
@@ -199,6 +162,8 @@ export default function CharacterDetailMobile({
             <span style={{ color: raceColor }}>{data.race}</span>
             <span className={styles.separator}>•</span>
             <span>{data.class}</span>
+            <span className={styles.separator}>•</span>
+            <span>{data.server}</span>
           </div>
           {data.title_name && (
             <div className={styles.titleBadge} style={{ borderColor: getGradeColor(data.title_grade) }}>

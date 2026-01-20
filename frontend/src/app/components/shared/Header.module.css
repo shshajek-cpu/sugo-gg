@@ -119,3 +119,64 @@
         /* Consider a hamburger menu for mobile later, or keep simplified */
     }
 }
+
+/* New Layout Styles */
+.topRow {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 12px;
+}
+
+.headerSearch {
+    flex: 1;
+    max-width: 400px;
+    margin-left: 12px;
+}
+
+@media (max-width: 768px) {
+    .headerInner {
+        flex-direction: column;
+        gap: 8px;
+        padding: 8px 16px;
+    }
+
+    .topRow {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .headerSearch {
+        margin-left: 8px;
+        max-width: none;
+    }
+
+    .nav {
+        width: 100%;
+        justify-content: space-between;
+        padding-top: 4px;
+        padding-bottom: 4px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .nav::-webkit-scrollbar {
+        display: none;
+    }
+}
+@media (min-width: 769px) {
+    .headerInner {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+        flex-direction: row;
+    }
+    .topRow {
+        width: auto;
+        flex: 1;
+    }
+    .nav {
+        margin-left: 20px;
+    }
+}

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import RankingFilterBar from './RankingFilterBar'
-import RankingMobile from './RankingMobile'
+import RankingMobile from '../mobile/RankingMobile'
 import styles from './Ranking.module.css'
 
 export default function RankingLayoutClient({

@@ -33,7 +33,7 @@ import { RecentCharacter } from '../../../../types/character'
 import type { OcrStat } from '../../../../types/stats'
 import DSTabs from '@/app/components/design-system/DSTabs'
 import { MAIN_CHARACTER_KEY, MainCharacter } from '../../../components/SearchBar'
-import CharacterDetailMobile from '../../../components/CharacterDetailMobile'
+import CharacterDetailMobile from '../../../components/mobile/CharacterDetailMobile'
 
 // --- Types mapping to UI components ---
 export type CharacterData = {

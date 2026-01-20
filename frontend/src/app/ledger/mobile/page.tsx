@@ -27,11 +27,9 @@ export default function MobileLedgerPage() {
 
     return (
         <div className={styles.container}>
-            {/* 메인 뷰 */}
             {currentView === 'main' && (
                 <div className={styles.viewMain}>
-                    {/* Header */}
-                    <header className={styles.header}>
+                    <div className={styles.statsHeader}>
                         <div className={styles.dateNav}>
                             <span className={styles.navArrow}>&lt;</span>
                             <div className={styles.dateDisplay}>
@@ -62,7 +60,8 @@ export default function MobileLedgerPage() {
                                 <div className={styles.incomeValue}>1.2억</div>
                             </div>
                         </div>
-                    </header>
+                    </div>
+
 
                     {/* Item Filter & List */}
                     <div className={styles.sectionHeader}>
