@@ -153,25 +153,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [fetchNickname, fetchMainCharacter])
 
   const signInWithGoogle = async () => {
-    console.log('[Auth] Google 로그인 시도 시작')
-    console.log('[Auth] Redirect URL:', `${window.location.origin}/auth/callback`)
+    console.log('[Auth] Google 로그인 시도 시작 (팝업 방식)')
 
     try {
+      // 팝업으로 OAuth URL 열기
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`
+          redirectTo: `${window.location.origin}/auth/callback?popup=true`,
+          skipBrowserRedirect: true // 브라우저 리다이렉트 방지, URL만 반환
         }
       })
-
-      console.log('[Auth] signInWithOAuth 응답:', { data, error })
 
       if (error) {
         console.error('[Auth] Google 로그인 오류:', error)
         throw error
       }
 
-      console.log('[Auth] Google 로그인 성공, 리디렉션 중...')
+      if (!data.url) {
+        throw new Error('OAuth URL을 받지 못했습니다')
+      }
+
+      // 팝업 창 열기
+      const width = 500
+      const height = 600
+      const left = window.screenX + (window.outerWidth - width) / 2
+      const top = window.screenY + (window.outerHeight - height) / 2
+
+      const popup = window.open(
+        data.url,
+        'google-login',
+        `width=${width},height=${height},left=${left},top=${top},toolbar=no,menubar=no,scrollbars=yes,resizable=yes`
+      )
+
+      if (!popup) {
+        // 팝업이 차단된 경우 기존 리다이렉트 방식으로 폴백
+        console.warn('[Auth] 팝업이 차단됨, 리다이렉트 방식으로 전환')
+        window.location.href = data.url
+        return
+      }
+
+      console.log('[Auth] 팝업 창 열림, 로그인 대기 중...')
+
+      // 팝업이 닫히면 세션 갱신 (onAuthStateChange가 처리하지만 수동 체크도 추가)
+      const checkPopupClosed = setInterval(async () => {
+        if (popup.closed) {
+          clearInterval(checkPopupClosed)
+          console.log('[Auth] 팝업 닫힘, 세션 확인 중...')
+
+          // 세션 새로고침
+          const { data: { session } } = await supabase.auth.getSession()
+          if (session) {
+            console.log('[Auth] 로그인 성공!')
+          }
+        }
+      }, 500)
+
     } catch (err) {
       console.error('[Auth] Google 로그인 예외:', err)
       throw err

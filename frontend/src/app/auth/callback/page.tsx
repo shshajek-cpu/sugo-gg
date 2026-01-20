@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { supabase } from '@/lib/supabaseClient'
 
 const DEVICE_ID_KEY = 'ledger_device_id'
 
 export default function AuthCallbackPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const isPopup = searchParams.get('popup') === 'true'
   const [status, setStatus] = useState('로그인 처리 중...')
   const [error, setError] = useState<string | null>(null)
 
@@ -57,7 +59,16 @@ export default function AuthCallbackPage() {
           setStatus('로그인 완료!')
         }
 
-        // Redirect to ledger page
+        // 팝업 모드인 경우 창 닫기
+        if (isPopup) {
+          setStatus('로그인 완료! 창을 닫습니다...')
+          setTimeout(() => {
+            window.close()
+          }, 500)
+          return
+        }
+
+        // 일반 모드인 경우 리다이렉트
         setTimeout(() => router.push('/ledger'), 1000)
 
       } catch (err: any) {
@@ -67,7 +78,7 @@ export default function AuthCallbackPage() {
     }
 
     handleCallback()
-  }, [router])
+  }, [router, isPopup])
 
   if (error) {
     return (
@@ -100,7 +111,7 @@ export default function AuthCallbackPage() {
           </h2>
           <p style={{ color: '#9ca3af', marginBottom: '24px' }}>{error}</p>
           <button
-            onClick={() => router.push('/')}
+            onClick={() => isPopup ? window.close() : router.push('/')}
             style={{
               padding: '10px 24px',
               background: '#FACC15',
@@ -111,7 +122,7 @@ export default function AuthCallbackPage() {
               fontWeight: 600
             }}
           >
-            홈으로 이동
+            {isPopup ? '창 닫기' : '홈으로 이동'}
           </button>
         </div>
       </div>
