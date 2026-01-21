@@ -254,23 +254,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     console.log('[Auth] 로그아웃 시도...')
     try {
-      const { error } = await supabase.auth.signOut()
+      // 세션이 없어도 로컬 상태는 정리
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
       if (error) {
         console.error('[Auth] 로그아웃 오류:', error)
-        throw error
+        // 세션 관련 에러는 무시하고 로컬 상태만 정리
+        if (!error.message?.includes('session')) {
+          throw error
+        }
       }
       console.log('[Auth] 로그아웃 성공')
-      // 상태 즉시 초기화
+    } catch (err: any) {
+      console.error('[Auth] 로그아웃 예외:', err)
+      // AuthSessionMissingError는 무시 (이미 로그아웃 상태)
+      if (!err?.message?.includes('session')) {
+        throw err
+      }
+    } finally {
+      // 항상 로컬 상태 정리
       setUser(null)
       setSession(null)
       setNicknameState(null)
       setMainCharacterState(null)
-      // localStorage 정리
       localStorage.removeItem(NICKNAME_KEY)
       localStorage.removeItem(MAIN_CHARACTER_KEY)
-    } catch (err) {
-      console.error('[Auth] 로그아웃 예외:', err)
-      throw err
+      console.log('[Auth] 로컬 상태 정리 완료')
     }
   }
 
