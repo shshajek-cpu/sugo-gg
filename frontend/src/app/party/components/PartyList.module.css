@@ -1,3 +1,5 @@
+/* PartyList - Black Theme Design System */
+
 .container {
   display: flex;
   flex-direction: column;
@@ -7,40 +9,62 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 
 .sectionTitle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 1rem;
   font-weight: 600;
-  color: var(--text-main, #E5E7EB);
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  color: #E5E7EB;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #222;
+}
+
+.sectionIcon {
+  font-size: 1.1rem;
+}
+
+.sectionCount {
+  margin-left: auto;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: #f59e0b;
 }
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 16px;
 }
 
+/* 로딩 상태 */
 .loading {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  padding: 48px;
-  color: var(--text-secondary, #9CA3AF);
+  gap: 16px;
+  padding: 60px 20px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--border-color, #374151);
-  border-top-color: var(--primary, #FACC15);
+  width: 40px;
+  height: 40px;
+  border: 3px solid #222;
+  border-top-color: #f59e0b;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+}
+
+.loadingText {
+  font-size: 0.9rem;
+  color: #6B7280;
 }
 
 @keyframes spin {
@@ -49,10 +73,38 @@
   }
 }
 
+/* 빈 상태 */
 .empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   text-align: center;
-  padding: 48px;
-  color: var(--text-secondary, #9CA3AF);
-  background: var(--bg-card, #1a1d24);
-  border-radius: 8px;
+  padding: 60px 20px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.emptyText {
+  font-size: 0.95rem;
+  color: #6B7280;
+}
+
+.emptyHint {
+  font-size: 0.85rem;
+  color: #4B5563;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }

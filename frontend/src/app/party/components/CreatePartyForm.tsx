@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMyCharacters } from '@/hooks/useMyCharacters'
+import { useAuth } from '@/context/AuthContext'
 import type { DungeonType, CreatePartyRequest, PartyUserCharacter } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
 import { CLASSES } from '@/app/constants/game-data'
@@ -30,7 +31,8 @@ interface SlotConfig {
 
 export default function CreatePartyForm() {
   const router = useRouter()
-  const { characters, loading: loadingCharacters } = useMyCharacters()
+  const { session } = useAuth()
+  const { characters, loading: loadingCharacters } = useMyCharacters({ accessToken: session?.access_token })
 
   const [dungeonType, setDungeonType] = useState<DungeonType>('transcend')
   const [dungeons, setDungeons] = useState<DungeonData[]>([])
@@ -136,11 +138,10 @@ export default function CreatePartyForm() {
     setError(null)
 
     try {
-      // ledger_device_id 키 사용 (useMyCharacters와 동일)
-      let deviceId = localStorage.getItem('ledger_device_id')
-      if (!deviceId) {
-        deviceId = crypto.randomUUID()
-        localStorage.setItem('ledger_device_id', deviceId)
+      if (!session?.access_token) {
+        setError('로그인이 필요합니다.')
+        setSubmitting(false)
+        return
       }
 
       const requestData: CreatePartyRequest = {
@@ -177,7 +178,7 @@ export default function CreatePartyForm() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Device-ID': deviceId
+          'Authorization': `Bearer ${session.access_token}`
         },
         body: JSON.stringify(requestData)
       })
@@ -206,6 +207,58 @@ export default function CreatePartyForm() {
 
   return (
     <form className={styles.form} onSubmit={handleSubmit}>
+      {/* 캐릭터 선택 - 최상단 카드형 */}
+      <div className={styles.characterSection}>
+        <h3 className={styles.sectionTitle}>파티장 캐릭터 선택</h3>
+        {loadingCharacters ? (
+          <div className={styles.loadingState}>불러오는 중...</div>
+        ) : characters.length === 0 ? (
+          <div className={styles.emptyState}>
+            <p>등록된 캐릭터가 없습니다.</p>
+            <p className={styles.emptyHint}>상단 "내 모집 캐릭터"에서 먼저 등록해주세요.</p>
+          </div>
+        ) : (
+          <div className={styles.characterCards}>
+            {characters.map(char => {
+              const serverName = SERVERS.find(s => s.id === String(char.character_server_id))?.name || ''
+              const isSelected = selectedCharacter?.id === char.id
+              return (
+                <button
+                  key={char.id}
+                  type="button"
+                  className={`${styles.characterCard} ${isSelected ? styles.selected : ''}`}
+                  onClick={() => setSelectedCharacter(char)}
+                >
+                  <div className={styles.cardProfile}>
+                    {char.profile_image ? (
+                      <img src={char.profile_image} alt={char.character_name} className={styles.cardProfileImg} />
+                    ) : (
+                      <div className={styles.cardProfilePlaceholder}>
+                        {char.character_class?.charAt(0) || '?'}
+                      </div>
+                    )}
+                    {isSelected && <span className={styles.selectedBadge}>✓</span>}
+                  </div>
+                  <div className={styles.cardInfo}>
+                    <span className={styles.cardName}>{char.character_name}</span>
+                    <span className={styles.cardClass}>{char.character_class}</span>
+                    <span className={styles.cardMeta}>{serverName} · Lv{char.character_level || '?'}</span>
+                  </div>
+                  <div className={styles.cardStats}>
+                    {char.character_item_level && (
+                      <span className={styles.cardStat}>아이템 {char.character_item_level}</span>
+                    )}
+                    {char.character_pve_score && (
+                      <span className={styles.cardStat}>PVE {(char.character_pve_score / 10000).toFixed(1)}만</span>
+                    )}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
       {/* 던전 선택 */}
       <div className={styles.section}>
         <h3 className={styles.sectionTitle}>던전 선택</h3>
@@ -428,34 +481,6 @@ export default function CreatePartyForm() {
             <span>선착순: 조건 충족시 바로 참여</span>
           </label>
         </div>
-      </div>
-
-      {/* 캐릭터 선택 */}
-      <div className={styles.section}>
-        <h3 className={styles.sectionTitle}>모집 캐릭터 선택</h3>
-        {loadingCharacters ? (
-          <p>불러오는 중...</p>
-        ) : characters.length === 0 ? (
-          <p className={styles.noCharacter}>
-            등록된 캐릭터가 없습니다. 먼저 상단에서 캐릭터를 등록해주세요.
-          </p>
-        ) : (
-          <div className={styles.characterSelect}>
-            {characters.map(char => {
-              const serverName = SERVERS.find(s => s.id === String(char.character_server_id))?.name || ''
-              return (
-                <button
-                  key={char.id}
-                  type="button"
-                  className={`${styles.characterOption} ${selectedCharacter?.id === char.id ? styles.selected : ''}`}
-                  onClick={() => setSelectedCharacter(char)}
-                >
-                  {char.character_class} Lv{char.character_level || '?'} {serverName} {char.character_name}
-                </button>
-              )
-            })}
-          </div>
-        )}
       </div>
 
       {/* 제목/설명 */}

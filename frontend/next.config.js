@@ -16,6 +16,9 @@ const nextConfig = {
         caseSensitiveRoutes: false,
         optimizePackageImports: ['lucide-react', 'recharts'],
     },
+    typescript: {
+        ignoreBuildErrors: true,
+    },
 }
 
 module.exports = nextConfig

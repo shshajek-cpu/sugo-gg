@@ -1,23 +1,178 @@
+/* CreatePartyForm - Black Theme Design System */
+
 .form {
   max-width: 600px;
   margin: 0 auto;
 }
 
 .section {
-  background: var(--bg-card, #1a1d24);
-  border-radius: 8px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
 }
 
 .sectionTitle {
   font-size: 0.95rem;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
+  font-weight: 600;
   margin: 0 0 12px 0;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #222;
 }
 
+/* 캐릭터 선택 섹션 - 상단 카드형 */
+.characterSection {
+  background: #111;
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+.characterCards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.characterCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 12px;
+  background: #0a0a0a;
+  border: 2px solid #222;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.characterCard:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.characterCard.selected {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+  box-shadow: 0 0 20px rgba(245, 158, 11, 0.2);
+}
+
+.cardProfile {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.cardProfileImg {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #333;
+}
+
+.characterCard.selected .cardProfileImg {
+  border-color: #f59e0b;
+}
+
+.cardProfilePlaceholder {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 3px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.characterCard.selected .cardProfilePlaceholder {
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+.selectedBadge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  width: 24px;
+  height: 24px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #000;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.cardName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #E5E7EB;
+}
+
+.cardClass {
+  font-size: 0.8rem;
+  color: #f59e0b;
+}
+
+.cardMeta {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.cardStats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.cardStat {
+  font-size: 0.7rem;
+  color: #9CA3AF;
+  background: #111;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.loadingState {
+  text-align: center;
+  padding: 40px;
+  color: #6B7280;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 40px 20px;
+  color: #6B7280;
+}
+
+.emptyState p {
+  margin: 0 0 8px 0;
+}
+
+.emptyHint {
+  font-size: 0.85rem;
+  color: #f59e0b;
+}
+
+/* 던전 타입 선택 */
 .dungeonTypes {
   display: flex;
   flex-wrap: wrap;
@@ -27,22 +182,22 @@
 
 .typeButton {
   padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid var(--border-color, #374151);
-  background: transparent;
-  color: var(--text-secondary, #9CA3AF);
+  border-radius: 6px;
+  border: 1px solid #222;
+  background: #0a0a0a;
+  color: #9CA3AF;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .typeButton:hover {
-  border-color: var(--primary, #FACC15);
-  color: var(--primary, #FACC15);
+  border-color: #f59e0b;
+  color: #f59e0b;
 }
 
 .typeButton.active {
-  background: var(--primary, #FACC15);
-  border-color: var(--primary, #FACC15);
+  background: #f59e0b;
+  border-color: #f59e0b;
   color: #000;
   font-weight: 600;
 }
@@ -60,18 +215,23 @@
 .dungeonSelect label, .tierSelect label {
   display: block;
   font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   margin-bottom: 6px;
 }
 
 .dungeonSelect select {
   width: 100%;
   padding: 10px;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
+  background: #0a0a0a;
+  border: 1px solid #222;
   border-radius: 6px;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.9rem;
+}
+
+.dungeonSelect select:focus {
+  border-color: #f59e0b;
+  outline: none;
 }
 
 .tiers {
@@ -84,24 +244,25 @@
   width: 36px;
   height: 36px;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #374151);
-  background: transparent;
-  color: var(--text-secondary, #9CA3AF);
+  border: 1px solid #222;
+  background: #0a0a0a;
+  color: #9CA3AF;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .tierButton:hover {
-  border-color: var(--primary, #FACC15);
+  border-color: #f59e0b;
 }
 
 .tierButton.active {
-  background: var(--primary, #FACC15);
-  border-color: var(--primary, #FACC15);
+  background: #f59e0b;
+  border-color: #f59e0b;
   color: #000;
   font-weight: 600;
 }
 
+/* 라디오 그룹 */
 .radioGroup {
   display: flex;
   flex-direction: column;
@@ -113,12 +274,12 @@
   align-items: center;
   gap: 8px;
   cursor: pointer;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.9rem;
 }
 
 .radio input {
-  accent-color: var(--primary, #FACC15);
+  accent-color: #f59e0b;
 }
 
 .scheduleInputs {
@@ -128,6 +289,7 @@
   margin-top: 16px;
 }
 
+/* 입력 필드 */
 .inputGroup {
   margin-bottom: 12px;
 }
@@ -135,49 +297,52 @@
 .inputGroup label {
   display: block;
   font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   margin-bottom: 6px;
 }
 
 .inputGroup input, .inputGroup textarea, .inputGroup select {
   width: 100%;
   padding: 10px;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
+  background: #0a0a0a;
+  border: 1px solid #222;
   border-radius: 6px;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.9rem;
 }
 
 .inputGroup input:focus, .inputGroup textarea:focus, .inputGroup select:focus {
   outline: none;
-  border-color: var(--primary, #FACC15);
+  border-color: #f59e0b;
 }
 
+/* 진행 횟수 */
 .runCount {
   display: flex;
   align-items: center;
   gap: 12px;
   font-size: 0.9rem;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
 }
 
 .runCount button {
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #374151);
-  background: transparent;
-  color: var(--text-main, #E5E7EB);
+  border: 1px solid #222;
+  background: #0a0a0a;
+  color: #E5E7EB;
   cursor: pointer;
   font-size: 1.1rem;
+  transition: all 0.2s;
 }
 
 .runCount button:hover {
-  border-color: var(--primary, #FACC15);
-  color: var(--primary, #FACC15);
+  border-color: #f59e0b;
+  color: #f59e0b;
 }
 
+/* 스펙 조건 */
 .specInputs {
   display: flex;
   flex-direction: column;
@@ -189,20 +354,20 @@
   align-items: center;
   gap: 8px;
   font-size: 0.9rem;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
 }
 
 .specInput input[type="checkbox"] {
-  accent-color: var(--primary, #FACC15);
+  accent-color: #f59e0b;
 }
 
 .specInput input[type="number"] {
   width: 100px;
   padding: 6px 8px;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
+  background: #0a0a0a;
+  border: 1px solid #222;
   border-radius: 4px;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.85rem;
 }
 
@@ -210,6 +375,12 @@
   opacity: 0.5;
 }
 
+.specInput input[type="number"]:focus {
+  border-color: #f59e0b;
+  outline: none;
+}
+
+/* 슬롯 설정 */
 .slots {
   display: flex;
   flex-direction: column;
@@ -225,86 +396,90 @@
 .slotLabel {
   min-width: 100px;
   font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
 }
 
 .leaderSlot {
-  color: var(--primary, #FACC15);
+  color: #f59e0b;
   font-size: 0.9rem;
+  font-weight: 500;
 }
 
 .slotRow select {
   flex: 1;
   padding: 8px;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
+  background: #0a0a0a;
+  border: 1px solid #222;
   border-radius: 4px;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.85rem;
+}
+
+.slotRow select:focus {
+  border-color: #f59e0b;
+  outline: none;
 }
 
 .slotNote {
   margin-top: 12px;
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
 }
 
-.characterSelect {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.characterOption {
-  padding: 8px 12px;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--border-color, #374151);
-  border-radius: 6px;
-  color: var(--text-main, #E5E7EB);
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.characterOption:hover {
-  border-color: var(--primary, #FACC15);
-}
-
-.characterOption.selected {
-  border-color: var(--primary, #FACC15);
-  background: rgba(250, 204, 21, 0.1);
-}
-
-.noCharacter {
-  font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
-}
-
+/* 에러 메시지 */
 .error {
   color: #EF4444;
   font-size: 0.9rem;
   margin-bottom: 16px;
   text-align: center;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
 }
 
+/* 제출 버튼 */
 .submitButton {
   width: 100%;
-  padding: 14px;
-  background: var(--primary, #FACC15);
+  padding: 16px;
+  background: #f59e0b;
   color: #000;
   border: none;
   border-radius: 8px;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.2s ease;
 }
 
 .submitButton:hover:not(:disabled) {
-  transform: scale(1.02);
+  background: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .submitButton:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* 반응형 */
+@media (max-width: 600px) {
+  .scheduleInputs {
+    grid-template-columns: 1fr;
+  }
+
+  .characterCards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cardProfileImg,
+  .cardProfilePlaceholder {
+    width: 48px;
+    height: 48px;
+  }
+
+  .cardName {
+    font-size: 0.85rem;
+  }
 }

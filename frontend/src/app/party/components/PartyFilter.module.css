@@ -1,5 +1,9 @@
+/* PartyFilter - Black Theme Design System */
+
 .container {
-  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .filterGroup {
@@ -10,29 +14,90 @@
 
 .filterButton {
   padding: 8px 16px;
-  border-radius: 20px;
-  border: 1px solid var(--border-color, #374151);
-  background: var(--bg-card, #1a1d24);
-  color: var(--text-secondary, #9CA3AF);
-  font-size: 0.875rem;
+  border-radius: 6px;
+  border: 1px solid #222;
+  background: #111;
+  color: #9CA3AF;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
 }
 
 .filterButton:hover {
-  border-color: var(--primary, #FACC15);
-  color: var(--primary, #FACC15);
+  border-color: #f59e0b;
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
 }
 
 .filterButton.active {
-  background: var(--primary, #FACC15);
-  border-color: var(--primary, #FACC15);
+  background: #f59e0b;
+  border-color: #f59e0b;
   color: #000;
   font-weight: 600;
 }
 
-.filterButton.pvp.active {
-  background: #EF4444;
-  border-color: #EF4444;
+/* 던전 타입별 활성 색상 */
+.filterButton.transcend.active {
+  background: #f59e0b;
+  border-color: #f59e0b;
+  color: #000;
+}
+
+.filterButton.expedition.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
   color: #fff;
+}
+
+.filterButton.sanctuary.active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+.filterButton.subjugation.active {
+  background: #8b5cf6;
+  border-color: #8b5cf6;
+  color: #fff;
+}
+
+.filterButton.pvp.active {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+}
+
+/* 상태 필터 */
+.statusFilter {
+  display: flex;
+  gap: 8px;
+}
+
+.statusButton {
+  padding: 6px 12px;
+  border-radius: 4px;
+  border: 1px solid #222;
+  background: transparent;
+  color: #6B7280;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.statusButton:hover {
+  color: #E5E7EB;
+  border-color: #333;
+}
+
+.statusButton.active {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+@media (max-width: 480px) {
+  .filterButton {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
 }

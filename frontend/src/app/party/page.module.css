@@ -1,19 +1,25 @@
+/* Party Page - Black Theme Design System */
+
 .container {
   max-width: 1200px;
   margin: 0 auto;
   padding: 20px;
+  min-height: 80vh;
+  background: #000;
 }
 
+/* 헤더 */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .title {
   font-size: 1.5rem;
-  color: var(--text-main, #E5E7EB);
+  font-weight: 700;
+  color: #E5E7EB;
   margin: 0;
 }
 
@@ -28,75 +34,89 @@
   flex-direction: column;
   align-items: flex-end;
   text-decoration: none;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-size: 0.9rem;
+  padding: 8px 12px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.myPartyLink:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
 }
 
 .myPartyCount {
   font-size: 0.75rem;
-  color: var(--primary, #FACC15);
+  color: #f59e0b;
+  margin-top: 2px;
 }
 
+/* 탭 */
 .tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 24px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 4px;
 }
 
 .tab {
+  flex: 1;
   padding: 12px 20px;
   background: transparent;
   border: none;
-  color: var(--text-secondary, #9CA3AF);
+  border-radius: 6px;
+  color: #9CA3AF;
   font-size: 0.95rem;
+  font-weight: 500;
   cursor: pointer;
-  position: relative;
-  transition: color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .tab:hover {
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .tab.active {
-  color: var(--primary, #FACC15);
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
 }
 
-.tab.active::after {
-  content: '';
-  position: absolute;
-  bottom: -1px;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: var(--primary, #FACC15);
-}
-
+/* 필터 + 생성 버튼 영역 */
 .filterRow {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .createButton {
   flex-shrink: 0;
-  padding: 10px 20px;
-  background: var(--primary, #FACC15);
+  padding: 12px 24px;
+  background: #f59e0b;
   color: #000;
-  text-decoration: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
   font-weight: 600;
-  transition: transform 0.2s;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .createButton:hover {
-  transform: scale(1.02);
+  background: #d97706;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
+/* 내 파티 섹션 */
 .myParties {
   display: flex;
   flex-direction: column;
@@ -104,33 +124,64 @@
 }
 
 .mySection {
-  background: var(--bg-card, #1a1d24);
-  border-radius: 8px;
-  padding: 16px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .mySectionTitle {
-  font-size: 0.95rem;
-  color: var(--text-main, #E5E7EB);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #E5E7EB;
   margin: 0 0 16px 0;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid #222;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .myGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
   gap: 16px;
 }
 
+/* 로딩/빈 상태 */
 .loading, .empty {
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
   font-size: 0.9rem;
   text-align: center;
-  padding: 20px;
+  padding: 40px 20px;
 }
 
+/* 반응형 */
 @media (max-width: 768px) {
+  .container {
+    padding: 16px;
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .headerActions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .tabs {
+    flex-direction: row;
+  }
+
+  .tab {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+
   .filterRow {
     flex-direction: column;
   }

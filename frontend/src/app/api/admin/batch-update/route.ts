@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { calculatePvEScore, calculatePvPScore } from '../../../../lib/combatPower'
-import { aggregateStats, AggregatedStats } from '../../../../lib/statsAggregator'
+import { calculateDualCombatPowerFromStats } from '../../../../lib/combatPower'
+import { aggregateStats } from '../../../../lib/statsAggregator'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Vercel serverless timeout (최대 60초)
@@ -116,7 +116,11 @@ export async function GET(request: NextRequest) {
 
                 // 스탯 집계
                 const statList = data.stat?.statList || []
-                const equipmentList = data.equipment?.equipmentList || []
+                const equipment = data.equipment?.equipmentList || []
+                const titles = data.title || { titleList: [] }
+                const daevanion = data.daevanion || { boardList: [] }
+                const stats = data.stat
+                const equippedTitleId = data.profile?.titleId
 
                 // 아이템레벨 추출
                 const itemLevelStat = statList.find((s: any) =>
@@ -124,14 +128,25 @@ export async function GET(request: NextRequest) {
                 )
                 const itemLevel = itemLevelStat?.value || 0
 
+                // 전투력 계산에서 제외할 아이템 필터링
+                const equipmentForCalc = equipment.filter((item: any) => {
+                    const pos = item.slotPos
+                    const slotName = item.slotPosName || ''
+                    const isArcana = (pos >= 41 && pos <= 45) || slotName.startsWith('Arcana')
+                    const isPet = pos === 51
+                    const isWings = pos === 52
+                    return !isArcana && !isPet && !isWings
+                })
+
                 // 스탯 집계 및 전투력 계산
                 let pveScore = 0
                 let pvpScore = 0
 
                 try {
-                    const aggregated: AggregatedStats = aggregateStats(statList, equipmentList)
-                    pveScore = calculatePvEScore(aggregated)
-                    pvpScore = calculatePvPScore(aggregated)
+                    const aggregatedStats = aggregateStats(equipmentForCalc, titles, daevanion, stats, equippedTitleId)
+                    const combatResult = calculateDualCombatPowerFromStats(aggregatedStats, stats)
+                    pveScore = combatResult.pve
+                    pvpScore = combatResult.pvp
                 } catch (calcErr) {
                     // 계산 실패 시 기본값 사용
                     console.warn(`[Batch] Combat power calc failed for ${char.name}:`, calcErr)

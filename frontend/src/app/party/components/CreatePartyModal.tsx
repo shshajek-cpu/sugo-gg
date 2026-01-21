@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useMyCharacters } from '@/hooks/useMyCharacters'
+import { useAuth } from '@/context/AuthContext'
 import type { DungeonType, CreatePartyRequest, PartyUserCharacter } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
 import { CLASSES } from '@/app/constants/game-data'
@@ -48,7 +49,8 @@ const CLASS_ICONS: Record<string, string> = {
 
 export default function CreatePartyModal({ isOpen, onClose }: CreatePartyModalProps) {
   const router = useRouter()
-  const { characters, loading: loadingCharacters } = useMyCharacters()
+  const { session } = useAuth()
+  const { characters, loading: loadingCharacters } = useMyCharacters({ accessToken: session?.access_token })
 
   const [dungeonType, setDungeonType] = useState<DungeonType>('transcend')
   const [dungeons, setDungeons] = useState<DungeonData[]>([])
@@ -141,12 +143,12 @@ export default function CreatePartyModal({ isOpen, onClose }: CreatePartyModalPr
     setSlots(newSlots)
   }, [maxMembers])
 
-  // 캐릭터 자동 선택
+  // 모달이 닫힐 때 선택 초기화
   useEffect(() => {
-    if (characters.length > 0 && !selectedCharacter) {
-      setSelectedCharacter(characters[0])
+    if (!isOpen) {
+      setSelectedCharacter(null)
     }
-  }, [characters, selectedCharacter])
+  }, [isOpen])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -252,6 +254,47 @@ export default function CreatePartyModal({ isOpen, onClose }: CreatePartyModalPr
         </div>
 
         <form className={styles.modalContent} onSubmit={handleSubmit}>
+          {/* 캐릭터 선택 섹션 */}
+          <div className={styles.characterSection}>
+            <div className={styles.sectionHeader}>
+              <span className={styles.sectionTitle}>파티장 캐릭터</span>
+              {loadingCharacters && <span className={styles.loadingText}>불러오는 중...</span>}
+            </div>
+            {!loadingCharacters && characters.length === 0 ? (
+              <div className={styles.emptyCharacter}>
+                등록된 캐릭터가 없습니다. 좌측 "내 모집 캐릭터"에서 먼저 등록해주세요.
+              </div>
+            ) : (
+              <div className={styles.characterCards}>
+                {characters.map(char => {
+                  const serverName = SERVERS.find(s => s.id === String(char.character_server_id))?.name || ''
+                  const isSelected = selectedCharacter?.id === char.id
+                  const classIcon = CLASS_ICONS[char.character_class] || '👤'
+                  return (
+                    <button
+                      key={char.id}
+                      type="button"
+                      className={`${styles.characterCard} ${isSelected ? styles.selected : ''}`}
+                      onClick={() => setSelectedCharacter(char)}
+                    >
+                      <div className={styles.cardIcon}>{classIcon}</div>
+                      <div className={styles.cardInfo}>
+                        <span className={styles.cardName}>{char.character_name}</span>
+                        <span className={styles.cardMeta}>
+                          {char.character_class} · {serverName}
+                        </span>
+                        {char.character_item_level && (
+                          <span className={styles.cardStat}>아이템 {char.character_item_level}</span>
+                        )}
+                      </div>
+                      {isSelected && <span className={styles.selectedCheck}>✓</span>}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
           {/* 던전 선택 섹션 */}
           <div className={styles.section}>
             <div className={styles.dungeonTypes}>
@@ -412,28 +455,6 @@ export default function CreatePartyModal({ isOpen, onClose }: CreatePartyModalPr
                 ))}
               </div>
 
-              {/* 캐릭터 선택 (작은 드롭다운) */}
-              {characters.length > 1 && (
-                <div className={styles.charSelectRow}>
-                  <label>캐릭터:</label>
-                  <select
-                    value={selectedCharacter?.id || ''}
-                    onChange={e => {
-                      const char = characters.find(c => c.id === e.target.value)
-                      setSelectedCharacter(char || null)
-                    }}
-                  >
-                    {characters.map(char => {
-                      const serverName = SERVERS.find(s => s.id === String(char.character_server_id))?.name || ''
-                      return (
-                        <option key={char.id} value={char.id}>
-                          {char.character_class} {serverName} {char.character_name}
-                        </option>
-                      )
-                    })}
-                  </select>
-                </div>
-              )}
             </div>
 
             {/* 오른쪽: 스펙 조건 */}

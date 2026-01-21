@@ -1,88 +1,107 @@
+/* PartyCard - Black Theme Design System */
+
 .card {
   display: block;
-  position: relative;
-  background: var(--bg-card, #1a1d24);
-  border-radius: 8px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
   padding: 16px;
   text-decoration: none;
   color: inherit;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 2px solid transparent;
-  overflow: hidden;
-}
-
-/* 배경 이미지를 옅게 만드는 오버레이 */
-.bgOverlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    to right,
-    rgba(26, 29, 36, 0.97) 0%,
-    rgba(26, 29, 36, 0.85) 50%,
-    rgba(26, 29, 36, 0.7) 100%
-  );
-  z-index: 0;
-  pointer-events: none;
+  transition: all 0.2s ease;
 }
 
 .card:hover {
+  border-color: #f59e0b;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.15);
 }
 
-.card.pve {
-  border-color: var(--primary, #FACC15);
-}
-
-.card.pvp {
-  border-color: #EF4444;
-  background: linear-gradient(135deg, #1a1d24 0%, #2a1a1a 100%);
-}
-
+/* 헤더 */
 .header {
-  position: relative;
-  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.dungeonType {
+.dungeonInfo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dungeonBadge {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--text-main, #E5E7EB);
+  color: #000;
 }
 
-.status {
-  font-size: 0.875rem;
-  color: var(--primary, #FACC15);
+.dungeonName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #E5E7EB;
 }
 
+.tier {
+  margin-left: 4px;
+  color: #f59e0b;
+}
+
+.statusBadge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.recruiting {
+  padding: 4px 8px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f59e0b;
+}
+
+.full {
+  padding: 4px 8px;
+  background: rgba(107, 114, 128, 0.15);
+  border: 1px solid #6B7280;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6B7280;
+}
+
+.memberCount {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #E5E7EB;
+}
+
+/* 제목 */
 .title {
-  position: relative;
-  z-index: 1;
-  font-size: 0.875rem;
-  color: var(--text-secondary, #9CA3AF);
-  margin-bottom: 8px;
+  font-size: 0.9rem;
+  color: #9CA3AF;
+  margin-bottom: 12px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
+/* 시간 박스 */
 .timeBox {
-  position: relative;
-  z-index: 1;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin-bottom: 8px;
-  font-size: 0.9rem;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
 }
 
 .timeIcon {
@@ -90,84 +109,331 @@
 }
 
 .timeLabel {
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--primary, #FACC15);
+  color: #f59e0b;
 }
 
-.timeSeparator {
-  color: var(--text-secondary, #9CA3AF);
-}
-
-.timeDate {
-  color: var(--text-secondary, #9CA3AF);
-}
-
-.timeRemaining {
+.timeSub {
   margin-left: auto;
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
 }
 
-.specs {
-  position: relative;
-  z-index: 1;
-  font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
-  margin-bottom: 8px;
+/* 참가 조건 */
+.requirements {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  background: rgba(245, 158, 11, 0.05);
+  border-radius: 6px;
 }
 
-.slots {
-  position: relative;
-  z-index: 1;
+.reqItem {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.reqLabel {
+  font-size: 0.75rem;
+  color: #6B7280;
+}
+
+.reqValue {
   font-size: 0.85rem;
-  color: var(--text-main, #E5E7EB);
-  margin-bottom: 8px;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+/* 파티원 섹션 */
+.membersSection {
+  margin-bottom: 12px;
+}
+
+.membersGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 8px;
+}
+
+/* 멤버 슬롯 */
+.memberSlot {
+  min-height: 120px;
+}
+
+/* 멤버 카드 (채워진 슬롯) */
+.memberCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 8px;
+  height: 100%;
+}
+
+.leaderBadge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  background: #f59e0b;
+  border-radius: 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #000;
+  white-space: nowrap;
+  z-index: 5;
+}
+
+/* 프로필 이미지 */
+.profileWrapper {
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.profileImage {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #333;
+}
+
+.profilePlaceholder {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+}
+
+.raceIndicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #0a0a0a;
+}
+
+/* 멤버 정보 */
+.memberInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  margin-bottom: 0;
+}
+
+.memberName {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #E5E7EB;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 직업 + 아이템 레벨 한줄 표시 */
+.classRow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+}
+
+.memberClass {
+  color: #9CA3AF;
+}
+
+.itemLevel {
+  color: #60A5FA;
+  font-weight: 600;
+}
+
+.memberServer {
+  display: none;
+  /* 작은 카드에서는 서버명 숨김 (공간 부족) */
+}
+
+/* 빈 슬롯 */
+.emptySlot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 120px;
+  background: #0a0a0a;
+  border: 2px dashed #333;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.emptySlot:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.emptyIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  color: #6B7280;
+  margin-bottom: 6px;
+}
+
+.emptyClass {
+  font-size: 0.7rem;
+  color: #6B7280;
+  text-align: center;
+}
+
+/* 하단 스탯 통계 (푸터 위) */
+.partyStats {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 12px;
+  margin-top: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.partyStatItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.partyStatIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: #1a1a1a;
+  border-radius: 6px;
+  color: #f59e0b;
+  font-size: 1.1rem;
+}
+
+.partyStatContent {
+  display: flex;
+  flex-direction: column;
+}
+
+.partyStatLabel {
+  font-size: 0.65rem;
+  color: #9CA3AF;
+}
+
+.partyStatValue {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #E5E7EB;
+  font-family: monospace;
+}
+
+/* 푸터 */
+.footer {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
-  align-items: center;
-}
-
-.slot {
-  font-size: 0.8rem;
-}
-
-.slot.filled {
-  color: var(--primary, #FACC15);
-}
-
-.slot.empty {
-  color: var(--text-secondary, #9CA3AF);
-}
-
-.footer {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  padding-top: 8px;
-  margin-top: 4px;
-}
-
-.leader {
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  gap: 8px;
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 1px solid #222;
 }
 
 .pendingBadge {
-  color: #EF4444;
+  padding: 4px 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid #ef4444;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 500;
+  color: #ef4444;
 }
 
-.myRole {
-  color: var(--primary, #FACC15);
+.myRoleBadge {
+  padding: 4px 10px;
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #f59e0b;
 }
 
-.myApplication {
-  color: #60A5FA;
+.applicationBadge {
+  padding: 4px 10px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid #3b82f6;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #3b82f6;
+}
+
+.runCountBadge {
+  padding: 4px 10px;
+  background: rgba(167, 139, 250, 0.15);
+  border: 1px solid #A78BFA;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #A78BFA;
+}
+
+/* 반응형 */
+@media (max-width: 640px) {
+
+  /* 모바일에서도 4열 유지 (작게) */
+  .profileImage,
+  .profilePlaceholder {
+    width: 36px;
+    height: 36px;
+  }
+
+  .memberName {
+    font-size: 0.7rem;
+  }
+
+  .classRow {
+    font-size: 0.65rem;
+  }
+
+  .memberSlot,
+  .emptySlot {
+    min-height: 100px;
+  }
+
+  .partyStats {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
+
+  .partyStatItem {
+    width: 100%;
+  }
 }

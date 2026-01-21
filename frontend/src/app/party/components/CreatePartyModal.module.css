@@ -69,6 +69,124 @@
   margin-bottom: 16px;
 }
 
+/* 캐릭터 선택 섹션 */
+.characterSection {
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.sectionTitle {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f59e0b;
+}
+
+.loadingText {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+.emptyCharacter {
+  text-align: center;
+  padding: 16px;
+  font-size: 0.85rem;
+  color: #9CA3AF;
+}
+
+.characterCards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.characterCard {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  background: #0a0a0a;
+  border: 2px solid #222;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+  position: relative;
+}
+
+.characterCard:hover {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.05);
+}
+
+.characterCard.selected {
+  border-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.cardIcon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #111;
+  border-radius: 8px;
+}
+
+.cardInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cardName {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #E5E7EB;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cardMeta {
+  font-size: 0.75rem;
+  color: #9CA3AF;
+}
+
+.cardStat {
+  font-size: 0.7rem;
+  color: #f59e0b;
+}
+
+.selectedCheck {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  background: #f59e0b;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #000;
+}
+
 /* 던전 타입 버튼 */
 .dungeonTypes {
   display: flex;
@@ -89,14 +207,14 @@
 }
 
 .typeButton:hover {
-  border-color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
   color: var(--text-main, #E5E7EB);
 }
 
 .typeButton.active {
   background: rgba(250, 204, 21, 0.15);
-  border-color: var(--primary, #FACC15);
-  color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
+  color: var(--primary, #f59e0b);
 }
 
 .typeButton.pvp {
@@ -142,7 +260,7 @@
 
 .dungeonSelect select:focus {
   outline: none;
-  border-color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
 }
 
 /* 단계 선택 */
@@ -169,12 +287,12 @@
 }
 
 .tierButton:hover {
-  border-color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
 }
 
 .tierButton.active {
-  background: var(--primary, #FACC15);
-  border-color: var(--primary, #FACC15);
+  background: var(--primary, #f59e0b);
+  border-color: var(--primary, #f59e0b);
   color: #000;
 }
 
@@ -203,7 +321,7 @@
 }
 
 .runCount button:hover {
-  border-color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
 }
 
 .runCount span {
@@ -231,7 +349,7 @@
 }
 
 .radioLabel input[type="radio"] {
-  accent-color: var(--primary, #FACC15);
+  accent-color: var(--primary, #f59e0b);
 }
 
 .scheduleInputs {
@@ -314,7 +432,7 @@
 
 .leaderSlot {
   font-size: 0.8rem;
-  color: var(--primary, #FACC15);
+  color: var(--primary, #f59e0b);
 }
 
 .slotSelect {
@@ -365,7 +483,7 @@
 }
 
 .specRow input[type="checkbox"] {
-  accent-color: var(--primary, #FACC15);
+  accent-color: var(--primary, #f59e0b);
 }
 
 .specInput {
@@ -399,7 +517,7 @@
 .titleInput:focus,
 .descInput:focus {
   outline: none;
-  border-color: var(--primary, #FACC15);
+  border-color: var(--primary, #f59e0b);
 }
 
 .descInput {
@@ -440,7 +558,7 @@
 .submitButton {
   padding: 10px 24px;
   font-size: 0.9rem;
-  background: var(--primary, #FACC15);
+  background: var(--primary, #f59e0b);
   border: none;
   border-radius: 6px;
   color: #000;
@@ -449,7 +567,7 @@
 }
 
 .submitButton:hover:not(:disabled) {
-  background: #eab308;
+  background: #d97706;
 }
 
 .submitButton:disabled {
@@ -461,6 +579,10 @@
 @media (max-width: 600px) {
   .modal {
     max-height: 95vh;
+  }
+
+  .characterCards {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .twoColumn {

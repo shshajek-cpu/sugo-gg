@@ -1,6 +1,9 @@
+/* MyCharacters - Black Theme Design System */
+
 .container {
-  background: var(--bg-card, #1a1d24);
-  border-radius: 8px;
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 12px;
   padding: 16px;
   margin-bottom: 16px;
 }
@@ -14,17 +17,17 @@
 
 .title {
   font-size: 0.95rem;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-weight: 600;
 }
 
 .description {
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   margin: 0 0 12px 0;
 }
 
-/* 검색 래퍼 (상단 검색 스타일) */
+/* 검색 래퍼 */
 .searchWrapper {
   position: relative;
   margin-bottom: 16px;
@@ -52,10 +55,10 @@
 .serverSelect {
   padding: 8px 12px;
   font-size: 0.85rem;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
-  border-radius: 20px;
-  color: var(--text-main, #E5E7EB);
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+  color: #E5E7EB;
   cursor: pointer;
   outline: none;
   transition: all 0.15s;
@@ -63,60 +66,60 @@
 }
 
 .serverSelect:hover {
-  border-color: var(--text-main, #E5E7EB);
+  border-color: #333;
 }
 
 .serverSelect:focus {
-  border-color: var(--primary, #FACC15);
+  border-color: #f59e0b;
 }
 
 .serverSelect option {
-  background: #1a1d24;
-  color: var(--text-main, #E5E7EB);
+  background: #111;
+  color: #E5E7EB;
 }
 
 .raceButton {
   padding: 10px 14px;
   font-size: 0.85rem;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
-  border-radius: 20px;
-  color: var(--text-secondary, #9CA3AF);
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 6px;
+  color: #9CA3AF;
   cursor: pointer;
   transition: all 0.15s;
   font-weight: 500;
 }
 
 .raceButton:hover {
-  border-color: var(--text-main, #E5E7EB);
-  color: var(--text-main, #E5E7EB);
+  border-color: #333;
+  color: #E5E7EB;
 }
 
 .raceButton.elyosActive {
-  background: rgba(59, 130, 246, 0.15);
-  border-color: #3b82f6;
-  color: #60a5fa;
+  background: rgba(45, 212, 191, 0.15);
+  border-color: #2DD4BF;
+  color: #2DD4BF;
 }
 
 .raceButton.asmodianActive {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: #ef4444;
-  color: #f87171;
+  background: rgba(167, 139, 250, 0.15);
+  border-color: #A78BFA;
+  color: #A78BFA;
 }
 
 .searchInputWrapper {
   flex: 1;
   display: flex;
   align-items: center;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
-  border-radius: 24px;
+  background: #0a0a0a;
+  border: 1px solid #222;
+  border-radius: 8px;
   padding: 0 16px;
   transition: border-color 0.2s;
 }
 
 .searchInputWrapper:focus-within {
-  border-color: var(--primary, #FACC15);
+  border-color: #f59e0b;
 }
 
 .searchIcon {
@@ -131,12 +134,12 @@
   font-size: 0.9rem;
   background: transparent;
   border: none;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   outline: none;
 }
 
 .searchInput::placeholder {
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
 }
 
 .clearButton {
@@ -148,7 +151,7 @@
   background: rgba(255, 255, 255, 0.1);
   border: none;
   border-radius: 50%;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   cursor: pointer;
   font-size: 1rem;
   transition: all 0.15s;
@@ -156,7 +159,7 @@
 
 .clearButton:hover {
   background: rgba(255, 255, 255, 0.2);
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
 }
 
 /* 검색 결과 드롭다운 */
@@ -166,8 +169,8 @@
   left: 0;
   right: 0;
   margin-top: 8px;
-  background: #111318;
-  border: 1px solid #1f2937;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 12px;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.8);
   z-index: 1000;
@@ -182,15 +185,15 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: #9ca3af;
-  background: #0f1115;
-  border-bottom: 1px solid #1f2937;
+  background: #0a0a0a;
+  border-bottom: 1px solid #222;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .searchingText {
-  color: #fbbf24;
+  color: #f59e0b;
 }
 
 .searchDropdownList {
@@ -206,8 +209,8 @@
   justify-content: space-between;
   align-items: center;
   padding: 10px 12px;
-  background: #1a1d24;
-  border: 1px solid #2a2f3a;
+  background: #0a0a0a;
+  border: 1px solid #222;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
@@ -215,22 +218,22 @@
 }
 
 .searchResultItem:hover {
-  background: #242830;
-  border-color: #3a3f4a;
+  background: #1a1a1a;
+  border-color: #333;
 }
 
-/* 프로필 이미지 (상단 검색과 동일) */
+/* 프로필 이미지 */
 .profileImageWrapper {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
   border-radius: 8px;
   overflow: hidden;
-  background: #111318;
+  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #3b82f6;
+  border: 2px solid #333;
 }
 
 .profileImage {
@@ -263,18 +266,18 @@
 .registerButton {
   padding: 6px 14px;
   font-size: 0.8rem;
-  background: var(--primary, #FACC15);
+  background: #f59e0b;
   color: #000;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
   transition: background 0.15s;
 }
 
 .registerButton:hover:not(:disabled) {
-  background: #eab308;
+  background: #d97706;
 }
 
 .registerButton:disabled {
@@ -296,10 +299,10 @@
 
 .characterSectionTitle {
   font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-color, #374151);
+  border-bottom: 1px solid #222;
 }
 
 .characterList {
@@ -310,7 +313,9 @@
 
 .loading, .empty {
   font-size: 0.85rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
+  text-align: center;
+  padding: 20px;
 }
 
 /* 캐릭터 카드 */
@@ -318,9 +323,9 @@
   display: flex;
   align-items: center;
   padding: 10px 12px;
-  background: rgba(250, 204, 21, 0.05);
-  border: 1px solid rgba(250, 204, 21, 0.3);
-  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.05);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 8px;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -332,11 +337,11 @@
   flex-shrink: 0;
   border-radius: 6px;
   overflow: hidden;
-  background: #111318;
+  background: #0a0a0a;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid rgba(250, 204, 21, 0.5);
+  border: 2px solid rgba(245, 158, 11, 0.5);
 }
 
 .cardProfileImage {
@@ -363,7 +368,7 @@
   align-items: center;
   gap: 6px;
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   margin-left: auto;
 }
 
@@ -377,13 +382,13 @@
 /* 공통 스타일 */
 .className {
   font-size: 0.85rem;
-  color: var(--text-main, #E5E7EB);
+  color: #E5E7EB;
   font-weight: 500;
 }
 
 .level {
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
 }
 
 .charName {
@@ -397,21 +402,21 @@
 
 .serverName {
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
 }
 
 .separator {
   font-size: 0.75rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
   opacity: 0.5;
 }
 
 .stat {
   font-size: 0.8rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
 }
 
-/* 돌파 배지 - 파란색 마름모 */
+/* 돌파 배지 - 주황색 */
 .breakthrough {
   display: inline-flex;
   align-items: center;
@@ -461,16 +466,17 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: 4px;
-  color: #60A5FA;
+  color: #f59e0b;
   cursor: pointer;
   font-size: 0.85rem;
+  transition: all 0.15s;
 }
 
 .refreshButton:hover:not(:disabled) {
-  background: rgba(59, 130, 246, 0.2);
+  background: rgba(245, 158, 11, 0.2);
 }
 
 .refreshButton:disabled {
@@ -487,9 +493,10 @@
   background: transparent;
   border: 1px solid rgba(239, 68, 68, 0.3);
   border-radius: 4px;
-  color: var(--text-secondary, #9CA3AF);
+  color: #9CA3AF;
   cursor: pointer;
   font-size: 1rem;
+  transition: all 0.15s;
 }
 
 .deleteButton:hover {
@@ -500,28 +507,29 @@
 
 .hint {
   font-size: 0.75rem;
-  color: var(--text-secondary, #9CA3AF);
+  color: #6B7280;
   margin: 10px 0 0 0;
   opacity: 0.8;
 }
 
-/* 디버그 버튼 */
+/* 디버그 버튼 - 주황색으로 변경 */
 .debugButton {
   width: 28px;
   height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(168, 85, 247, 0.1);
-  border: 1px solid rgba(168, 85, 247, 0.3);
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.3);
   border-radius: 4px;
-  color: #a855f7;
+  color: #f59e0b;
   cursor: pointer;
   font-size: 0.85rem;
+  transition: all 0.15s;
 }
 
 .debugButton:hover {
-  background: rgba(168, 85, 247, 0.2);
+  background: rgba(245, 158, 11, 0.2);
 }
 
 /* 디버그 오버레이 */
@@ -540,8 +548,8 @@
 }
 
 .debugPanel {
-  background: #1a1d24;
-  border: 1px solid #374151;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 12px;
   width: 100%;
   max-width: 700px;
@@ -555,9 +563,9 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid #222;
   font-weight: 600;
-  color: #a855f7;
+  color: #f59e0b;
 }
 
 .debugHeader button {
@@ -589,23 +597,24 @@
 
 .debugFooter {
   padding: 12px 16px;
-  border-top: 1px solid #374151;
+  border-top: 1px solid #222;
   display: flex;
   justify-content: flex-end;
 }
 
 .debugFooter button {
   padding: 8px 16px;
-  background: #a855f7;
-  color: #fff;
+  background: #f59e0b;
+  color: #000;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-size: 0.85rem;
+  font-weight: 600;
 }
 
 .debugFooter button:hover {
-  background: #9333ea;
+  background: #d97706;
 }
 
 /* 모바일 대응 */
