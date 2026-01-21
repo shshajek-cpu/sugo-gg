@@ -1153,3 +1153,607 @@
 .cardCountSub {
     color: #ef4444;
 }
+
+/* --- Loading State --- */
+.loadingContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 16px;
+}
+
+.loadingSpinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #333;
+    border-top-color: #f59e0b;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.loadingText {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+}
+
+/* --- No Characters State --- */
+.noCharactersBox {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 16px;
+    gap: 12px;
+}
+
+.noCharactersIcon {
+    font-size: 48px;
+}
+
+.noCharactersText {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #E5E7EB;
+}
+
+.noCharactersSubtext {
+    font-size: 0.9rem;
+    color: #9CA3AF;
+}
+
+/* --- No Items State --- */
+.noItemsBox {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+}
+
+.noItemsText {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+}
+
+/* --- Story Avatar Image --- */
+.storyAvatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+/* --- Profile Image Actual --- */
+.profileImgActual {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.profileImgLargeActual {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 12px;
+}
+
+/* --- Item Price --- */
+.itemPrice {
+    font-size: 0.7rem;
+    color: #f59e0b;
+    margin-top: 2px;
+}
+
+/* --- Item Image --- */
+.itemImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+/* --- Story Avatar Add Button --- */
+.storyAvatarAdd {
+    background: #222;
+    border: 2px dashed #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.addIcon {
+    font-size: 24px;
+    color: #666;
+    font-weight: 300;
+}
+
+/* --- Small Step Button (for daily content) --- */
+.btnStepSmall {
+    background: #222;
+    border: 1px solid #444;
+    color: #fff;
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnStepSmall:active {
+    background: #333;
+}
+
+/* --- Delete Character Area --- */
+.deleteCharacterArea {
+    padding: 24px 16px;
+    border-top: 1px solid #222;
+    margin-top: 16px;
+}
+
+.deleteCharacterBtn {
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.deleteCharacterBtn:active {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+/* --- Modal Overlay --- */
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 16px;
+}
+
+.modalContent {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 400px;
+    max-height: 80vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.modalContentSmall {
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 320px;
+    padding: 20px;
+}
+
+.modalHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    border-bottom: 1px solid #222;
+}
+
+.modalTitle {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #fff;
+    margin: 0;
+}
+
+.modalClose {
+    background: transparent;
+    border: none;
+    color: #666;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+}
+
+/* --- Search Section --- */
+.searchSection {
+    padding: 16px;
+    border-bottom: 1px solid #222;
+}
+
+.serverSelect {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.serverBtn {
+    flex: 1;
+    padding: 8px;
+    background: #222;
+    border: 1px solid #333;
+    color: #9CA3AF;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.serverBtnActive {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.searchInputWrapper {
+    display: flex;
+    gap: 8px;
+}
+
+.searchInput {
+    flex: 1;
+    padding: 10px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 0.9rem;
+}
+
+.searchInput:focus {
+    outline: none;
+    border-color: #f59e0b;
+}
+
+.searchBtn {
+    padding: 10px 16px;
+    background: #f59e0b;
+    border: none;
+    border-radius: 8px;
+    color: #000;
+    font-weight: bold;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.searchBtn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+/* --- Search Results --- */
+.searchResults {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0;
+    max-height: 300px;
+}
+
+.noResults {
+    padding: 32px 16px;
+    text-align: center;
+    color: #9CA3AF;
+}
+
+.searchResultItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-bottom: 1px solid #222;
+    cursor: pointer;
+}
+
+.searchResultItem:active {
+    background: #1a1a1a;
+}
+
+.resultAvatar {
+    width: 44px;
+    height: 44px;
+    background: #222;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.resultAvatarImg {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.resultInfo {
+    flex: 1;
+}
+
+.resultName {
+    font-weight: bold;
+    color: #E5E7EB;
+    font-size: 0.9rem;
+}
+
+.resultClass {
+    color: #9CA3AF;
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.addBtn {
+    padding: 8px 16px;
+    background: #f59e0b;
+    border: none;
+    border-radius: 6px;
+    color: #000;
+    font-weight: bold;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+
+.addBtn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+/* --- Delete Confirm Modal --- */
+.deleteConfirmText {
+    text-align: center;
+    padding: 16px 0;
+    color: #E5E7EB;
+    line-height: 1.6;
+}
+
+.deleteWarning {
+    color: #ef4444;
+    font-size: 0.85rem;
+}
+
+.modalButtons {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.cancelBtn {
+    flex: 1;
+    padding: 12px;
+    background: #222;
+    border: 1px solid #333;
+    color: #E5E7EB;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+}
+
+.confirmDeleteBtn {
+    flex: 1;
+    padding: 12px;
+    background: #ef4444;
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.confirmDeleteBtn:disabled {
+    background: #666;
+    cursor: not-allowed;
+}
+
+/* --- Error Toast --- */
+.errorToast {
+    position: fixed;
+    bottom: 80px;
+    left: 16px;
+    right: 16px;
+    background: #ef4444;
+    color: #fff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    text-align: center;
+    font-size: 0.9rem;
+    z-index: 1001;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* --- Dungeon Modal Styles --- */
+.dungeonModalBody {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.dungeonSelectGroup {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.dungeonSelectLabel {
+    font-size: 0.85rem;
+    color: #9CA3AF;
+    font-weight: bold;
+}
+
+.dungeonSelectButtons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.dungeonSelectBtn {
+    flex: 1;
+    min-width: 80px;
+    padding: 10px 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.dungeonSelectBtn:active {
+    background: #333;
+}
+
+.dungeonSelectBtnActive {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+/* Tier Grid (5 columns) */
+.dungeonTierGrid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+.dungeonTierBtn {
+    padding: 10px 8px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all 0.2s;
+}
+
+.dungeonTierBtn:active {
+    background: #333;
+}
+
+.dungeonTierBtnActive {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.tierNumber {
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.tierKina {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+}
+
+.dungeonTierBtnActive .tierKina {
+    color: #f59e0b;
+}
+
+/* Boss Grid (2 columns) */
+.dungeonBossGrid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.dungeonBossBtn {
+    padding: 12px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+}
+
+.dungeonBossBtn:active {
+    background: #333;
+}
+
+.dungeonBossBtnActive {
+    background: rgba(245, 158, 11, 0.1);
+    border-color: #f59e0b;
+    color: #f59e0b;
+}
+
+.bossName {
+    font-weight: 500;
+}
+
+.bossKina {
+    font-size: 0.75rem;
+    color: #9CA3AF;
+}
+
+.bossKinaSmall {
+    font-size: 0.7rem;
+    color: #9CA3AF;
+    margin-left: 4px;
+}
+
+.dungeonBossBtnActive .bossKina,
+.dungeonBossBtnActive .bossKinaSmall {
+    color: #f59e0b;
+}
+
+/* Double Row */
+.dungeonDoubleRow {
+    display: flex;
+    gap: 8px;
+}
+
+.dungeonDoubleRow .btn2x {
+    flex: 1;
+}
+
+/* Disabled state for record button */
+.btnRecord:disabled {
+    background: rgba(128, 128, 128, 0.15);
+    color: #666;
+    border-color: #444;
+    cursor: not-allowed;
+}
