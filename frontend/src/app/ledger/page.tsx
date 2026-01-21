@@ -356,7 +356,7 @@ export default function LedgerPage() {
     getAuthHeader,
     isReady,
     characterId: selectedCharacterId,
-    date: today
+    date: selectedDate
   })
 
   // 아이템 관리
