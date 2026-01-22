@@ -421,47 +421,48 @@ export default function MobileLedgerPage() {
         const weeklyData = charData.weeklyData || {};
         const missionCount = charData.missionCount || 0;
 
-        // 주간 컨텐츠 진행률
+        // 주간 컨텐츠 진행률 (PC와 동일하게 잔여횟수 표시)
         const weeklyProgress = WEEKLY_CONTENT_DEFS.map(def => {
-            let current = 0;
+            let remaining = 0;  // 잔여 횟수
             let max = def.maxPerChar;
             let bonus = 0;
 
             if (def.id === 'transcend') {
-                const remaining = baseTickets.transcend ?? def.maxPerChar;
-                current = def.maxPerChar - remaining;
+                remaining = baseTickets.transcend ?? def.maxPerChar;
                 bonus = bonusTickets.transcend || 0;
             } else if (def.id === 'expedition') {
-                const remaining = baseTickets.expedition ?? def.maxPerChar;
-                current = def.maxPerChar - remaining;
+                remaining = baseTickets.expedition ?? def.maxPerChar;
                 bonus = bonusTickets.expedition || 0;
             } else if (def.id === 'sanctuary') {
-                const remaining = baseTickets.sanctuary ?? def.maxPerChar;
-                current = def.maxPerChar - remaining;
+                remaining = baseTickets.sanctuary ?? def.maxPerChar;
                 bonus = bonusTickets.sanctuary || 0;
             } else if (def.id === 'shugo') {
-                const shugoBase = weeklyData.shugoBase ?? 14;
-                current = 14 - shugoBase;
+                remaining = weeklyData.shugoBase ?? 14;
                 bonus = weeklyData.shugoBonus || 0;
             } else if (def.id === 'mission') {
-                current = missionCount;
+                // 사명은 완료한 횟수가 current (최대 5회)
+                remaining = Math.max(0, def.maxPerChar - missionCount);
             } else if (def.id === 'weekly_order') {
-                current = weeklyData.weeklyOrderCount || 0;
+                // 주간지령서는 완료한 횟수가 기록됨 -> 잔여 = max - 완료
+                remaining = Math.max(0, def.maxPerChar - (weeklyData.weeklyOrderCount || 0));
             } else if (def.id === 'abyss_order') {
-                current = weeklyData.abyssOrderCount || 0;
+                // 어비스지령서는 완료한 횟수가 기록됨 -> 잔여 = max - 완료
+                remaining = Math.max(0, def.maxPerChar - (weeklyData.abyssOrderCount || 0));
             }
 
-            return { ...def, current, max: max + bonus };
+            return { ...def, current: remaining, max, bonus };
         });
 
-        // 일일 컨텐츠 진행률
+        // 일일 컨텐츠 진행률 (PC와 동일하게 잔여횟수 표시)
         const dailyProgress = DAILY_CONTENT_DEFS.map(def => {
-            const current = contentRecords[def.contentType] || 0;
+            const completionCount = contentRecords[def.contentType] || 0;
             let bonus = 0;
             if (def.ticketKey) {
                 bonus = bonusTickets[def.ticketKey] || 0;
             }
-            return { ...def, current, max: def.maxPerChar + bonus };
+            // 잔여횟수 = maxCount - completionCount (PC와 동일)
+            const remaining = Math.max(0, def.maxPerChar - completionCount);
+            return { ...def, current: remaining, max: def.maxPerChar, bonus };
         });
 
         return { weekly: weeklyProgress, daily: dailyProgress };
