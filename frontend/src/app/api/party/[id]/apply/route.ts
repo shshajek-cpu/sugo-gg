@@ -136,17 +136,15 @@ export async function POST(
       member = newMember
     }
 
-    // 파티장에게 알림
-    if (party.notification_enabled) {
-      await supabase.from('party_notifications').insert({
-        user_id: party.user_id,
-        party_id: partyId,
-        type: 'apply_received',
-        title: '새 파티 신청',
-        message: `${body.character_name}님이 "${party.title}" 파티에 신청했습니다.`,
-        data: { applicant_name: body.character_name, applicant_class: body.character_class }
-      })
-    }
+    // 파티장에게 알림 (항상 전송)
+    await supabase.from('party_notifications').insert({
+      user_id: party.user_id,
+      party_id: partyId,
+      type: 'apply_received',
+      title: '새 파티 신청',
+      message: `${body.character_name}님이 "${party.title || party.dungeon_name}" 파티에 신청했습니다.`,
+      data: { applicant_name: body.character_name, applicant_class: body.character_class }
+    })
 
     return NextResponse.json({
       member,
