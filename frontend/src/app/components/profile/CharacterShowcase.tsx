@@ -17,6 +17,7 @@ interface CharacterShowcaseProps {
     level?: number
     itemLevel?: number
     totalBreakthrough?: number
+    isVerified?: boolean // OCR 검증 여부
 }
 
 export default function CharacterShowcase({
@@ -31,7 +32,8 @@ export default function CharacterShowcase({
     race,
     level,
     itemLevel,
-    totalBreakthrough
+    totalBreakthrough,
+    isVerified = false
 }: CharacterShowcaseProps) {
     const cardRef = useRef<HTMLDivElement>(null)
     const [rotation, setRotation] = useState({ x: 0, y: 0 })
@@ -84,6 +86,29 @@ export default function CharacterShowcase({
                 />
 
                 <div className={styles.cardInner}>
+                    {/* 검증 뱃지 (우측 상단) */}
+                    {isVerified && (
+                        <div className={styles.verifiedBadge}>
+                            <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                style={{ flexShrink: 0 }}
+                            >
+                                <circle cx="12" cy="12" r="10" fill="#1D9BF0" />
+                                <path
+                                    d="M9 12l2 2 4-4"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                />
+                            </svg>
+                            <span className={styles.verifiedText}>검증</span>
+                        </div>
+                    )}
+
                     {/* Depth Layer 1: Background Atmosphere */}
                     <div className={styles.bgLayer} />
 

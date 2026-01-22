@@ -262,6 +262,7 @@ export default function ProfileSection({ character, arcana, onArcanaClick, stats
                     level={character.level}
                     itemLevel={calculatedItemLevel}
                     totalBreakthrough={totalBreakthrough}
+                    isVerified={!!(ocrStats && ocrStats.length > 0)}
                 />
             </div>
 
