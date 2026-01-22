@@ -568,7 +568,6 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
                 )
               })}
             </div>
-            <p className={styles.hint}>※ 🔄 클릭 시 최신 스펙으로 갱신</p>
           </>
         )}
       </div>
