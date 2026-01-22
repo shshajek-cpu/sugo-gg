@@ -42,19 +42,10 @@ export async function POST(
       return NextResponse.json({ error: '이미 신청한 파티입니다.' }, { status: 400 })
     }
 
-    // 취소/거절된 기록이 있으면 재신청 불가
-    const cancelledOrRejected = party.members?.find(
-      (m: { user_id: string; status: string }) =>
-        m.user_id === user.id && ['cancelled', 'rejected'].includes(m.status)
-    )
-    if (cancelledOrRejected) {
-      return NextResponse.json({ error: '이미 신청했던 파티입니다. 재신청이 불가능합니다.' }, { status: 400 })
-    }
-
-    // 추방된 경우에만 재신청 가능
+    // 이전에 취소/거절/추방된 기록이 있으면 재신청 허용 (기존 기록 업데이트)
     const previousMember = party.members?.find(
       (m: { id: string; user_id: string; status: string }) =>
-        m.user_id === user.id && m.status === 'kicked'
+        m.user_id === user.id && ['cancelled', 'rejected', 'kicked'].includes(m.status)
     ) as { id: string; user_id: string; status: string } | undefined
 
     // 슬롯 확인
