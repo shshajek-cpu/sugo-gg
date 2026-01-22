@@ -5,14 +5,24 @@ import { useAuth } from '@/context/AuthContext'
 
 const DEVICE_ID_KEY = 'ledger_device_id'
 
+// device_id 가져오기 (없으면 생성)
+function getOrCreateDeviceId(): string | null {
+  if (typeof window === 'undefined') return null
+
+  let deviceId = localStorage.getItem(DEVICE_ID_KEY)
+  if (!deviceId) {
+    deviceId = crypto.randomUUID()
+    localStorage.setItem(DEVICE_ID_KEY, deviceId)
+    console.log('[getOrCreateDeviceId] 새 device_id 생성:', deviceId.substring(0, 8) + '...')
+  }
+  return deviceId
+}
+
 // Standalone function to get auth headers (for use outside of React components)
 export function getAuthHeader(): Record<string, string> {
-  if (typeof window === 'undefined') return {}
-
-  // Check for device ID
-  const deviceId = localStorage.getItem(DEVICE_ID_KEY)
+  const deviceId = getOrCreateDeviceId()
   if (deviceId) {
-    return { 'x-device-id': deviceId }
+    return { 'X-Device-ID': deviceId }
   }
   return {}
 }
@@ -60,23 +70,20 @@ export function useDeviceId() {
   // Return auth headers for requests
   // 주의: Google 로그인은 다른 Supabase 프로젝트(edwtbiujwjprydmahwhh)를 사용하므로
   // ledger API(mnbngmdjiszyowfvnzhk)에서는 항상 device_id를 사용
-  const getAuthHeader = useCallback((): Record<string, string> => {
-    // 항상 device_id 사용 (Google 로그인 여부와 관계없이)
-    const storedDeviceId = localStorage.getItem(DEVICE_ID_KEY)
-    if (storedDeviceId) {
-      return { 'X-Device-ID': storedDeviceId }
-    }
-    if (deviceId) {
-      return { 'X-Device-ID': deviceId }
+  const getAuthHeaderCallback = useCallback((): Record<string, string> => {
+    // 항상 device_id 사용 (없으면 생성)
+    const id = getOrCreateDeviceId()
+    if (id) {
+      return { 'X-Device-ID': id }
     }
     return {}
-  }, [deviceId])
+  }, [])
 
   return {
     deviceId,
     isLoading,
     isAuthenticated,
-    getAuthHeader,
+    getAuthHeader: getAuthHeaderCallback,
     accessToken: session?.access_token
   }
 }
