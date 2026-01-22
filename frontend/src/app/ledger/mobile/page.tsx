@@ -453,15 +453,20 @@ export default function MobileLedgerPage() {
             return { ...def, current: remaining, max, bonus };
         });
 
-        // 일일 컨텐츠 진행률 (PC와 동일하게 잔여횟수 표시)
+        // 일일 컨텐츠 진행률 (PC와 동일하게 baseTickets에서 잔여횟수 가져오기)
         const dailyProgress = DAILY_CONTENT_DEFS.map(def => {
-            const completionCount = contentRecords[def.contentType] || 0;
             let bonus = 0;
             if (def.ticketKey) {
                 bonus = bonusTickets[def.ticketKey] || 0;
             }
-            // 잔여횟수 = maxCount - completionCount (PC와 동일)
-            const remaining = Math.max(0, def.maxPerChar - completionCount);
+
+            // PC와 동일하게 baseTickets에서 직접 잔여횟수 가져오기
+            // API에서 반환하는 baseTickets 키: daily_dungeon, awakening, nightmare, dimension, subjugation
+            let remaining = def.maxPerChar;
+            if (def.ticketKey && baseTickets[def.ticketKey] !== undefined) {
+                remaining = baseTickets[def.ticketKey];
+            }
+
             return { ...def, current: remaining, max: def.maxPerChar, bonus };
         });
 
