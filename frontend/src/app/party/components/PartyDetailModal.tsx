@@ -306,20 +306,63 @@ export default function PartyDetailModal({ partyId, isOpen, onClose, onDeleted }
                 <h4 className={styles.sectionTitle}>
                   파티 슬롯 ({party.current_members}/{party.max_members})
                 </h4>
-                <div className={styles.slotsGrid}>
-                  {slotsWithMembers.map(({ slot, member }) => (
-                    <SlotCard
-                      key={slot.id}
-                      slot={slot}
-                      member={member}
-                      isLeader={party.is_leader}
-                      canKick={party.is_leader}
-                      canApply={canApplySlot(slot)}
-                      onKick={() => member && handleKick(member.id)}
-                      onApply={() => setApplySlot(slot)}
-                    />
-                  ))}
-                </div>
+                {/* 성역: 1팀/2팀 구분 */}
+                {party.dungeon_type === 'sanctuary' ? (
+                  <div className={styles.sanctuarySlots}>
+                    {/* 1팀 */}
+                    <div className={styles.teamSection}>
+                      <div className={styles.teamHeader}>1팀</div>
+                      <div className={styles.slotsGrid}>
+                        {slotsWithMembers.filter(({ slot }) => slot.party_number === 1).map(({ slot, member }) => (
+                          <SlotCard
+                            key={slot.id}
+                            slot={slot}
+                            member={member}
+                            isLeader={party.is_leader}
+                            canKick={party.is_leader}
+                            canApply={canApplySlot(slot)}
+                            onKick={() => member && handleKick(member.id)}
+                            onApply={() => setApplySlot(slot)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                    {/* 2팀 */}
+                    <div className={styles.teamSection}>
+                      <div className={styles.teamHeader}>2팀</div>
+                      <div className={styles.slotsGrid}>
+                        {slotsWithMembers.filter(({ slot }) => slot.party_number === 2).map(({ slot, member }) => (
+                          <SlotCard
+                            key={slot.id}
+                            slot={slot}
+                            member={member}
+                            isLeader={party.is_leader}
+                            canKick={party.is_leader}
+                            canApply={canApplySlot(slot)}
+                            onKick={() => member && handleKick(member.id)}
+                            onApply={() => setApplySlot(slot)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 일반 던전 */
+                  <div className={styles.slotsGrid}>
+                    {slotsWithMembers.map(({ slot, member }) => (
+                      <SlotCard
+                        key={slot.id}
+                        slot={slot}
+                        member={member}
+                        isLeader={party.is_leader}
+                        canKick={party.is_leader}
+                        canApply={canApplySlot(slot)}
+                        onKick={() => member && handleKick(member.id)}
+                        onApply={() => setApplySlot(slot)}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* 신청 대기 (파티장) */}

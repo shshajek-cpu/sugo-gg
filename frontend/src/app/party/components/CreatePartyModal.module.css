@@ -558,6 +558,29 @@
   color: var(--text-secondary, #9CA3AF);
 }
 
+/* 성역 슬롯 (1팀/2팀 구분) */
+.sanctuarySlots {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.teamSection {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 10px;
+}
+
+.teamHeader {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f59e0b;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+}
+
 /* 슬롯 */
 .slotsCompact {
   display: flex;

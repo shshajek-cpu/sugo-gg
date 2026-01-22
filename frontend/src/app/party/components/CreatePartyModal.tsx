@@ -594,34 +594,94 @@ export default function CreatePartyModal({ isOpen, onClose, onCreated, editMode,
             {/* 왼쪽: 파티 설정 - 생성 모드에서만 표시 */}
             {!editMode && (
               <div className={styles.columnLeft}>
-                <div className={styles.slotsCompact}>
-                  {slots.slice(0, 4).map((slot, index) => (
-                    <div key={index} className={styles.slotRow}>
-                      <span className={styles.slotLabel}>
-                        슬롯{slot.slot_number}{index === 0 && '(나)'}:
-                      </span>
-                      {index === 0 ? (
-                        <span className={styles.leaderSlot}>
-                          {selectedCharacter
-                            ? `${leaderIcon} ${selectedCharacter.character_class} ${selectedCharacter.character_name}`
-                            : '캐릭터 선택'}
-                        </span>
-                      ) : (
-                        <select
-                          className={styles.slotSelect}
-                          value={slot.required_class || ''}
-                          onChange={e => updateSlotClass(index, e.target.value || null)}
-                        >
-                          <option value="">자유</option>
-                          {CLASSES.map(cls => (
-                            <option key={cls.id} value={cls.name}>{cls.name}</option>
-                          ))}
-                        </select>
-                      )}
+                {/* 성역: 1팀/2팀 구분 */}
+                {dungeonType === 'sanctuary' ? (
+                  <div className={styles.sanctuarySlots}>
+                    {/* 1팀 */}
+                    <div className={styles.teamSection}>
+                      <div className={styles.teamHeader}>1팀</div>
+                      <div className={styles.slotsCompact}>
+                        {slots.slice(0, 4).map((slot, index) => (
+                          <div key={index} className={styles.slotRow}>
+                            <span className={styles.slotLabel}>
+                              슬롯{slot.slot_number}{index === 0 && '(나)'}:
+                            </span>
+                            {index === 0 ? (
+                              <span className={styles.leaderSlot}>
+                                {selectedCharacter
+                                  ? `${leaderIcon} ${selectedCharacter.character_class} ${selectedCharacter.character_name}`
+                                  : '캐릭터 선택'}
+                              </span>
+                            ) : (
+                              <select
+                                className={styles.slotSelect}
+                                value={slot.required_class || ''}
+                                onChange={e => updateSlotClass(index, e.target.value || null)}
+                              >
+                                <option value="">자유</option>
+                                {CLASSES.map(cls => (
+                                  <option key={cls.id} value={cls.name}>{cls.name}</option>
+                                ))}
+                              </select>
+                            )}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
-
+                    {/* 2팀 */}
+                    <div className={styles.teamSection}>
+                      <div className={styles.teamHeader}>2팀</div>
+                      <div className={styles.slotsCompact}>
+                        {slots.slice(4, 8).map((slot, index) => (
+                          <div key={index + 4} className={styles.slotRow}>
+                            <span className={styles.slotLabel}>
+                              슬롯{slot.slot_number}:
+                            </span>
+                            <select
+                              className={styles.slotSelect}
+                              value={slot.required_class || ''}
+                              onChange={e => updateSlotClass(index + 4, e.target.value || null)}
+                            >
+                              <option value="">자유</option>
+                              {CLASSES.map(cls => (
+                                <option key={cls.id} value={cls.name}>{cls.name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* 일반 던전: 기존 4슬롯 */
+                  <div className={styles.slotsCompact}>
+                    {slots.slice(0, 4).map((slot, index) => (
+                      <div key={index} className={styles.slotRow}>
+                        <span className={styles.slotLabel}>
+                          슬롯{slot.slot_number}{index === 0 && '(나)'}:
+                        </span>
+                        {index === 0 ? (
+                          <span className={styles.leaderSlot}>
+                            {selectedCharacter
+                              ? `${leaderIcon} ${selectedCharacter.character_class} ${selectedCharacter.character_name}`
+                              : '캐릭터 선택'}
+                          </span>
+                        ) : (
+                          <select
+                            className={styles.slotSelect}
+                            value={slot.required_class || ''}
+                            onChange={e => updateSlotClass(index, e.target.value || null)}
+                          >
+                            <option value="">자유</option>
+                            {CLASSES.map(cls => (
+                              <option key={cls.id} value={cls.name}>{cls.name}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
