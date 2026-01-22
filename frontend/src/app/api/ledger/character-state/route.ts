@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 
 // getSupabase의 로컬 별칭 (db로 사용)
 const db = getSupabase()
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const characterId = searchParams.get('characterId')
 
-    const userData = await getUserFromRequest(request)
+    const userData = await getUserFromRequestWithDevice(request)
     if (!userData?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const db = getSupabase()
-    const userData = await getUserFromRequest(request)
+    const userData = await getUserFromRequestWithDevice(request)
     if (!userData?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

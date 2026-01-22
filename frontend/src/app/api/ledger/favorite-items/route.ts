@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 import { verifyCharacterOwnership } from '../../../../lib/ledgerAuth'
 
 export async function GET(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }

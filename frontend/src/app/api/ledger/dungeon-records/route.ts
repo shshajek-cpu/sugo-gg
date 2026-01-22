@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 
 // GET: 던전 기록 조회
 export async function GET(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
 // POST: 던전 기록 저장
 export async function POST(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -162,7 +162,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE: 던전 기록 삭제 (content_records도 함께 정리)
 export async function DELETE(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)

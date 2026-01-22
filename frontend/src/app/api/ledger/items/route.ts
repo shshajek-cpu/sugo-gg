@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 import { verifyCharacterOwnership } from '../../../../lib/ledgerAuth'
 import { getKoreanGameDate } from '../../../../lib/koreanDate'
 
 // GET: 아이템 목록 조회
 export async function GET(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
@@ -62,7 +62,7 @@ export async function GET(request: NextRequest) {
 
 // POST: 아이템 등록
 export async function POST(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH: 아이템 업데이트 (quantity, unit_price, total_price, sold_price, sold_date 등)
 export async function PATCH(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }
@@ -212,7 +212,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE: 아이템 삭제
 export async function DELETE(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }

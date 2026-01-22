@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '../../../../lib/supabaseClient'
-import { getUserFromRequest } from '../../../../lib/auth'
+import { getUserFromRequestWithDevice } from '../../../../lib/auth'
 
 // GET: Fetch daily content records for a character and date
 export async function GET(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request)
+    const user = await getUserFromRequestWithDevice(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
 // POST: Create or update daily content record
 export async function POST(request: NextRequest) {
   try {
-    const user = await getUserFromRequest(request)
+    const user = await getUserFromRequestWithDevice(request)
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }

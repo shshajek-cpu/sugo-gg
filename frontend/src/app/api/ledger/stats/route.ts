@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 import { verifyCharacterOwnership } from '../../../../lib/ledgerAuth'
 import { getKoreanGameDate } from '../../../../lib/koreanDate'
 
@@ -8,7 +8,7 @@ const getGameDate = getKoreanGameDate
 
 // GET: 통계 조회
 export async function GET(request: NextRequest) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) {
     return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
   }

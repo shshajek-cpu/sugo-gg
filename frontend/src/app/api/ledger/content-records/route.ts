@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getSupabase, getUserFromRequest } from '../../../../lib/auth'
+import { getSupabase, getUserFromRequestWithDevice } from '../../../../lib/auth'
 
 // GET: 특정 캐릭터의 특정 날짜 컨텐츠 기록 조회
 export async function GET(request: Request) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
 
 // POST: 컨텐츠 기록 생성 또는 업데이트
 export async function POST(request: Request) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
 
 // DELETE: 컨텐츠 기록 삭제
 export async function DELETE(request: Request) {
-  const user = await getUserFromRequest(request)
+  const user = await getUserFromRequestWithDevice(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
