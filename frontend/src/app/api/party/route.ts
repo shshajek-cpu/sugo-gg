@@ -33,10 +33,11 @@ export async function GET(request: NextRequest) {
       query = query.eq('is_immediate', isImmediate === 'true')
     }
 
-    // 완료된 파티 중 5일 지난 것은 제외
-    const fiveDaysAgo = new Date()
-    fiveDaysAgo.setDate(fiveDaysAgo.getDate() - 5)
-    query = query.or(`status.neq.completed,completed_at.gt.${fiveDaysAgo.toISOString()}`)
+    // 전체 조회시 completed 제외
+    if (status === 'all') {
+      query = query.neq('status', 'completed')
+    }
+    // recruiting, full 등 특정 상태는 위에서 이미 필터 적용됨
 
     // 정렬: 즉시 진행 먼저, 그 다음 예약 시간순
     query = query
