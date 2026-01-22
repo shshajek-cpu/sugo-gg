@@ -115,15 +115,18 @@
   top: 100%;
   left: 0;
   right: 0;
-  background: rgba(17, 19, 24, 0.95);
+  background: rgba(17, 19, 24, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(12px);
   border-radius: 8px;
   max-height: 300px;
+  min-height: 50px;
   overflow-y: auto;
   z-index: 100;
   margin-top: 4px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* 애니메이션 대신 즉시 표시 */
+  animation: none;
 }
 
 .searchResultItem {
@@ -238,10 +241,19 @@
 }
 
 .searchNoResults {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
   padding: 20px;
   text-align: center;
   color: #666;
   font-size: 14px;
+  background: rgba(17, 19, 24, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  z-index: 100;
 }
 
 /* 최근 검색 헤더 */

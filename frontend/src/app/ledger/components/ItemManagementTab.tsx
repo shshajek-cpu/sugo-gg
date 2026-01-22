@@ -163,6 +163,9 @@ export default function ItemManagementTab({
   // 검색 컨테이너 ref (외부 클릭 감지용)
   const searchContainerRef = useRef<HTMLDivElement>(null)
 
+  // 검색 debounce용 타이머 ref
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null)
+
   // 최근 검색 로드 (localStorage)
   useEffect(() => {
     const saved = localStorage.getItem('recentItemSearches')
@@ -189,6 +192,10 @@ export default function ItemManagementTab({
     document.addEventListener('mousedown', handleClickOutside)
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
+      // debounce 타이머 정리
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current)
+      }
     }
   }, [])
 
@@ -521,22 +528,31 @@ export default function ItemManagementTab({
                 placeholder={isLoadingItems ? "아이템 로딩 중..." : "아이템 이름 검색..."}
                 value={searchQuery}
                 onChange={(e) => {
-                  setSearchQuery(e.target.value)
-                  // 입력할 때마다 실시간 검색
-                  if (e.target.value.trim()) {
-                    const query = e.target.value.toLowerCase()
-                    const baseItems = slotFilter === 'all'
-                      ? allItems
-                      : allItems.filter(item => item.slotPos === parseInt(slotFilter))
-                    const filtered = baseItems.filter(item =>
-                      item.name.toLowerCase().includes(query)
-                    )
-                    setSearchResults(filtered)
-                    setShowSearchResults(true)
-                  } else {
-                    setSearchResults([])
-                    setShowSearchResults(false)
+                  const value = e.target.value
+                  setSearchQuery(value)
+
+                  // 기존 타이머 취소
+                  if (searchDebounceRef.current) {
+                    clearTimeout(searchDebounceRef.current)
                   }
+
+                  // 150ms debounce 적용
+                  searchDebounceRef.current = setTimeout(() => {
+                    if (value.trim()) {
+                      const query = value.toLowerCase()
+                      const baseItems = slotFilter === 'all'
+                        ? allItems
+                        : allItems.filter(item => item.slotPos === parseInt(slotFilter))
+                      const filtered = baseItems.filter(item =>
+                        item.name.toLowerCase().includes(query)
+                      )
+                      setSearchResults(filtered)
+                      setShowSearchResults(true)
+                    } else {
+                      setSearchResults([])
+                      setShowSearchResults(false)
+                    }
+                  }, 150)
                 }}
                 onFocus={() => {
                   // 포커스 시 검색 결과 또는 최근 검색 표시
