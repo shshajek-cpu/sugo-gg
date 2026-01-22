@@ -175,6 +175,16 @@ export default function LedgerPage() {
     subjugation: 0
   })
 
+  // 충전 설정 (주기마다 충전되는 횟수)
+  const [chargeSettings, setChargeSettings] = useState<Record<string, number>>({
+    transcend: 1,
+    expedition: 1,
+    nightmare: 2,
+    dimension: 1,
+    shugo: 2,
+    od_energy: 15
+  })
+
   // 마지막 충전 시간
   const [lastChargeTime, setLastChargeTime] = useState<Date>(new Date())
 
@@ -249,6 +259,9 @@ export default function LedgerPage() {
         if (data.baseTickets) setBaseTickets(data.baseTickets)
         if (data.bonusTickets) setTicketBonuses(data.bonusTickets)
 
+        // 충전 설정 복원
+        if (data.chargeSettings) setChargeSettings(data.chargeSettings)
+
         // 오드 에너지 데이터 복원
         if (data.odEnergy) {
           setOdEnergy({
@@ -285,6 +298,14 @@ export default function LedgerPage() {
           dimension: 0,
           subjugation: 0
         })
+        setChargeSettings({
+          transcend: 1,
+          expedition: 1,
+          nightmare: 2,
+          dimension: 1,
+          shugo: 2,
+          od_energy: 15
+        })
         setOdEnergy({
           timeEnergy: 840,
           ticketEnergy: 0,
@@ -318,6 +339,7 @@ export default function LedgerPage() {
             characterId: selectedCharacterId,
             baseTickets,
             bonusTickets: ticketBonuses,
+            chargeSettings,
             odEnergy: {
               timeEnergy: odEnergy.timeEnergy,
               ticketEnergy: odEnergy.ticketEnergy,
@@ -339,7 +361,7 @@ export default function LedgerPage() {
     // 1초 디바운스 (500ms에서 증가)
     const timeoutId = setTimeout(saveCharacterData, 1000)
     return () => clearTimeout(timeoutId)
-  }, [selectedCharacterId, isReady, isLoadingCharacterData, baseTickets, ticketBonuses, odEnergy, lastChargeTime, lastSanctuaryChargeTime, getAuthHeader])
+  }, [selectedCharacterId, isReady, isLoadingCharacterData, baseTickets, ticketBonuses, chargeSettings, odEnergy, lastChargeTime, lastSanctuaryChargeTime, getAuthHeader])
 
   // 컨텐츠 기록
   const {

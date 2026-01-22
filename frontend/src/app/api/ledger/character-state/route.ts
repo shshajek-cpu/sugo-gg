@@ -55,6 +55,14 @@ export async function GET(request: NextRequest) {
           dimension: 0,
           subjugation: 0
         },
+        chargeSettings: {
+          transcend: 1,
+          expedition: 1,
+          nightmare: 2,
+          dimension: 1,
+          shugo: 2,
+          od_energy: 15
+        },
         odEnergy: {
           timeEnergy: 840,
           ticketEnergy: 0,
@@ -69,6 +77,14 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       baseTickets: data.base_tickets,
       bonusTickets: data.bonus_tickets,
+      chargeSettings: data.charge_settings || {
+        transcend: 1,
+        expedition: 1,
+        nightmare: 2,
+        dimension: 1,
+        shugo: 2,
+        od_energy: 15
+      },
       odEnergy: {
         timeEnergy: data.od_time_energy,
         ticketEnergy: data.od_ticket_energy,
@@ -97,6 +113,7 @@ export async function POST(request: NextRequest) {
       characterId,
       baseTickets,
       bonusTickets,
+      chargeSettings,
       odEnergy,
       lastChargeTime,
       lastSanctuaryChargeTime
@@ -107,19 +124,26 @@ export async function POST(request: NextRequest) {
     }
 
     // UPSERT (있으면 업데이트, 없으면 생성)
+    const upsertData: any = {
+      user_id: userData.id,
+      character_id: characterId,
+      base_tickets: baseTickets,
+      bonus_tickets: bonusTickets,
+      od_time_energy: odEnergy.timeEnergy,
+      od_ticket_energy: odEnergy.ticketEnergy,
+      od_last_charge_time: odEnergy.lastChargeTime,
+      last_charge_time: lastChargeTime,
+      last_sanctuary_charge_time: lastSanctuaryChargeTime
+    }
+
+    // chargeSettings가 있으면 추가
+    if (chargeSettings) {
+      upsertData.charge_settings = chargeSettings
+    }
+
     const { data, error } = await db
       .from('ledger_character_state')
-      .upsert({
-        user_id: userData.id,
-        character_id: characterId,
-        base_tickets: baseTickets,
-        bonus_tickets: bonusTickets,
-        od_time_energy: odEnergy.timeEnergy,
-        od_ticket_energy: odEnergy.ticketEnergy,
-        od_last_charge_time: odEnergy.lastChargeTime,
-        last_charge_time: lastChargeTime,
-        last_sanctuary_charge_time: lastSanctuaryChargeTime
-      }, {
+      .upsert(upsertData, {
         onConflict: 'user_id,character_id'
       })
       .select()

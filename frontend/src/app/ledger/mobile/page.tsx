@@ -166,10 +166,11 @@ export default function MobileLedgerPage() {
     // 선택된 캐릭터 ID
     const selectedCharacterId = selectedCharacter?.id || characters[0]?.id || null;
 
-    // 캐릭터 상태 (티켓, 오드 에너지)
+    // 캐릭터 상태 (티켓, 오드 에너지, 충전 설정)
     const [characterState, setCharacterState] = useState<{
         baseTickets: Record<string, number>;
         bonusTickets: Record<string, number>;
+        chargeSettings: Record<string, number>;
         odEnergy: { timeEnergy: number; ticketEnergy: number };
     }>({
         baseTickets: {
@@ -179,6 +180,9 @@ export default function MobileLedgerPage() {
         bonusTickets: {
             transcend: 0, expedition: 0, sanctuary: 0,
             daily_dungeon: 0, awakening: 0, nightmare: 0, dimension: 0, subjugation: 0
+        },
+        chargeSettings: {
+            transcend: 1, expedition: 1, nightmare: 2, dimension: 1, shugo: 2, od_energy: 15
         },
         odEnergy: { timeEnergy: 840, ticketEnergy: 0 }
     });
@@ -200,6 +204,7 @@ export default function MobileLedgerPage() {
                     setCharacterState({
                         baseTickets: data.baseTickets || characterState.baseTickets,
                         bonusTickets: data.bonusTickets || characterState.bonusTickets,
+                        chargeSettings: data.chargeSettings || characterState.chargeSettings,
                         odEnergy: {
                             timeEnergy: data.odEnergy?.timeEnergy || 840,
                             ticketEnergy: data.odEnergy?.ticketEnergy || 0
