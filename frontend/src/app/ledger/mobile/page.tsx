@@ -128,6 +128,21 @@ export default function MobileLedgerPage() {
     const [expeditionDouble, setExpeditionDouble] = useState(false);
     const [sanctuaryDouble, setSanctuaryDouble] = useState(false);
 
+    // 던전 카드 펼침/접힘 상태
+    const [expandedDungeons, setExpandedDungeons] = useState<Record<string, boolean>>({
+        transcend: false,
+        expedition: false,
+        sanctuary: false
+    });
+
+    // 던전 카드 토글 함수
+    const toggleDungeonExpand = (dungeonType: string) => {
+        setExpandedDungeons(prev => ({
+            ...prev,
+            [dungeonType]: !prev[dungeonType]
+        }));
+    };
+
     // 로딩 상태
     const isLoadingRef = useRef(false);
     const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -233,14 +248,207 @@ export default function MobileLedgerPage() {
 
     // 아이템 관리
     const {
+        items: allItems,
         unsoldItems,
-        soldItems
+        soldItems,
+        addItem,
+        sellItem,
+        unsellItem,
+        deleteItem,
+        refetch: refetchItems
     } = useLedgerItems({
         characterId: selectedCharacterId,
         getAuthHeader,
         isReady,
         selectedDate
     });
+
+    // 아이템 검색/등록 상태
+    const [itemSearchQuery, setItemSearchQuery] = useState('');
+    const [itemSearchResults, setItemSearchResults] = useState<any[]>([]);
+    const [showItemSearch, setShowItemSearch] = useState(false);
+    const [isItemSearching, setIsItemSearching] = useState(false);
+    const [itemCatalog, setItemCatalog] = useState<any[]>([]);
+    const [isLoadingCatalog, setIsLoadingCatalog] = useState(false);
+
+    // 아이템 등록 모달 상태
+    const [showItemRegisterModal, setShowItemRegisterModal] = useState(false);
+    const [selectedItemForRegister, setSelectedItemForRegister] = useState<any>(null);
+    const [registerQuantity, setRegisterQuantity] = useState(1);
+    const [registerPrice, setRegisterPrice] = useState(0);
+    const [isRegistering, setIsRegistering] = useState(false);
+
+    // 아이템 액션 시트 상태 (판매/삭제)
+    const [showItemActionSheet, setShowItemActionSheet] = useState(false);
+    const [selectedItemForAction, setSelectedItemForAction] = useState<any>(null);
+    const [sellPrice, setSellPrice] = useState('');
+    const [isProcessing, setIsProcessing] = useState(false);
+
+    // 아이템 필터 상태
+    const [itemStatusFilter, setItemStatusFilter] = useState<'unsold' | 'sold'>('unsold');
+
+    // 아이템 카탈로그 로드
+    useEffect(() => {
+        const loadItemCatalog = async () => {
+            setIsLoadingCatalog(true);
+            try {
+                const categories = [
+                    'Sword', 'Greatsword', 'Dagger', 'Bow', 'Magicbook', 'Orb', 'Mace', 'Staff', 'Guarder',
+                    'Helmet', 'Shoulder', 'Torso', 'Pants', 'Gloves', 'Boots', 'Cape',
+                    'Necklace', 'Earring', 'Ring', 'Bracelet',
+                    'MagicStone', 'GodStone', 'Wing', 'Material'
+                ];
+
+                const promises = categories.map(cat =>
+                    fetch(`/api/item/official?action=search&category=${cat}&size=200`)
+                        .then(res => res.ok ? res.json() : { contents: [] })
+                        .catch(() => ({ contents: [] }))
+                );
+
+                const results = await Promise.all(promises);
+                const allOfficialItems = results.flatMap(r => r.contents || []);
+
+                const items = allOfficialItems.map((item: any) => ({
+                    id: String(item.id),
+                    name: item.name,
+                    grade: item.grade || 'Common',
+                    category: item.categoryName || '기타',
+                    icon_url: item.image
+                }));
+
+                const uniqueItems = Array.from(new Map(items.map((i: any) => [i.id, i])).values());
+                setItemCatalog(uniqueItems as any[]);
+            } catch (e) {
+                console.error('[Mobile] Failed to load item catalog:', e);
+            } finally {
+                setIsLoadingCatalog(false);
+            }
+        };
+
+        loadItemCatalog();
+    }, []);
+
+    // 아이템 검색 핸들러
+    const handleItemSearch = useCallback((query: string) => {
+        setItemSearchQuery(query);
+        if (!query.trim()) {
+            setItemSearchResults([]);
+            return;
+        }
+        const filtered = itemCatalog.filter(item =>
+            item.name.toLowerCase().includes(query.toLowerCase())
+        );
+        setItemSearchResults(filtered.slice(0, 20));
+    }, [itemCatalog]);
+
+    // 등급 변환 맵
+    const GRADE_TO_LOCAL: Record<string, string> = {
+        'Epic': 'heroic', 'Unique': 'legendary', 'Legend': 'ultimate',
+        'Rare': 'rare', 'Common': 'common',
+        'heroic': 'heroic', 'legendary': 'legendary', 'ultimate': 'ultimate',
+        'rare': 'rare', 'common': 'common'
+    };
+
+    // 등급 색상
+    const GRADE_COLORS: Record<string, string> = {
+        'Epic': '#A78BFA', 'Unique': '#FBBF24', 'Legend': '#F472B6',
+        'Rare': '#60A5FA', 'Common': '#9CA3AF',
+        'heroic': '#A78BFA', 'legendary': '#FBBF24', 'ultimate': '#F472B6',
+        'rare': '#60A5FA', 'common': '#9CA3AF'
+    };
+
+    // 카테고리 변환
+    const getCategoryType = (categoryName: string): string => {
+        const equipmentCategories = ['장검', '대검', '단검', '활', '법서', '보주', '전곤', '법봉', '가더', '투구', '견갑', '상의', '하의', '장갑', '신발', '망토', '목걸이', '귀걸이', '반지', '팔찌'];
+        const materialCategories = ['마석/영석', '신석', '날개깃', '돌파재료', '채집재료', '제작재료', '물질변환재료'];
+        if (equipmentCategories.includes(categoryName)) return 'equipment';
+        if (materialCategories.includes(categoryName)) return 'material';
+        if (categoryName.includes('날개')) return 'wing';
+        return 'etc';
+    };
+
+    // 아이템 등록 실행
+    const handleRegisterItem = async () => {
+        if (!selectedItemForRegister || isRegistering) return;
+
+        setIsRegistering(true);
+        try {
+            const localGrade = GRADE_TO_LOCAL[selectedItemForRegister.grade] || 'common';
+            const localCategory = getCategoryType(selectedItemForRegister.category);
+
+            await addItem({
+                item_id: selectedItemForRegister.id,
+                item_name: selectedItemForRegister.name,
+                item_grade: localGrade,
+                item_category: localCategory,
+                quantity: registerQuantity,
+                unit_price: registerPrice,
+                total_price: registerQuantity * registerPrice,
+                icon_url: selectedItemForRegister.icon_url
+            });
+
+            setShowItemRegisterModal(false);
+            setSelectedItemForRegister(null);
+            setRegisterQuantity(1);
+            setRegisterPrice(0);
+            setItemSearchQuery('');
+            setItemSearchResults([]);
+        } catch (e) {
+            console.error('[Mobile] Failed to register item:', e);
+        } finally {
+            setIsRegistering(false);
+        }
+    };
+
+    // 아이템 판매 실행
+    const handleSellItem = async () => {
+        if (!selectedItemForAction || isProcessing) return;
+
+        setIsProcessing(true);
+        try {
+            const price = parseInt(sellPrice) || selectedItemForAction.total_price;
+            await sellItem(selectedItemForAction.id, price);
+            setShowItemActionSheet(false);
+            setSelectedItemForAction(null);
+            setSellPrice('');
+        } catch (e) {
+            console.error('[Mobile] Failed to sell item:', e);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // 아이템 판매 취소
+    const handleUnsellItem = async () => {
+        if (!selectedItemForAction || isProcessing) return;
+
+        setIsProcessing(true);
+        try {
+            await unsellItem(selectedItemForAction.id);
+            setShowItemActionSheet(false);
+            setSelectedItemForAction(null);
+        } catch (e) {
+            console.error('[Mobile] Failed to unsell item:', e);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    // 아이템 삭제 실행
+    const handleDeleteItem = async () => {
+        if (!selectedItemForAction || isProcessing) return;
+
+        setIsProcessing(true);
+        try {
+            await deleteItem(selectedItemForAction.id);
+            setShowItemActionSheet(false);
+            setSelectedItemForAction(null);
+        } catch (e) {
+            console.error('[Mobile] Failed to delete item:', e);
+        } finally {
+            setIsProcessing(false);
+        }
+    };
 
     // 주간 통계
     const { stats } = useWeeklyStats({
@@ -1040,94 +1248,313 @@ export default function MobileLedgerPage() {
                                 <span className={styles.contentTitle}>던전 컨텐츠</span>
                             </div>
 
-                            {/* 초월 */}
-                            <div className={styles.simpleCard}>
-                                <div className={styles.simpleCardLeft}>
-                                    <div className={styles.simpleCardBar}></div>
-                                    <span className={styles.simpleCardTitle}>초월</span>
+                            {/* 초월 - 펼침/접힘 카드 */}
+                            <div className={styles.dungeonCard}>
+                                <div
+                                    className={styles.dungeonCardHeader}
+                                    onClick={() => toggleDungeonExpand('transcend')}
+                                >
+                                    <div className={styles.dungeonCardLeft}>
+                                        <span className={styles.dungeonCardIcon}>🔥</span>
+                                        <span className={styles.dungeonCardTitle}>초월</span>
+                                    </div>
+                                    <div className={styles.dungeonCardRight}>
+                                        <span className={styles.dungeonCardCount}>
+                                            {transcendRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.transcend}
+                                            {characterState.bonusTickets.transcend > 0 && (
+                                                <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.transcend})</span>
+                                            )}
+                                        </span>
+                                        <span className={styles.dungeonCardKina}>
+                                            {(transcendRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만
+                                        </span>
+                                        <span className={styles.dungeonExpandIcon}>
+                                            {expandedDungeons.transcend ? '▲' : '▼'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className={styles.simpleCardRight}>
-                                    <span className={styles.simpleCardCount}>
-                                        {transcendRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                        {characterState.baseTickets.transcend}
-                                        {characterState.bonusTickets.transcend > 0 && `(+${characterState.bonusTickets.transcend})`}
-                                    </span>
-                                    <button className={styles.btnStepSmall} onClick={() => setShowDungeonModal('transcend')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => {
-                                        if (transcendRecords.length > 0) {
-                                            const lastRecord = transcendRecords[transcendRecords.length - 1];
-                                            if (lastRecord.count > 1) {
-                                                setTranscendRecords(prev => prev.map(r =>
-                                                    r.id === lastRecord.id
-                                                        ? { ...r, count: r.count - 1, kina: Math.round(r.kina / r.count * (r.count - 1)) }
-                                                        : r
-                                                ));
-                                            } else {
-                                                handleDeleteTranscendRecord(lastRecord.id);
-                                            }
-                                        }
-                                    }}>-</button>
-                                </div>
+
+                                {expandedDungeons.transcend && (
+                                    <div className={styles.dungeonCardBody}>
+                                        {/* 인라인 선택 UI */}
+                                        <div className={styles.dungeonInlineControls}>
+                                            <div className={styles.dungeonSelectRow}>
+                                                <select
+                                                    className={styles.dungeonSelect}
+                                                    value={transcendBoss}
+                                                    onChange={(e) => setTranscendBoss(e.target.value)}
+                                                >
+                                                    {dungeonData?.transcend.bosses.map(boss => (
+                                                        <option key={boss.id} value={boss.id}>{boss.name}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    className={styles.dungeonSelect}
+                                                    value={transcendTier}
+                                                    onChange={(e) => setTranscendTier(Number(e.target.value))}
+                                                >
+                                                    {dungeonData?.transcend.bosses[0]?.tiers?.map(t => (
+                                                        <option key={t.tier} value={t.tier}>T{t.tier} ({(t.kina / 10000).toFixed(0)}만)</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className={styles.dungeonActionRow}>
+                                                <button
+                                                    className={`${styles.dungeonDoubleBtn} ${transcendDouble ? styles.active : ''}`}
+                                                    onClick={() => setTranscendDouble(!transcendDouble)}
+                                                >
+                                                    2배
+                                                </button>
+                                                <button
+                                                    className={styles.dungeonRecordBtn}
+                                                    onClick={handleAddTranscendRecord}
+                                                    disabled={!canEdit}
+                                                >
+                                                    + 기록 추가
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 기록 리스트 */}
+                                        {transcendRecords.length > 0 && (
+                                            <div className={styles.dungeonRecordList}>
+                                                {transcendRecords.map(record => (
+                                                    <div key={record.id} className={styles.dungeonRecordItem}>
+                                                        <div className={styles.dungeonRecordInfo}>
+                                                            <span className={styles.dungeonRecordName}>
+                                                                {record.bossName} T{record.tier}
+                                                            </span>
+                                                            <span className={styles.dungeonRecordCount}>x{record.count}</span>
+                                                        </div>
+                                                        <div className={styles.dungeonRecordRight}>
+                                                            <span className={styles.dungeonRecordKina}>
+                                                                {(record.kina / 10000).toFixed(0)}만
+                                                            </span>
+                                                            <button
+                                                                className={styles.dungeonRecordDelete}
+                                                                onClick={() => handleDeleteTranscendRecord(record.id)}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className={styles.dungeonRecordTotal}>
+                                                    합계: {(transcendRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만 키나
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* 원정 */}
-                            <div className={styles.simpleCard}>
-                                <div className={styles.simpleCardLeft}>
-                                    <div className={styles.simpleCardBar}></div>
-                                    <span className={styles.simpleCardTitle}>원정</span>
+                            {/* 원정 - 펼침/접힘 카드 */}
+                            <div className={styles.dungeonCard}>
+                                <div
+                                    className={styles.dungeonCardHeader}
+                                    onClick={() => toggleDungeonExpand('expedition')}
+                                >
+                                    <div className={styles.dungeonCardLeft}>
+                                        <span className={styles.dungeonCardIcon}>⚔️</span>
+                                        <span className={styles.dungeonCardTitle}>원정</span>
+                                    </div>
+                                    <div className={styles.dungeonCardRight}>
+                                        <span className={styles.dungeonCardCount}>
+                                            {expeditionRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.expedition}
+                                            {characterState.bonusTickets.expedition > 0 && (
+                                                <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.expedition})</span>
+                                            )}
+                                        </span>
+                                        <span className={styles.dungeonCardKina}>
+                                            {(expeditionRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만
+                                        </span>
+                                        <span className={styles.dungeonExpandIcon}>
+                                            {expandedDungeons.expedition ? '▲' : '▼'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className={styles.simpleCardRight}>
-                                    <span className={styles.simpleCardCount}>
-                                        {expeditionRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                        {characterState.baseTickets.expedition}
-                                        {characterState.bonusTickets.expedition > 0 && `(+${characterState.bonusTickets.expedition})`}
-                                    </span>
-                                    <button className={styles.btnStepSmall} onClick={() => setShowDungeonModal('expedition')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => {
-                                        if (expeditionRecords.length > 0) {
-                                            const lastRecord = expeditionRecords[expeditionRecords.length - 1];
-                                            if (lastRecord.count > 1) {
-                                                setExpeditionRecords(prev => prev.map(r =>
-                                                    r.id === lastRecord.id
-                                                        ? { ...r, count: r.count - 1, kina: Math.round(r.kina / r.count * (r.count - 1)) }
-                                                        : r
-                                                ));
-                                            } else {
-                                                handleDeleteExpeditionRecord(lastRecord.id);
-                                            }
-                                        }
-                                    }}>-</button>
-                                </div>
+
+                                {expandedDungeons.expedition && (
+                                    <div className={styles.dungeonCardBody}>
+                                        {/* 인라인 선택 UI */}
+                                        <div className={styles.dungeonInlineControls}>
+                                            <div className={styles.dungeonSelectRow}>
+                                                <select
+                                                    className={styles.dungeonSelect}
+                                                    value={expeditionCategory}
+                                                    onChange={(e) => {
+                                                        setExpeditionCategory(e.target.value);
+                                                        const cat = dungeonData?.expedition.categories.find(c => c.id === e.target.value);
+                                                        if (cat && cat.bosses.length > 0) {
+                                                            setExpeditionBoss(cat.bosses[0].id);
+                                                        }
+                                                    }}
+                                                >
+                                                    {dungeonData?.expedition.categories.map(cat => (
+                                                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                                    ))}
+                                                </select>
+                                                <select
+                                                    className={styles.dungeonSelect}
+                                                    value={expeditionBoss}
+                                                    onChange={(e) => setExpeditionBoss(e.target.value)}
+                                                >
+                                                    {dungeonData?.expedition.categories
+                                                        .find(c => c.id === expeditionCategory)?.bosses
+                                                        .map(boss => (
+                                                            <option key={boss.id} value={boss.id}>
+                                                                {boss.name} ({((boss.kina || 0) / 10000).toFixed(0)}만)
+                                                            </option>
+                                                        ))}
+                                                </select>
+                                            </div>
+                                            <div className={styles.dungeonActionRow}>
+                                                <button
+                                                    className={`${styles.dungeonDoubleBtn} ${expeditionDouble ? styles.active : ''}`}
+                                                    onClick={() => setExpeditionDouble(!expeditionDouble)}
+                                                >
+                                                    2배
+                                                </button>
+                                                <button
+                                                    className={styles.dungeonRecordBtn}
+                                                    onClick={handleAddExpeditionRecord}
+                                                    disabled={!canEdit}
+                                                >
+                                                    + 기록 추가
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 기록 리스트 */}
+                                        {expeditionRecords.length > 0 && (
+                                            <div className={styles.dungeonRecordList}>
+                                                {expeditionRecords.map(record => (
+                                                    <div key={record.id} className={styles.dungeonRecordItem}>
+                                                        <div className={styles.dungeonRecordInfo}>
+                                                            <span className={styles.dungeonRecordName}>
+                                                                {record.bossName}
+                                                            </span>
+                                                            <span className={styles.dungeonRecordCategory}>
+                                                                ({record.category})
+                                                            </span>
+                                                            <span className={styles.dungeonRecordCount}>x{record.count}</span>
+                                                        </div>
+                                                        <div className={styles.dungeonRecordRight}>
+                                                            <span className={styles.dungeonRecordKina}>
+                                                                {(record.kina / 10000).toFixed(0)}만
+                                                            </span>
+                                                            <button
+                                                                className={styles.dungeonRecordDelete}
+                                                                onClick={() => handleDeleteExpeditionRecord(record.id)}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className={styles.dungeonRecordTotal}>
+                                                    합계: {(expeditionRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만 키나
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
-                            {/* 성역 */}
-                            <div className={styles.simpleCard}>
-                                <div className={styles.simpleCardLeft}>
-                                    <div className={styles.simpleCardBar}></div>
-                                    <span className={styles.simpleCardTitle}>성역</span>
+                            {/* 성역 - 펼침/접힘 카드 */}
+                            <div className={styles.dungeonCard}>
+                                <div
+                                    className={styles.dungeonCardHeader}
+                                    onClick={() => toggleDungeonExpand('sanctuary')}
+                                >
+                                    <div className={styles.dungeonCardLeft}>
+                                        <span className={styles.dungeonCardIcon}>🏛️</span>
+                                        <span className={styles.dungeonCardTitle}>성역</span>
+                                    </div>
+                                    <div className={styles.dungeonCardRight}>
+                                        <span className={styles.dungeonCardCount}>
+                                            {sanctuaryRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.sanctuary}
+                                            {characterState.bonusTickets.sanctuary > 0 && (
+                                                <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.sanctuary})</span>
+                                            )}
+                                        </span>
+                                        <span className={styles.dungeonCardKina}>
+                                            {(sanctuaryRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만
+                                        </span>
+                                        <span className={styles.dungeonExpandIcon}>
+                                            {expandedDungeons.sanctuary ? '▲' : '▼'}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className={styles.simpleCardRight}>
-                                    <span className={styles.simpleCardCount}>
-                                        {sanctuaryRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                        {characterState.baseTickets.sanctuary}
-                                        {characterState.bonusTickets.sanctuary > 0 && `(+${characterState.bonusTickets.sanctuary})`}
-                                    </span>
-                                    <button className={styles.btnStepSmall} onClick={() => setShowDungeonModal('sanctuary')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => {
-                                        if (sanctuaryRecords.length > 0) {
-                                            const lastRecord = sanctuaryRecords[sanctuaryRecords.length - 1];
-                                            if (lastRecord.count > 1) {
-                                                setSanctuaryRecords(prev => prev.map(r =>
-                                                    r.id === lastRecord.id
-                                                        ? { ...r, count: r.count - 1, kina: Math.round(r.kina / r.count * (r.count - 1)) }
-                                                        : r
-                                                ));
-                                            } else {
-                                                handleDeleteSanctuaryRecord(lastRecord.id);
-                                            }
-                                        }
-                                    }}>-</button>
-                                </div>
+
+                                {expandedDungeons.sanctuary && (
+                                    <div className={styles.dungeonCardBody}>
+                                        {/* 인라인 선택 UI */}
+                                        <div className={styles.dungeonInlineControls}>
+                                            <div className={styles.dungeonSelectRow}>
+                                                <select
+                                                    className={styles.dungeonSelect}
+                                                    value={sanctuaryBoss}
+                                                    onChange={(e) => setSanctuaryBoss(e.target.value)}
+                                                >
+                                                    {dungeonData?.sanctuary.categories[0]?.bosses.map(boss => (
+                                                        <option key={boss.id} value={boss.id}>
+                                                            {boss.name} ({((boss.kina || 0) / 10000).toFixed(0)}만)
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className={styles.dungeonActionRow}>
+                                                <button
+                                                    className={`${styles.dungeonDoubleBtn} ${sanctuaryDouble ? styles.active : ''}`}
+                                                    onClick={() => setSanctuaryDouble(!sanctuaryDouble)}
+                                                >
+                                                    2배
+                                                </button>
+                                                <button
+                                                    className={styles.dungeonRecordBtn}
+                                                    onClick={handleAddSanctuaryRecord}
+                                                    disabled={!canEdit}
+                                                >
+                                                    + 기록 추가
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* 기록 리스트 */}
+                                        {sanctuaryRecords.length > 0 && (
+                                            <div className={styles.dungeonRecordList}>
+                                                {sanctuaryRecords.map(record => (
+                                                    <div key={record.id} className={styles.dungeonRecordItem}>
+                                                        <div className={styles.dungeonRecordInfo}>
+                                                            <span className={styles.dungeonRecordName}>
+                                                                {record.bossName}
+                                                            </span>
+                                                            <span className={styles.dungeonRecordCount}>x{record.count}</span>
+                                                        </div>
+                                                        <div className={styles.dungeonRecordRight}>
+                                                            <span className={styles.dungeonRecordKina}>
+                                                                {(record.kina / 10000).toFixed(0)}만
+                                                            </span>
+                                                            <button
+                                                                className={styles.dungeonRecordDelete}
+                                                                onClick={() => handleDeleteSanctuaryRecord(record.id)}
+                                                            >
+                                                                ×
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                <div className={styles.dungeonRecordTotal}>
+                                                    합계: {(sanctuaryRecords.reduce((sum, r) => sum + r.kina, 0) / 10000).toFixed(0)}만 키나
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
 
                             {/* 일일 컨텐츠 */}
@@ -1220,12 +1647,19 @@ export default function MobileLedgerPage() {
                     {/* Sub View: Items */}
                     {selectedSubTab === 'items' && (
                         <div className={styles.charSubview}>
+                            {/* 요약 통계 */}
                             <div className={styles.itemSummaryBox}>
-                                <div className={styles.itemSummaryStat}>
+                                <div
+                                    className={`${styles.itemSummaryStat} ${itemStatusFilter === 'unsold' ? styles.itemStatActive : ''}`}
+                                    onClick={() => setItemStatusFilter('unsold')}
+                                >
                                     <div className={styles.itemSummaryLabel}>보유 아이템</div>
                                     <div className={styles.itemSummaryValue}>{unsoldItems.length}건</div>
                                 </div>
-                                <div className={`${styles.itemSummaryStat} ${styles.noBorder}`}>
+                                <div
+                                    className={`${styles.itemSummaryStat} ${styles.noBorder} ${itemStatusFilter === 'sold' ? styles.itemStatActive : ''}`}
+                                    onClick={() => setItemStatusFilter('sold')}
+                                >
                                     <div className={styles.itemSummaryLabel}>판매 완료</div>
                                     <div className={styles.itemSummaryValueWhite}>
                                         {soldItems.length}건
@@ -1233,24 +1667,152 @@ export default function MobileLedgerPage() {
                                 </div>
                             </div>
 
-                            {unsoldItems.length === 0 ? (
-                                <div className={styles.noItemsBox}>
-                                    <div className={styles.noItemsText}>보유 중인 아이템이 없습니다</div>
-                                </div>
-                            ) : (
-                                <div className={styles.summaryScroll}>
-                                    {unsoldItems.map((item) => (
-                                        <div key={item.id} className={styles.itemCard}>
-                                            <div className={`${styles.itemImgBox} ${item.item_grade === 'legendary' ? styles.itemLegendary : ''}`}>
-                                                <div className={styles.itemBadge}>x{item.quantity || 1}</div>
+                            {/* 아이템 검색/등록 */}
+                            <div className={styles.itemSearchContainer}>
+                                <input
+                                    type="text"
+                                    className={styles.itemSearchInput}
+                                    placeholder={isLoadingCatalog ? "아이템 로딩 중..." : "아이템 검색하여 등록..."}
+                                    value={itemSearchQuery}
+                                    onChange={(e) => handleItemSearch(e.target.value)}
+                                    onFocus={() => setShowItemSearch(true)}
+                                    disabled={isLoadingCatalog}
+                                />
+                                {itemSearchQuery && (
+                                    <button
+                                        className={styles.itemSearchClear}
+                                        onClick={() => {
+                                            setItemSearchQuery('');
+                                            setItemSearchResults([]);
+                                        }}
+                                    >
+                                        ×
+                                    </button>
+                                )}
+
+                                {/* 검색 결과 드롭다운 */}
+                                {showItemSearch && itemSearchResults.length > 0 && (
+                                    <div className={styles.itemSearchResults}>
+                                        {itemSearchResults.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={styles.itemSearchResultItem}
+                                                onClick={() => {
+                                                    setSelectedItemForRegister(item);
+                                                    setShowItemRegisterModal(true);
+                                                    setShowItemSearch(false);
+                                                }}
+                                            >
+                                                {item.icon_url && (
+                                                    <img
+                                                        src={item.icon_url}
+                                                        alt={item.name}
+                                                        className={styles.itemSearchResultIcon}
+                                                        style={{ borderColor: GRADE_COLORS[item.grade] || '#9CA3AF' }}
+                                                    />
+                                                )}
+                                                <div className={styles.itemSearchResultInfo}>
+                                                    <span
+                                                        className={styles.itemSearchResultName}
+                                                        style={{ color: GRADE_COLORS[item.grade] || '#E5E7EB' }}
+                                                    >
+                                                        {item.name}
+                                                    </span>
+                                                    <span className={styles.itemSearchResultCategory}>{item.category}</span>
+                                                </div>
                                             </div>
-                                            <div className={styles.itemName}>{item.item_name}</div>
-                                            {item.total_price && (
-                                                <div className={styles.itemPrice}>{formatMoney(item.total_price)}</div>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 아이템 목록 */}
+                            {itemStatusFilter === 'unsold' ? (
+                                unsoldItems.length === 0 ? (
+                                    <div className={styles.noItemsBox}>
+                                        <div className={styles.noItemsText}>보유 중인 아이템이 없습니다</div>
+                                        <div className={styles.noItemsHint}>위 검색창에서 아이템을 검색하여 등록하세요</div>
+                                    </div>
+                                ) : (
+                                    <div className={styles.itemListContainer}>
+                                        {unsoldItems.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={styles.itemListCard}
+                                                onClick={() => {
+                                                    setSelectedItemForAction(item);
+                                                    setSellPrice(item.total_price?.toString() || '');
+                                                    setShowItemActionSheet(true);
+                                                }}
+                                            >
+                                                <div
+                                                    className={styles.itemListIcon}
+                                                    style={{ borderColor: GRADE_COLORS[item.item_grade] || '#9CA3AF' }}
+                                                >
+                                                    {item.icon_url ? (
+                                                        <img src={item.icon_url} alt={item.item_name} />
+                                                    ) : (
+                                                        <span>📦</span>
+                                                    )}
+                                                    {item.quantity > 1 && (
+                                                        <span className={styles.itemListBadge}>x{item.quantity}</span>
+                                                    )}
+                                                </div>
+                                                <div className={styles.itemListInfo}>
+                                                    <div
+                                                        className={styles.itemListName}
+                                                        style={{ color: GRADE_COLORS[item.item_grade] || '#E5E7EB' }}
+                                                    >
+                                                        {item.item_name}
+                                                    </div>
+                                                    <div className={styles.itemListMeta}>
+                                                        {item.total_price ? `${item.total_price.toLocaleString()} 키나` : '가격 미정'}
+                                                    </div>
+                                                </div>
+                                                <div className={styles.itemListAction}>▶</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
+                            ) : (
+                                soldItems.length === 0 ? (
+                                    <div className={styles.noItemsBox}>
+                                        <div className={styles.noItemsText}>판매 완료된 아이템이 없습니다</div>
+                                    </div>
+                                ) : (
+                                    <div className={styles.itemListContainer}>
+                                        {soldItems.map((item) => (
+                                            <div
+                                                key={item.id}
+                                                className={`${styles.itemListCard} ${styles.itemListCardSold}`}
+                                                onClick={() => {
+                                                    setSelectedItemForAction(item);
+                                                    setShowItemActionSheet(true);
+                                                }}
+                                            >
+                                                <div
+                                                    className={styles.itemListIcon}
+                                                    style={{ borderColor: GRADE_COLORS[item.item_grade] || '#9CA3AF', opacity: 0.7 }}
+                                                >
+                                                    {item.icon_url ? (
+                                                        <img src={item.icon_url} alt={item.item_name} />
+                                                    ) : (
+                                                        <span>📦</span>
+                                                    )}
+                                                </div>
+                                                <div className={styles.itemListInfo}>
+                                                    <div className={styles.itemListName} style={{ color: '#9CA3AF' }}>
+                                                        {item.item_name}
+                                                    </div>
+                                                    <div className={styles.itemListMetaSold}>
+                                                        판매: {item.sold_price?.toLocaleString() || 0} 키나
+                                                    </div>
+                                                </div>
+                                                <div className={styles.itemListSoldBadge}>완료</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )
                             )}
                         </div>
                     )}
@@ -1573,6 +2135,197 @@ export default function MobileLedgerPage() {
                                 disabled={!canEdit}
                             >
                                 기록
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 아이템 등록 모달 */}
+            {showItemRegisterModal && selectedItemForRegister && (
+                <div className={styles.modalOverlay} onClick={() => setShowItemRegisterModal(false)}>
+                    <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <h3 className={styles.modalTitle}>아이템 등록</h3>
+                            <button className={styles.modalClose} onClick={() => setShowItemRegisterModal(false)}>×</button>
+                        </div>
+
+                        <div className={styles.itemRegisterBody}>
+                            {/* 아이템 정보 */}
+                            <div className={styles.itemRegisterInfo}>
+                                {selectedItemForRegister.icon_url && (
+                                    <img
+                                        src={selectedItemForRegister.icon_url}
+                                        alt={selectedItemForRegister.name}
+                                        className={styles.itemRegisterIcon}
+                                        style={{ borderColor: GRADE_COLORS[selectedItemForRegister.grade] || '#9CA3AF' }}
+                                    />
+                                )}
+                                <div className={styles.itemRegisterDetails}>
+                                    <div
+                                        className={styles.itemRegisterName}
+                                        style={{ color: GRADE_COLORS[selectedItemForRegister.grade] || '#E5E7EB' }}
+                                    >
+                                        {selectedItemForRegister.name}
+                                    </div>
+                                    <div className={styles.itemRegisterCategory}>{selectedItemForRegister.category}</div>
+                                </div>
+                            </div>
+
+                            {/* 수량 입력 */}
+                            <div className={styles.itemRegisterField}>
+                                <label className={styles.itemRegisterLabel}>개수</label>
+                                <div className={styles.itemQuantityControl}>
+                                    <button
+                                        className={styles.itemQuantityBtn}
+                                        onClick={() => setRegisterQuantity(Math.max(1, registerQuantity - 1))}
+                                        disabled={registerQuantity <= 1}
+                                    >
+                                        −
+                                    </button>
+                                    <input
+                                        type="number"
+                                        value={registerQuantity}
+                                        onChange={(e) => setRegisterQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+                                        className={styles.itemQuantityInput}
+                                        min={1}
+                                    />
+                                    <button
+                                        className={styles.itemQuantityBtn}
+                                        onClick={() => setRegisterQuantity(registerQuantity + 1)}
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 단가 입력 */}
+                            <div className={styles.itemRegisterField}>
+                                <label className={styles.itemRegisterLabel}>판매 단가 (키나)</label>
+                                <input
+                                    type="text"
+                                    value={registerPrice.toLocaleString()}
+                                    onChange={(e) => {
+                                        const value = e.target.value.replace(/,/g, '');
+                                        setRegisterPrice(parseInt(value) || 0);
+                                    }}
+                                    className={styles.itemPriceInput}
+                                    placeholder="0"
+                                />
+                            </div>
+
+                            {/* 총액 표시 */}
+                            <div className={styles.itemRegisterTotal}>
+                                <span className={styles.itemTotalLabel}>총 판매 금액</span>
+                                <span className={styles.itemTotalValue}>{(registerQuantity * registerPrice).toLocaleString()} 키나</span>
+                            </div>
+
+                            {/* 버튼 */}
+                            <div className={styles.itemRegisterButtons}>
+                                <button
+                                    className={styles.cancelBtn}
+                                    onClick={() => setShowItemRegisterModal(false)}
+                                >
+                                    취소
+                                </button>
+                                <button
+                                    className={styles.submitBtn}
+                                    onClick={handleRegisterItem}
+                                    disabled={isRegistering}
+                                >
+                                    {isRegistering ? '등록 중...' : '등록'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 아이템 액션 시트 (판매/삭제) */}
+            {showItemActionSheet && selectedItemForAction && (
+                <div className={styles.actionSheetOverlay} onClick={() => setShowItemActionSheet(false)}>
+                    <div className={styles.actionSheet} onClick={(e) => e.stopPropagation()}>
+                        <div className={styles.actionSheetHandle}></div>
+
+                        {/* 아이템 정보 */}
+                        <div className={styles.actionSheetItem}>
+                            {selectedItemForAction.icon_url && (
+                                <img
+                                    src={selectedItemForAction.icon_url}
+                                    alt={selectedItemForAction.item_name}
+                                    className={styles.actionSheetIcon}
+                                    style={{ borderColor: GRADE_COLORS[selectedItemForAction.item_grade] || '#9CA3AF' }}
+                                />
+                            )}
+                            <div className={styles.actionSheetInfo}>
+                                <div
+                                    className={styles.actionSheetName}
+                                    style={{ color: GRADE_COLORS[selectedItemForAction.item_grade] || '#E5E7EB' }}
+                                >
+                                    {selectedItemForAction.item_name}
+                                    {selectedItemForAction.quantity > 1 && ` x${selectedItemForAction.quantity}`}
+                                </div>
+                                <div className={styles.actionSheetPrice}>
+                                    {selectedItemForAction.sold_price
+                                        ? `판매가: ${selectedItemForAction.sold_price.toLocaleString()} 키나`
+                                        : selectedItemForAction.total_price
+                                            ? `등록가: ${selectedItemForAction.total_price.toLocaleString()} 키나`
+                                            : '가격 미정'}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 액션 버튼들 */}
+                        <div className={styles.actionSheetButtons}>
+                            {!selectedItemForAction.sold_price ? (
+                                <>
+                                    {/* 미판매 아이템: 판매 완료 */}
+                                    <div className={styles.actionSheetSellSection}>
+                                        <input
+                                            type="text"
+                                            className={styles.actionSheetSellInput}
+                                            placeholder="판매 금액 입력"
+                                            value={sellPrice}
+                                            onChange={(e) => {
+                                                const value = e.target.value.replace(/,/g, '');
+                                                setSellPrice(value);
+                                            }}
+                                        />
+                                        <button
+                                            className={styles.actionSheetSellBtn}
+                                            onClick={handleSellItem}
+                                            disabled={isProcessing}
+                                        >
+                                            {isProcessing ? '처리 중...' : '판매 완료'}
+                                        </button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    {/* 판매완료 아이템: 판매 취소 */}
+                                    <button
+                                        className={styles.actionSheetUnsellBtn}
+                                        onClick={handleUnsellItem}
+                                        disabled={isProcessing}
+                                    >
+                                        {isProcessing ? '처리 중...' : '판매 취소'}
+                                    </button>
+                                </>
+                            )}
+
+                            <button
+                                className={styles.actionSheetDeleteBtn}
+                                onClick={handleDeleteItem}
+                                disabled={isProcessing}
+                            >
+                                삭제
+                            </button>
+
+                            <button
+                                className={styles.actionSheetCancelBtn}
+                                onClick={() => setShowItemActionSheet(false)}
+                            >
+                                닫기
                             </button>
                         </div>
                     </div>

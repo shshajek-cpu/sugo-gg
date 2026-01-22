@@ -40,10 +40,32 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 const NICKNAME_KEY = 'ledger_nickname'
 const MAIN_CHARACTER_KEY = 'ledger_main_character'
 
+// 로컬 개발 시 Google 로그인 우회 (NEXT_PUBLIC_DEV_SKIP_AUTH=true)
+const DEV_SKIP_AUTH = process.env.NEXT_PUBLIC_DEV_SKIP_AUTH === 'true'
+
+// Mock 사용자 (개발용)
+const MOCK_USER: User = {
+  id: 'dev-user-12345',
+  email: 'dev@localhost',
+  app_metadata: {},
+  user_metadata: { name: '개발자' },
+  aud: 'authenticated',
+  created_at: new Date().toISOString()
+} as User
+
+const MOCK_SESSION: Session = {
+  access_token: 'dev-access-token',
+  refresh_token: 'dev-refresh-token',
+  expires_in: 999999,
+  expires_at: Date.now() / 1000 + 999999,
+  token_type: 'bearer',
+  user: MOCK_USER
+} as Session
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  const [user, setUser] = useState<User | null>(DEV_SKIP_AUTH ? MOCK_USER : null)
+  const [session, setSession] = useState<Session | null>(DEV_SKIP_AUTH ? MOCK_SESSION : null)
+  const [isLoading, setIsLoading] = useState(!DEV_SKIP_AUTH)
   const [nickname, setNicknameState] = useState<string | null>(null)
   const [isNicknameLoading, setIsNicknameLoading] = useState(false)
   const [mainCharacter, setMainCharacterState] = useState<MainCharacter | null>(null)
@@ -108,6 +130,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [session?.access_token, fetchMainCharacter])
 
   useEffect(() => {
+    // 개발 모드: Google 로그인 우회
+    if (DEV_SKIP_AUTH) {
+      console.log('[Auth] 개발 모드: Google 로그인 우회 (NEXT_PUBLIC_DEV_SKIP_AUTH=true)')
+      setIsLoading(false)
+      return
+    }
+
     // Load nickname and main character from localStorage
     if (typeof window !== 'undefined') {
       const savedNickname = localStorage.getItem(NICKNAME_KEY)

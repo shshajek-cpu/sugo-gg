@@ -1757,3 +1757,797 @@
     border-color: #444;
     cursor: not-allowed;
 }
+
+/* ========================================== */
+/* === Dungeon Card - Expandable Style === */
+/* ========================================== */
+
+.dungeonCard {
+    margin: 0 16px 12px 16px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.dungeonCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.dungeonCardHeader:active {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.dungeonCardLeft {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dungeonCardIcon {
+    font-size: 1.1rem;
+}
+
+.dungeonCardTitle {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+}
+
+.dungeonCardRight {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.dungeonCardCount {
+    color: #f59e0b;
+    font-weight: 700;
+    font-size: 0.95rem;
+}
+
+.dungeonCardBonus {
+    color: #3b82f6;
+    font-size: 0.85rem;
+    margin-left: 2px;
+}
+
+.dungeonCardKina {
+    color: #9CA3AF;
+    font-size: 0.85rem;
+}
+
+.dungeonExpandIcon {
+    color: #666;
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+}
+
+/* Dungeon Card Body (Expanded) */
+.dungeonCardBody {
+    padding: 0 16px 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Inline Controls */
+.dungeonInlineControls {
+    padding-top: 12px;
+}
+
+.dungeonSelectRow {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.dungeonSelect {
+    flex: 1;
+    padding: 10px 12px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #E5E7EB;
+    font-size: 0.85rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236B7280' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+}
+
+.dungeonSelect:focus {
+    outline: none;
+    border-color: #f59e0b;
+}
+
+.dungeonActionRow {
+    display: flex;
+    gap: 8px;
+}
+
+.dungeonDoubleBtn {
+    flex: 0 0 60px;
+    padding: 10px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    color: #6B7280;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dungeonDoubleBtn.active {
+    background: rgba(167, 139, 250, 0.15);
+    border-color: #A78BFA;
+    color: #A78BFA;
+}
+
+.dungeonRecordBtn {
+    flex: 1;
+    padding: 10px 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid #f59e0b;
+    border-radius: 8px;
+    color: #f59e0b;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.dungeonRecordBtn:active:not(:disabled) {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.dungeonRecordBtn:disabled {
+    background: rgba(128, 128, 128, 0.1);
+    border-color: #444;
+    color: #666;
+    cursor: not-allowed;
+}
+
+/* Record List */
+.dungeonRecordList {
+    margin-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding-top: 12px;
+}
+
+.dungeonRecordItem {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.dungeonRecordInfo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.dungeonRecordName {
+    color: #E5E7EB;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.dungeonRecordCategory {
+    color: #9CA3AF;
+    font-size: 0.8rem;
+}
+
+.dungeonRecordCount {
+    color: #6B7280;
+    font-size: 0.85rem;
+}
+
+.dungeonRecordRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.dungeonRecordKina {
+    color: #f59e0b;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.dungeonRecordDelete {
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: 1px solid #444;
+    border-radius: 50%;
+    color: #666;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.dungeonRecordDelete:active {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: #ef4444;
+    color: #ef4444;
+}
+
+.dungeonRecordTotal {
+    text-align: right;
+    padding: 8px 0 0 0;
+    color: #f59e0b;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+/* ============================== */
+/* 아이템 관리 스타일 */
+/* ============================== */
+
+/* 아이템 필터 탭 활성화 */
+.itemStatActive {
+    background: rgba(245, 158, 11, 0.1) !important;
+    border-bottom: 2px solid #f59e0b;
+}
+
+.itemSummaryStat {
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+/* 아이템 검색 컨테이너 */
+.itemSearchContainer {
+    margin: 0 16px 16px 16px;
+    position: relative;
+}
+
+.itemSearchInput {
+    width: 100%;
+    padding: 12px 40px 12px 16px;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #E5E7EB;
+    font-size: 0.95rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.itemSearchInput:focus {
+    border-color: #f59e0b;
+}
+
+.itemSearchInput::placeholder {
+    color: #6B7280;
+}
+
+.itemSearchClear {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: #6B7280;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 8px;
+}
+
+/* 검색 결과 드롭다운 */
+.itemSearchResults {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #111;
+    border: 1px solid #333;
+    border-radius: 10px;
+    margin-top: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.itemSearchResultItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    transition: background 0.15s;
+}
+
+.itemSearchResultItem:last-child {
+    border-bottom: none;
+}
+
+.itemSearchResultItem:active {
+    background: rgba(245, 158, 11, 0.1);
+}
+
+.itemSearchResultIcon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    border: 2px solid #9CA3AF;
+    object-fit: contain;
+    background: #0a0a0a;
+}
+
+.itemSearchResultInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.itemSearchResultName {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.itemSearchResultCategory {
+    font-size: 0.75rem;
+    color: #6B7280;
+}
+
+/* 아이템 목록 컨테이너 */
+.itemListContainer {
+    padding: 0 16px;
+}
+
+.itemListCard {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background: #111;
+    border: 1px solid #222;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.itemListCard:active {
+    background: rgba(245, 158, 11, 0.05);
+    border-color: #f59e0b;
+}
+
+.itemListCardSold {
+    opacity: 0.7;
+}
+
+.itemListIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid #9CA3AF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0a0a0a;
+    position: relative;
+    overflow: hidden;
+}
+
+.itemListIcon img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.itemListBadge {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #E5E7EB;
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+.itemListInfo {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.itemListName {
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.itemListMeta {
+    font-size: 0.8rem;
+    color: #f59e0b;
+}
+
+.itemListMetaSold {
+    font-size: 0.8rem;
+    color: #10B981;
+}
+
+.itemListAction {
+    color: #6B7280;
+    font-size: 0.8rem;
+}
+
+.itemListSoldBadge {
+    background: rgba(16, 185, 129, 0.2);
+    color: #10B981;
+    font-size: 0.75rem;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-weight: 500;
+}
+
+/* 빈 상태 힌트 */
+.noItemsHint {
+    color: #6B7280;
+    font-size: 0.85rem;
+    margin-top: 8px;
+}
+
+/* 아이템 등록 모달 바디 */
+.itemRegisterBody {
+    padding: 16px;
+}
+
+.itemRegisterInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #0a0a0a;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.itemRegisterIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    border: 2px solid #9CA3AF;
+    object-fit: contain;
+    background: #111;
+}
+
+.itemRegisterDetails {
+    flex: 1;
+}
+
+.itemRegisterName {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.itemRegisterCategory {
+    font-size: 0.8rem;
+    color: #6B7280;
+}
+
+.itemRegisterField {
+    margin-bottom: 16px;
+}
+
+.itemRegisterLabel {
+    display: block;
+    font-size: 0.85rem;
+    color: #9CA3AF;
+    margin-bottom: 8px;
+}
+
+.itemQuantityControl {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.itemQuantityBtn {
+    width: 48px;
+    height: 48px;
+    background: transparent;
+    border: none;
+    color: #E5E7EB;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.itemQuantityBtn:active {
+    background: rgba(245, 158, 11, 0.2);
+}
+
+.itemQuantityBtn:disabled {
+    color: #444;
+}
+
+.itemQuantityInput {
+    flex: 1;
+    text-align: center;
+    background: transparent;
+    border: none;
+    border-left: 1px solid #333;
+    border-right: 1px solid #333;
+    color: #E5E7EB;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 12px;
+    outline: none;
+    -moz-appearance: textfield;
+}
+
+.itemQuantityInput::-webkit-outer-spin-button,
+.itemQuantityInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.itemPriceInput {
+    width: 100%;
+    padding: 14px 16px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #E5E7EB;
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.itemPriceInput:focus {
+    border-color: #f59e0b;
+}
+
+.itemRegisterTotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px;
+    background: rgba(245, 158, 11, 0.1);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+.itemTotalLabel {
+    color: #9CA3AF;
+    font-size: 0.9rem;
+}
+
+.itemTotalValue {
+    color: #f59e0b;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.itemRegisterButtons {
+    display: flex;
+    gap: 12px;
+}
+
+.itemRegisterButtons .cancelBtn {
+    flex: 1;
+    padding: 14px;
+    background: #222;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #9CA3AF;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.itemRegisterButtons .submitBtn {
+    flex: 2;
+    padding: 14px;
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    border: none;
+    border-radius: 10px;
+    color: #000;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.itemRegisterButtons .submitBtn:disabled {
+    opacity: 0.5;
+}
+
+/* 액션 시트 */
+.actionSheetOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.actionSheet {
+    width: 100%;
+    max-width: 500px;
+    background: #111;
+    border-radius: 20px 20px 0 0;
+    padding: 12px 16px 32px 16px;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(100%);
+    }
+    to {
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+.actionSheetHandle {
+    width: 40px;
+    height: 4px;
+    background: #444;
+    border-radius: 2px;
+    margin: 0 auto 16px auto;
+}
+
+.actionSheetItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background: #0a0a0a;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.actionSheetIcon {
+    width: 56px;
+    height: 56px;
+    border-radius: 8px;
+    border: 2px solid #9CA3AF;
+    object-fit: contain;
+    background: #111;
+}
+
+.actionSheetInfo {
+    flex: 1;
+}
+
+.actionSheetName {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.actionSheetPrice {
+    font-size: 0.85rem;
+    color: #f59e0b;
+}
+
+.actionSheetButtons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.actionSheetSellSection {
+    display: flex;
+    gap: 8px;
+}
+
+.actionSheetSellInput {
+    flex: 1;
+    padding: 14px 16px;
+    background: #0a0a0a;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #E5E7EB;
+    font-size: 1rem;
+    outline: none;
+}
+
+.actionSheetSellInput:focus {
+    border-color: #f59e0b;
+}
+
+.actionSheetSellBtn {
+    padding: 14px 20px;
+    background: linear-gradient(135deg, #10B981, #059669);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.actionSheetSellBtn:disabled {
+    opacity: 0.5;
+}
+
+.actionSheetUnsellBtn {
+    width: 100%;
+    padding: 14px;
+    background: #222;
+    border: 1px solid #444;
+    border-radius: 10px;
+    color: #E5E7EB;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.actionSheetDeleteBtn {
+    width: 100%;
+    padding: 14px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    color: #ef4444;
+    font-size: 1rem;
+    cursor: pointer;
+}
+
+.actionSheetCancelBtn {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    border: 1px solid #333;
+    border-radius: 10px;
+    color: #9CA3AF;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 4px;
+}
