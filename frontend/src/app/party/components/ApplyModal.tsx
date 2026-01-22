@@ -6,6 +6,7 @@ import { useAuth } from '@/context/AuthContext'
 import { supabase } from '@/lib/supabaseClient'
 import type { PartySlot, PartyUserCharacter } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
+import BreakthroughBadge from './BreakthroughBadge'
 import styles from './ApplyModal.module.css'
 
 interface ApplyModalProps {
@@ -142,7 +143,9 @@ export default function ApplyModal({
               <span className={styles.label}>최소 조건:</span>
               <span className={styles.value}>
                 {minItemLevel && `아이템${minItemLevel}+`}
-                {minBreakthrough && ` 돌파${minBreakthrough}+`}
+                {minBreakthrough && (
+                  <> <BreakthroughBadge value={minBreakthrough} size="small" />+</>
+                )}
                 {minCombatPower && ` 전투력${(minCombatPower / 10000).toFixed(0)}만+`}
               </span>
             </div>
@@ -176,7 +179,9 @@ export default function ApplyModal({
                       </div>
                       <div className={styles.charStats}>
                         {char.character_item_level && `아이템${char.character_item_level}`}
-                        {char.character_breakthrough && ` 돌파${char.character_breakthrough}`}
+                        {char.character_breakthrough && (
+                          <> <BreakthroughBadge value={char.character_breakthrough} size="small" /></>
+                        )}
                       </div>
                     </button>
                   )

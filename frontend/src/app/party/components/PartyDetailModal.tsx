@@ -8,6 +8,7 @@ import { getTimeOfDay, getRelativeTime, getRemainingTime } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
 import SlotCard from './SlotCard'
 import PartyComments from './PartyComments'
+import BreakthroughBadge from './BreakthroughBadge'
 import styles from './PartyDetailModal.module.css'
 
 const ApplyModal = dynamic(() => import('./ApplyModal'), { ssr: false })
@@ -291,7 +292,9 @@ export default function PartyDetailModal({ partyId, isOpen, onClose, onDeleted }
                   <div className={styles.specs}>
                     조건:
                     {party.min_item_level && ` 아이템${party.min_item_level}+`}
-                    {party.min_breakthrough && ` | 돌파${party.min_breakthrough}+`}
+                    {party.min_breakthrough && (
+                      <> | <BreakthroughBadge value={party.min_breakthrough} size="small" />+</>
+                    )}
                     {party.min_combat_power && ` | 전투력${(party.min_combat_power / 10000).toFixed(0)}만+`}
                   </div>
                 )}
@@ -397,10 +400,7 @@ export default function PartyDetailModal({ partyId, isOpen, onClose, onDeleted }
                             <div className={styles.pendingMain}>
                               {member.character_class}
                               {(member.character_breakthrough || 0) > 0 && (
-                                <span className={styles.breakthroughBadge}>
-                                  <span className={styles.diamondIcon}></span>
-                                  <span className={styles.breakthroughValue}>{member.character_breakthrough}</span>
-                                </span>
+                                <> <BreakthroughBadge value={member.character_breakthrough!} size="small" /></>
                               )}
                               {' '}Lv{member.character_level} | {memberServerName} {member.character_name}
                             </div>

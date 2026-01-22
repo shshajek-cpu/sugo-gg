@@ -2,6 +2,7 @@
 
 import type { PartyMember } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
+import BreakthroughBadge from './BreakthroughBadge'
 import styles from './CharacterTooltip.module.css'
 
 interface CharacterTooltipProps {
@@ -27,7 +28,11 @@ export default function CharacterTooltip({ member }: CharacterTooltipProps) {
         </div>
         <div className={styles.stat}>
           <span className={styles.label}>돌파:</span>
-          <span className={styles.value}>{member.character_breakthrough || '-'}회</span>
+          <span className={styles.value}>
+            {member.character_breakthrough ? (
+              <BreakthroughBadge value={member.character_breakthrough} size="small" />
+            ) : '-'}
+          </span>
         </div>
         <div className={styles.stat}>
           <span className={styles.label}>전투력:</span>

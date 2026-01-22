@@ -6,6 +6,7 @@ import { supabase } from '@/lib/supabaseClient'
 import type { PartyPost, PartySlot, PartyMember, PartyUserCharacter } from '@/types/party'
 import { getTimeOfDay, getTimeOfDayIcon, getRelativeTime, getRemainingTime } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
+import BreakthroughBadge from './BreakthroughBadge'
 import styles from './PartyApplyConfirmModal.module.css'
 
 interface PartyApplyConfirmModalProps {
@@ -227,7 +228,9 @@ export default function PartyApplyConfirmModal({
               <div className={styles.requirements}>
                 <span className={styles.reqLabel}>참여 조건:</span>
                 {party.min_item_level && <span>아이템 {party.min_item_level}+</span>}
-                {party.min_breakthrough && <span>돌파 {party.min_breakthrough}+</span>}
+                {party.min_breakthrough && (
+                  <span><BreakthroughBadge value={party.min_breakthrough} size="small" />+</span>
+                )}
                 {party.min_combat_power && <span>전투력 {(party.min_combat_power / 10000).toFixed(0)}만+</span>}
               </div>
             )}

@@ -1,0 +1,66 @@
+/* 돌파 배지 공통 스타일 */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.diamond {
+  transform: rotate(45deg);
+  background: linear-gradient(135deg, #60A5FA 0%, #3B82F6 40%, #2563EB 60%, #1D4ED8 100%);
+  border: 1px solid #93C5FD;
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(59, 130, 246, 0.6);
+  flex-shrink: 0;
+}
+
+.value {
+  color: #60A5FA;
+  font-weight: 700;
+  text-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+.label {
+  color: #60A5FA;
+  font-weight: 500;
+}
+
+/* 사이즈 변형 */
+.small .diamond {
+  width: 8px;
+  height: 8px;
+}
+
+.small .value {
+  font-size: 0.75rem;
+}
+
+.small .label {
+  font-size: 0.7rem;
+}
+
+.medium .diamond {
+  width: 10px;
+  height: 10px;
+}
+
+.medium .value {
+  font-size: 0.85rem;
+}
+
+.medium .label {
+  font-size: 0.8rem;
+}
+
+.large .diamond {
+  width: 12px;
+  height: 12px;
+}
+
+.large .value {
+  font-size: 0.95rem;
+}
+
+.large .label {
+  font-size: 0.85rem;
+}

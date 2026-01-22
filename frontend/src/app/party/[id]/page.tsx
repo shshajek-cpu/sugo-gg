@@ -10,6 +10,7 @@ import { getTimeOfDay, getRelativeTime, getRemainingTime } from '@/types/party'
 import { SERVERS } from '@/app/constants/servers'
 import SlotCard from '../components/SlotCard'
 import PartyComments from '../components/PartyComments'
+import BreakthroughBadge from '../components/BreakthroughBadge'
 
 // 모달 지연 로딩 (신청 버튼 클릭 시에만 로드)
 const ApplyModal = dynamic(() => import('../components/ApplyModal'), { ssr: false })
@@ -281,7 +282,9 @@ export default function PartyDetailPage() {
           <div className={styles.specs}>
             조건:
             {party.min_item_level && ` 아이템${party.min_item_level}+`}
-            {party.min_breakthrough && ` | 돌파${party.min_breakthrough}+`}
+            {party.min_breakthrough && (
+              <> | <BreakthroughBadge value={party.min_breakthrough} size="small" />+</>
+            )}
             {party.min_combat_power && ` | 전투력${(party.min_combat_power / 10000).toFixed(0)}만+`}
           </div>
         )}
@@ -368,11 +371,15 @@ export default function PartyDetailPage() {
                 <div key={member.id} className={styles.pendingCard}>
                   <div className={styles.pendingInfo}>
                     <div className={styles.pendingMain}>
-                      {member.character_class} Lv{member.character_level} | {memberServerName} {member.character_name}
+                      {member.character_class}
+                      {(member.character_breakthrough || 0) > 0 && (
+                        <> <BreakthroughBadge value={member.character_breakthrough!} size="small" /></>
+                      )}
+                      {' '}Lv{member.character_level} | {memberServerName} {member.character_name}
                     </div>
                     <div className={styles.pendingStats}>
                       {member.character_item_level && `아이템${member.character_item_level}`}
-                      {member.character_breakthrough && ` 돌파${member.character_breakthrough}`}
+                      {member.character_combat_power && ` 전투력${(member.character_combat_power / 10000).toFixed(1)}만`}
                     </div>
                     {member.apply_message && (
                       <div className={styles.pendingMessage}>"{member.apply_message}"</div>
