@@ -267,28 +267,22 @@ export default memo(function PartyCard({
         </div>
       </div>
 
-      {/* 참여 조건 */}
-      {(party.min_item_level || party.min_breakthrough || party.min_combat_power) && (
+      {/* 참여 조건 - 성역 제외하고 항상 표시 */}
+      {party.dungeon_type !== 'sanctuary' && (
         <div className={styles.requirements}>
           <span className={styles.reqPrefix}>참여조건:</span>
-          {party.min_item_level && (
-            <span className={styles.reqItem}>
-              <span className={styles.reqLabel}>아이템</span>
-              <span className={styles.reqValue}>{party.min_item_level}+</span>
-            </span>
-          )}
-          {party.min_breakthrough && (
-            <span className={styles.reqItem}>
-              <span className={styles.reqLabel}>돌파</span>
-              <span className={styles.reqValue}>{party.min_breakthrough}+</span>
-            </span>
-          )}
-          {party.min_combat_power && (
-            <span className={styles.reqItem}>
-              <span className={styles.reqLabel}>전투력</span>
-              <span className={styles.reqValue}>{(party.min_combat_power / 10000).toFixed(0)}만+</span>
-            </span>
-          )}
+          <span className={styles.reqItem}>
+            <span className={styles.reqLabel}>아이템</span>
+            <span className={styles.reqValue}>{party.min_item_level ? `${party.min_item_level}+` : '-'}</span>
+          </span>
+          <span className={styles.reqItem}>
+            <span className={styles.reqLabel}>돌파</span>
+            <span className={styles.reqValue}>{party.min_breakthrough ? `${party.min_breakthrough}+` : '-'}</span>
+          </span>
+          <span className={styles.reqItem}>
+            <span className={styles.reqLabel}>전투력</span>
+            <span className={styles.reqValue}>{party.min_combat_power ? `${(party.min_combat_power / 10000).toFixed(0)}만+` : '-'}</span>
+          </span>
         </div>
       )}
 
