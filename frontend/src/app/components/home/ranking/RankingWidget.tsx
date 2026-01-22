@@ -105,10 +105,11 @@ export default function RankingWidget() {
                     value={selectedServer}
                     onChange={(e) => setSelectedServer(e.target.value)}
                     style={{
-                        width: '100%', padding: '0.5rem',
-                        background: 'rgba(255,255,255,0.05)', color: 'var(--text-main)',
-                        border: '1px solid var(--border)', borderRadius: '6px',
-                        fontSize: '0.9rem', marginBottom: '0.75rem', cursor: 'pointer'
+                        width: '100%', padding: '0.6rem 0.8rem',
+                        background: '#0a0a0a', color: 'var(--text-main)',
+                        border: '1px solid #222', borderRadius: '8px',
+                        fontSize: '0.9rem', marginBottom: '1rem', cursor: 'pointer',
+                        outline: 'none'
                     }}
                 >
                     {SERVERS.map(s => (
@@ -144,11 +145,12 @@ export default function RankingWidget() {
                             style={{
                                 padding: '0.3rem 0.5rem', fontSize: '0.8rem',
                                 borderRadius: '4px', cursor: 'pointer',
-                                border: selectedClass === cls ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
-                                background: selectedClass === cls ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
-                                color: selectedClass === cls ? 'var(--primary)' : 'var(--text-secondary)',
-                                fontWeight: selectedClass === cls ? 'bold' : 'normal',
-                                transition: 'all 0.2s'
+                                border: selectedClass === cls ? '1px solid #f59e0b' : '1px solid #222',
+                                background: selectedClass === cls ? '#111' : '#0a0a0a',
+                                color: selectedClass === cls ? '#f59e0b' : '#9CA3AF',
+                                fontWeight: selectedClass === cls ? '800' : '500',
+                                transition: 'all 0.2s',
+                                fontFamily: 'Rajdhani, sans-serif'
                             }}
                         >
                             {cls}
@@ -156,7 +158,7 @@ export default function RankingWidget() {
                     ))}
                 </div>
                 {/* Class Ranking List */}
-                <div className={styles.rankingColumnHeader} style={{ color: 'var(--primary)', borderBottomColor: 'rgba(245, 158, 11, 0.3)' }}>
+                <div className={styles.rankingColumnHeader} style={{ color: '#f59e0b', borderBottomColor: '#333' }}>
                     {selectedClass} 전투력 랭킹
                 </div>
                 <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
@@ -173,7 +175,7 @@ export default function RankingWidget() {
     return (
         <section className={styles.sectionCard}>
             <div className={styles.sectionHeader}>
-                <h2 className={styles.sectionTitle} style={{ color: 'var(--primary)' }}>실시간 전투력 랭킹</h2>
+                <h2 className={styles.sectionTitle}>실시간 전투력 랭킹</h2>
                 <Link href="/ranking" className={styles.sectionLink}>
                     전체보기 &gt;
                 </Link>

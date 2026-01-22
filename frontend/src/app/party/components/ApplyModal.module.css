@@ -4,7 +4,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,7 +15,8 @@
 .modal {
   width: 100%;
   max-width: 400px;
-  background: var(--bg-card, #1a1d24);
+  background: #111;
+  border: 1px solid #222;
   border-radius: 12px;
   overflow: hidden;
 }
@@ -47,7 +48,8 @@
   padding: 16px;
 }
 
-.slotInfo, .requirements {
+.slotInfo,
+.requirements {
   display: flex;
   justify-content: space-between;
   margin-bottom: 12px;
@@ -71,7 +73,8 @@
   margin-bottom: 8px;
 }
 
-.loading, .noCharacter {
+.loading,
+.noCharacter {
   font-size: 0.85rem;
   color: var(--text-secondary, #9CA3AF);
   text-align: center;
@@ -127,8 +130,8 @@
 .textarea {
   width: 100%;
   padding: 10px;
-  background: var(--bg-main, #0B0D12);
-  border: 1px solid var(--border-color, #374151);
+  background: #000;
+  border: 1px solid #222;
   border-radius: 6px;
   color: var(--text-main, #E5E7EB);
   font-size: 0.85rem;
@@ -153,7 +156,8 @@
   border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.cancelButton, .submitButton {
+.cancelButton,
+.submitButton {
   flex: 1;
   padding: 12px;
   border-radius: 6px;

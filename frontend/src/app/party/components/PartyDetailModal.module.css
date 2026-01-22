@@ -5,7 +5,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  background: rgba(0, 0, 0, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -15,13 +15,14 @@
 
 /* 모달 컨테이너 */
 .modal {
-  background: #1a1d24;
+  background: #111;
+  border: 1px solid #222;
   border-radius: 12px;
   width: 100%;
   max-width: 720px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
 }
 
 /* 헤더 */
@@ -30,10 +31,10 @@
   justify-content: space-between;
   align-items: center;
   padding: 16px 20px;
-  border-bottom: 1px solid #374151;
+  border-bottom: 1px solid #222;
   position: sticky;
   top: 0;
-  background: #1a1d24;
+  background: #111;
   z-index: 10;
 }
 
@@ -341,7 +342,7 @@
   padding: 6px 14px;
   font-size: 0.85rem;
   background: transparent;
-  border: 1px solid #374151;
+  border: 1px solid #222;
   border-radius: 6px;
   color: #9CA3AF;
   cursor: pointer;

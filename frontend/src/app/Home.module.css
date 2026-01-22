@@ -1,8 +1,14 @@
-/* Main Layout Grid */
+/* Main Layout Container */
+.homeContainer {
+    padding: 2rem 1rem;
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
 .homeGrid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 1.5rem;
+    gap: 2rem;
     margin-top: 1.5rem;
 }
 
@@ -15,11 +21,12 @@
 
 /* Common Section Card Style */
 .sectionCard {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
+    background: #111;
     border-radius: 12px;
-    padding: 1.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 1rem;
+    padding: 1.5rem;
+    border: 1px solid #222;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 }
 
 .sectionHeader {
@@ -30,13 +37,13 @@
 }
 
 .sectionTitle {
-    font-size: 1rem;
-    /* previously calc(0.9rem + 2px) approx */
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-secondary);
-    /* or brand-orange if needed */
-    letter-spacing: -0.02em;
+    color: var(--primary, #f59e0b);
+    letter-spacing: -0.01em;
     margin: 0;
+    text-transform: uppercase;
 }
 
 .sectionLink {
@@ -126,19 +133,20 @@
 .newsItem {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 0.6rem 0.75rem;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
     border-radius: 8px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.03);
-    transition: all 0.15s ease;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    transition: all 0.2s ease;
     cursor: pointer;
     text-decoration: none;
 }
 
 .newsItem:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: #1a1a1a;
+    border-color: var(--primary, #f59e0b);
+    transform: translateX(4px);
 }
 
 .newsDateBadge {
@@ -199,16 +207,21 @@
 .rankingItem {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.4rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-    transition: background 0.2s;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    background: #0a0a0a;
+    border: 1px solid #222;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s ease;
     cursor: pointer;
     text-decoration: none;
 }
 
 .rankingItem:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: #1a1a1a;
+    border-color: #333;
+    transform: translateY(-2px);
 }
 
 .rankBadge {
@@ -241,13 +254,13 @@
 }
 
 .charImage {
-    width: 24px;
-    height: 24px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     overflow: hidden;
-    border: 1.5px solid transparent;
+    border: 2px solid #222;
     flex-shrink: 0;
-    background: #222;
+    background: #000;
 }
 
 .charImage img {
@@ -398,4 +411,47 @@
     color: var(--danger);
     font-size: 0.9rem;
     text-align: center;
+}
+
+/* Recent Searches Section */
+.recentSearches {
+    margin-top: 3rem;
+}
+
+.recentSearchesContainer {
+    display: flex;
+    flex-direction: column;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #222;
+    background: #111;
+}
+
+.clearAllBtn {
+    background: none;
+    border: none;
+    color: var(--text-disabled);
+    font-size: 0.875rem;
+    cursor: pointer;
+    text-decoration: underline;
+    transition: color 0.2s;
+}
+
+.clearAllBtn:hover {
+    color: var(--danger);
+}
+
+.emptySearchState {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--text-disabled);
+}
+
+.emptySearchState p {
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+}
+
+.emptySearchState span {
+    font-size: 0.9rem;
 }

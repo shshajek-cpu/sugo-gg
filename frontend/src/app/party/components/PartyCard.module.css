@@ -21,14 +21,32 @@
 .header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   margin-bottom: 12px;
+}
+
+.headerLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .dungeonInfo {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* 파티 제목 */
+.partyTitle {
+  font-size: 0.85rem;
+  color: #9CA3AF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-left: 2px;
 }
 
 .dungeonBadge {
@@ -123,11 +141,19 @@
 /* 참가 조건 */
 .requirements {
   display: flex;
+  align-items: center;
   gap: 12px;
   margin-bottom: 12px;
   padding: 8px 12px;
   background: rgba(245, 158, 11, 0.05);
   border-radius: 6px;
+}
+
+.reqPrefix {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9CA3AF;
+  flex-shrink: 0;
 }
 
 .reqItem {

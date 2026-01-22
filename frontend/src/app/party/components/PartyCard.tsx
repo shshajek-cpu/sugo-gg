@@ -209,17 +209,23 @@ export default memo(function PartyCard({
     <div className={styles.card} onClick={handleClick} style={{ cursor: 'pointer' }}>
       {/* 헤더: 던전 정보 + 상태 */}
       <div className={styles.header}>
-        <div className={styles.dungeonInfo}>
-          <span
-            className={styles.dungeonBadge}
-            style={{ background: dungeonColor }}
-          >
-            {DUNGEON_TYPE_LABELS[party.dungeon_type]}
-          </span>
-          <span className={styles.dungeonName}>
-            {party.dungeon_name}
-            {party.dungeon_tier && <span className={styles.tier}>{party.dungeon_tier}단</span>}
-          </span>
+        <div className={styles.headerLeft}>
+          <div className={styles.dungeonInfo}>
+            <span
+              className={styles.dungeonBadge}
+              style={{ background: dungeonColor }}
+            >
+              {DUNGEON_TYPE_LABELS[party.dungeon_type]}
+            </span>
+            <span className={styles.dungeonName}>
+              {party.dungeon_name}
+              {party.dungeon_tier && <span className={styles.tier}>{party.dungeon_tier}단</span>}
+            </span>
+          </div>
+          {/* 파티 제목 (던전 정보 아래) */}
+          {party.title && (
+            <div className={styles.partyTitle}>{party.title}</div>
+          )}
         </div>
         <div className={styles.statusBadge}>
           <span className={party.status === 'recruiting' ? styles.recruiting : styles.full}>
@@ -232,6 +238,7 @@ export default memo(function PartyCard({
       {/* 참여 조건 */}
       {(party.min_item_level || party.min_breakthrough || party.min_combat_power) && (
         <div className={styles.requirements}>
+          <span className={styles.reqPrefix}>참여조건:</span>
           {party.min_item_level && (
             <span className={styles.reqItem}>
               <span className={styles.reqLabel}>아이템</span>

@@ -11,7 +11,7 @@ interface RecentCharacterCardProps {
 
 export default function RecentCharacterCard({ character, onClick, onRemove }: RecentCharacterCardProps) {
     const isElyos = character.race?.toLowerCase() === 'elyos'
-    const raceColor = isElyos ? '#4BC0C0' : '#FF6384'
+    const raceColor = isElyos ? '#2DD4BF' : '#A78BFA'
 
     return (
         <>
@@ -21,23 +21,22 @@ export default function RecentCharacterCard({ character, onClick, onRemove }: Re
                     align-items: center;
                     justify-content: space-between;
                     width: 100%;
-                    height: 56px;
-                    padding: 0 12px;
+                    height: 64px;
+                    padding: 0 16px;
                     background: transparent;
-                    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+                    border-bottom: 1px solid #222;
                     cursor: pointer;
                     transition: all 0.2s;
                 }
                 .recent-card:hover {
-                    background: rgba(255, 255, 255, 0.03);
-                    border-color: rgba(255, 255, 255, 0.1);
+                    background: #1a1a1a;
                 }
                 .recent-card:last-child {
                     border-bottom: none;
                 }
                 .recent-card .remove-btn {
                     opacity: 0;
-                    transition: opacity 0.2s;
+                    transition: all 0.2s;
                 }
                 .recent-card:hover .remove-btn {
                     opacity: 1;
@@ -53,7 +52,7 @@ export default function RecentCharacterCard({ character, onClick, onRemove }: Re
                         borderRadius: '50%',
                         overflow: 'hidden',
                         border: `2px solid ${raceColor}`,
-                        background: '#1f2937'
+                        background: '#0a0a0a'
                     }}>
                         {character.profileImage ? (
                             <img
@@ -83,13 +82,13 @@ export default function RecentCharacterCard({ character, onClick, onRemove }: Re
                         position: 'absolute',
                         bottom: '-2px',
                         right: '-2px',
-                        background: 'rgba(0,0,0,0.9)',
-                        color: '#fbbf24',
-                        fontSize: '0.6rem',
-                        fontWeight: '700',
-                        padding: '1px 4px',
+                        background: '#000',
+                        color: '#f59e0b',
+                        fontSize: '0.65rem',
+                        fontWeight: '800',
+                        padding: '1px 5px',
                         borderRadius: '4px',
-                        border: '1px solid #fbbf24',
+                        border: '1px solid #f59e0b',
                         lineHeight: 1
                     }}>
                         {character.level || '?'}
@@ -100,8 +99,8 @@ export default function RecentCharacterCard({ character, onClick, onRemove }: Re
                 <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{
                         color: '#fff',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
+                        fontWeight: '700',
+                        fontSize: '0.95rem',
                         whiteSpace: 'nowrap'
                     }}>
                         {character.name}
@@ -134,9 +133,9 @@ export default function RecentCharacterCard({ character, onClick, onRemove }: Re
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                             <span style={{ fontSize: '0.75rem', color: '#9ca3af' }}>IL</span>
                             <span style={{
-                                color: '#fbbf24',
-                                fontWeight: '700',
-                                fontSize: '0.85rem'
+                                color: '#f59e0b',
+                                fontWeight: '800',
+                                fontSize: '0.9rem'
                             }}>
                                 {character.itemLevel.toLocaleString()}
                             </span>

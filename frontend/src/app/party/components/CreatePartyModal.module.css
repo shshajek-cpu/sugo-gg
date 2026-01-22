@@ -37,7 +37,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
-  border-bottom: 1px solid var(--border-color, #374151);
+  border-bottom: 1px solid #222;
   background: #111;
 }
 
@@ -129,8 +129,8 @@
   align-items: center;
   gap: 8px;
   padding: 8px 10px;
-  background: #111;
-  border: 2px solid #222;
+  background: #000;
+  border: 1px solid #222;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s;
@@ -229,7 +229,7 @@
   padding: 6px 12px;
   font-size: 0.8rem;
   background: #0a0a0a;
-  border: 1px solid var(--border-color, #374151);
+  border: 1px solid #222;
   border-radius: 6px;
   color: var(--text-secondary, #9CA3AF);
   cursor: pointer;
@@ -517,7 +517,7 @@
   flex: 1;
   min-width: 0;
   padding-left: 16px;
-  border-left: 1px solid var(--border-color, #374151);
+  border-left: 1px solid #222;
 }
 
 /* 수정 모드: 전체 너비 */
@@ -695,14 +695,14 @@
   justify-content: flex-end;
   gap: 10px;
   padding-top: 16px;
-  border-top: 1px solid var(--border-color, #374151);
+  border-top: 1px solid #222;
 }
 
 .cancelButton {
   padding: 10px 20px;
   font-size: 0.9rem;
   background: transparent;
-  border: 1px solid var(--border-color, #374151);
+  border: 1px solid #222;
   border-radius: 6px;
   color: var(--text-secondary, #9CA3AF);
   cursor: pointer;

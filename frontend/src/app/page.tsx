@@ -115,7 +115,7 @@ export default function Home() {
     }
 
     return (
-        <main className="container" style={{ padding: '2rem 1rem' }}>
+        <main className={styles.homeContainer}>
             {/* Live Stream Section */}
             <div style={{ marginBottom: '2rem' }}>
                 <LiveStreamContainer />
@@ -140,9 +140,9 @@ export default function Home() {
 
             {/* Recent Characters Section */}
             {recentCharacters.length > 0 && (
-                <div>
+                <div className={styles.recentSearches}>
                     <div className={styles.sectionHeader}>
-                        <h3 className={styles.sectionTitle} style={{ color: 'var(--text-secondary)' }}>
+                        <h3 className={styles.sectionTitle}>
                             최근 검색한 캐릭터
                         </h3>
                         <button
@@ -150,27 +150,13 @@ export default function Home() {
                                 setRecentCharacters([])
                                 localStorage.removeItem('recent_characters')
                             }}
-                            style={{
-                                background: 'none',
-                                border: 'none',
-                                color: 'var(--text-disabled)',
-                                fontSize: '0.875rem',
-                                cursor: 'pointer',
-                                textDecoration: 'underline'
-                            }}
+                            className={styles.clearAllBtn}
                         >
                             전체 삭제
                         </button>
                     </div>
 
-                    <div style={{
-                        display: 'flex',
-                        flexDirection: 'column',
-                        borderRadius: '12px',
-                        overflow: 'hidden',
-                        border: '1px solid var(--border)',
-                        background: 'rgba(255, 255, 255, 0.02)'
-                    }}>
+                    <div className={styles.recentSearchesContainer}>
                         {recentCharacters.slice(0, 5).map((char) => (
                             <RecentCharacterCard
                                 key={char.id}
@@ -184,17 +170,9 @@ export default function Home() {
             )}
 
             {recentCharacters.length === 0 && (
-                <div style={{
-                    textAlign: 'center',
-                    padding: '4rem 0',
-                    color: 'var(--text-disabled)'
-                }}>
-                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>
-                        검색한 캐릭터가 없습니다
-                    </p>
-                    <p style={{ fontSize: '0.9rem' }}>
-                        위 검색창에서 캐릭터를 검색해보세요!
-                    </p>
+                <div className={styles.emptySearchState}>
+                    <p>검색한 캐릭터가 없습니다</p>
+                    <span>위 검색창에서 캐릭터를 검색해보세요!</span>
                 </div>
             )}
         </main >
