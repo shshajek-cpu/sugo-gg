@@ -34,8 +34,8 @@
   right: 0;
   width: 320px;
   max-height: 400px;
-  background: var(--bg-card, #1a1d24);
-  border: 1px solid var(--border-color, #374151);
+  background: #111;
+  border: 1px solid #222;
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   z-index: 1000;
