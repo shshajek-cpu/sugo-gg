@@ -3060,6 +3060,9 @@ export default function MobileLedgerPage() {
                                                     ) : (
                                                         <span>📦</span>
                                                     )}
+                                                    {item.quantity > 1 && (
+                                                        <span className={styles.soldItemQuantity}>x{item.quantity}</span>
+                                                    )}
                                                 </div>
                                                 <div
                                                     className={styles.soldItemName}

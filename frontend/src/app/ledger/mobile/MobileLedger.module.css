@@ -2501,23 +2501,24 @@
     font-weight: 500;
 }
 
-/* 판매 아이템 2열 그리드 */
+/* 판매 아이템 4열 그리드 */
 .soldItemsGrid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
     padding: 0 16px;
 }
 
 .soldItemCard {
     background: #111;
     border: 1px solid #222;
-    border-radius: 10px;
-    padding: 12px;
+    border-radius: 8px;
+    padding: 8px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
     position: relative;
+    align-items: center;
 }
 
 .soldItemCard:active {
@@ -2528,13 +2529,14 @@
 .soldItemIcon {
     width: 100%;
     aspect-ratio: 1;
-    border-radius: 8px;
+    border-radius: 6px;
     border: 2px solid #9CA3AF;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #0a0a0a;
     overflow: hidden;
+    position: relative;
 }
 
 .soldItemIcon img {
@@ -2543,39 +2545,55 @@
     object-fit: contain;
 }
 
+.soldItemQuantity {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    background: rgba(0, 0, 0, 0.8);
+    color: #E5E7EB;
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+
 .soldItemName {
-    font-size: 0.8rem;
+    font-size: 0.7rem;
     font-weight: 500;
     color: #E5E7EB;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    text-align: center;
+    width: 100%;
 }
 
 .soldItemPrice {
-    font-size: 0.75rem;
-    color: #10B981;
+    font-size: 0.65rem;
+    color: #f59e0b;
+    text-align: center;
 }
 
 .soldItemDeleteBtn {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 24px;
-    height: 24px;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
     border-radius: 50%;
-    background: rgba(239, 68, 68, 0.2);
+    background: rgba(239, 68, 68, 0.3);
     border: none;
     color: #ef4444;
-    font-size: 14px;
+    font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
+    z-index: 1;
 }
 
 .soldItemDeleteBtn:active {
-    background: rgba(239, 68, 68, 0.4);
+    background: rgba(239, 68, 68, 0.5);
 }
 
 /* 빈 상태 힌트 */
