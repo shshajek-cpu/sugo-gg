@@ -563,13 +563,17 @@ export default function LedgerPage() {
 
   // 즐겨찾기 선택 핸들러
   const handleSelectFavorite = async (favorite: any) => {
-    // 즐겨찾기 아이템을 선택하면 새 아이템으로 추가
+    // 즐겨찾기 아이템을 선택하면 새 아이템으로 추가 (바로 판매완료 처리)
     await addItem({
       item_id: favorite.item_id,
       item_name: favorite.item_name,
       item_grade: favorite.item_grade,
       item_category: favorite.item_category,
-      quantity: 1
+      quantity: 1,
+      unit_price: 0,
+      total_price: 0,
+      sold_price: 0,
+      icon_url: favorite.icon_url
     })
   }
 

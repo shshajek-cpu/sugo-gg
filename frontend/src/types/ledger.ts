@@ -163,6 +163,9 @@ export interface CreateItemRequest {
   total_price?: number
   source_content?: string
   item_id?: string
+  icon_url?: string
+  sold_price?: number
+  sold_date?: string
 }
 
 export interface UpdateItemSaleRequest {
