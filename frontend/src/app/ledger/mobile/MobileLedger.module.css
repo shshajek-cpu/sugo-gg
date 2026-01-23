@@ -1000,7 +1000,10 @@
 }
 
 .simpleCardTimer {
-    color: #666;
+    color: #f59e0b;
+    font-size: 0.7rem;
+    margin-left: 6px;
+    opacity: 0.9;
 }
 
 .simpleCardDivider {

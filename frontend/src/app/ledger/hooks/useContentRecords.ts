@@ -3,6 +3,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ContentRecord, ContentType, DungeonTier, UpdateContentRecordRequest } from '@/types/ledger'
 
+// 각 컨텐츠별 기본 maxCount (PC와 동일하게 유지)
+const DEFAULT_MAX_COUNTS: Record<string, number> = {
+  daily_dungeon: 7,       // 일일던전: 주간 리셋
+  awakening_battle: 3,    // 각성전: 주간 리셋
+  nightmare: 14,          // 악몽: 매일 05시에 2회 충전
+  dimension_invasion: 14, // 차원침공: 24시간마다 1회 충전
+  subjugation: 3,         // 토벌전: 주간 리셋
+  abyss_corridor: 3       // 어비스 회랑
+}
+
 interface UseContentRecordsProps {
   getAuthHeader: () => Record<string, string>
   isReady: boolean
@@ -94,7 +104,7 @@ export function useContentRecords({ getAuthHeader, isReady, characterId, date }:
         date,
         content_type: contentType,
         dungeon_tier: data.dungeon_tier || existing?.dungeon_tier || defaultTier?.id || '',
-        max_count: data.max_count ?? existing?.max_count ?? 3,
+        max_count: data.max_count ?? existing?.max_count ?? DEFAULT_MAX_COUNTS[contentType] ?? 3,
         completion_count: data.completion_count ?? existing?.completion_count ?? 0,
         is_double: data.is_double ?? existing?.is_double ?? false,
         base_kina: data.base_kina ?? existing?.base_kina ?? defaultTier?.default_kina ?? 50000
@@ -137,13 +147,15 @@ export function useContentRecords({ getAuthHeader, isReady, characterId, date }:
   // 완료 횟수 증가
   const incrementCompletion = async (contentType: string) => {
     const existing = records.find(r => r.content_type === contentType)
-    const maxCount = existing?.max_count ?? 3
+    // 기본값을 컨텐츠별로 설정 (PC와 동일)
+    const maxCount = existing?.max_count ?? DEFAULT_MAX_COUNTS[contentType] ?? 3
     const currentCount = existing?.completion_count ?? 0
 
     if (currentCount >= maxCount) return null
 
     return updateRecord(contentType, {
-      completion_count: currentCount + 1
+      completion_count: currentCount + 1,
+      max_count: maxCount  // maxCount도 함께 저장
     })
   }
 
