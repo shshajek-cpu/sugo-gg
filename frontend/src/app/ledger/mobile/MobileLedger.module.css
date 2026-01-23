@@ -347,6 +347,15 @@
     font-size: 1.1rem;
 }
 
+.expandIcon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6B7280;
+    font-size: 0.8rem;
+    margin-left: 8px;
+}
+
 .progressLabel {
     margin-bottom: 8px;
     font-size: 0.8rem;

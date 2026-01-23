@@ -73,13 +73,59 @@ export default function MobileLedgerPage() {
 
     // 캐릭터 관리
     const {
-        characters,
+        characters: realCharacters,
         isLoading: isCharactersLoading,
         addCharacter,
         removeCharacter,
         refetch: refetchCharacters,
         error: characterError
     } = useLedgerCharacters({ getAuthHeader, isReady })
+
+    // 개발용 더미 캐릭터 (로컬 테스트용)
+    const DUMMY_CHARACTERS: LedgerCharacter[] = process.env.NODE_ENV === 'development' ? [
+        {
+            id: 'dummy-1',
+            name: '테스트캐릭1',
+            server_name: '지펠',
+            class_name: '검투사',
+            faction: '천족',
+            item_level: 85,
+            profile_image: '',
+            todayIncome: 125000,
+            income: 125000,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        {
+            id: 'dummy-2',
+            name: '테스트캐릭2',
+            server_name: '이스라펠',
+            class_name: '마도성',
+            faction: '마족',
+            item_level: 82,
+            profile_image: '',
+            todayIncome: 87000,
+            income: 87000,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        },
+        {
+            id: 'dummy-3',
+            name: '테스트캐릭3',
+            server_name: '지펠',
+            class_name: '치유성',
+            faction: '천족',
+            item_level: 78,
+            profile_image: '',
+            todayIncome: 45000,
+            income: 45000,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+        }
+    ] : []
+
+    // 실제 캐릭터가 없으면 더미 캐릭터 사용 (개발 환경에서만)
+    const characters = realCharacters.length > 0 ? realCharacters : DUMMY_CHARACTERS
 
     // /ledger/mobile 경로로 직접 접근 시 /ledger로 리다이렉트
     useEffect(() => {
@@ -338,9 +384,51 @@ export default function MobileLedgerPage() {
         { id: 'dimension', name: '차원침공', maxPerChar: 14, color: 'cyan', ticketKey: 'dimension', contentType: 'dimension_invasion' },
     ];
 
+    // 개발용 더미 대시보드 데이터
+    const DUMMY_DASHBOARD_DATA: Record<string, any> = process.env.NODE_ENV === 'development' ? {
+        'dummy-1': {
+            name: '테스트캐릭1',
+            todayIncome: 125000,
+            weeklyIncome: 450000,
+            baseTickets: { transcend: 10, expedition: 18, sanctuary: 3, daily_dungeon: 5, awakening: 2, nightmare: 12, dimension: 10, subjugation: 2 },
+            bonusTickets: { transcend: 2, expedition: 0, sanctuary: 1 },
+            contentRecords: {},
+            weeklyData: { weeklyOrderCount: 4, abyssOrderCount: 8, shugoBase: 10, shugoBonus: 2 },
+            missionCount: 2
+        },
+        'dummy-2': {
+            name: '테스트캐릭2',
+            todayIncome: 87000,
+            weeklyIncome: 320000,
+            baseTickets: { transcend: 14, expedition: 21, sanctuary: 4, daily_dungeon: 7, awakening: 3, nightmare: 14, dimension: 14, subjugation: 3 },
+            bonusTickets: {},
+            contentRecords: {},
+            weeklyData: { weeklyOrderCount: 0, abyssOrderCount: 0, shugoBase: 14, shugoBonus: 0 },
+            missionCount: 0
+        },
+        'dummy-3': {
+            name: '테스트캐릭3',
+            todayIncome: 45000,
+            weeklyIncome: 180000,
+            baseTickets: { transcend: 6, expedition: 12, sanctuary: 2, daily_dungeon: 3, awakening: 1, nightmare: 8, dimension: 6, subjugation: 1 },
+            bonusTickets: { transcend: 1 },
+            contentRecords: {},
+            weeklyData: { weeklyOrderCount: 8, abyssOrderCount: 15, shugoBase: 6, shugoBonus: 0 },
+            missionCount: 4
+        }
+    } : {}
+
     // 대시보드 데이터 로드 (선택 날짜 기준)
     useEffect(() => {
         if (!isReady || characters.length === 0) return;
+
+        // 더미 캐릭터인 경우 더미 데이터 사용
+        const isDummyMode = characters.some(c => c.id.startsWith('dummy-'));
+        if (isDummyMode) {
+            setDashboardData(DUMMY_DASHBOARD_DATA);
+            setIsDashboardLoading(false);
+            return;
+        }
 
         const loadDashboardData = async () => {
             setIsDashboardLoading(true);
@@ -369,6 +457,16 @@ export default function MobileLedgerPage() {
     useEffect(() => {
         if (!isReady || characters.length === 0) {
             setTotalIncome({ dailyIncome: 0, weeklyIncome: 0 });
+            return;
+        }
+
+        // 더미 캐릭터인 경우 더미 데이터에서 수입 계산
+        const isDummyMode = characters.some(c => c.id.startsWith('dummy-'));
+        if (isDummyMode) {
+            const dailyTotal = characters.reduce((sum, c) => sum + (DUMMY_DASHBOARD_DATA[c.id]?.todayIncome || 0), 0);
+            const weeklyTotal = characters.reduce((sum, c) => sum + (DUMMY_DASHBOARD_DATA[c.id]?.weeklyIncome || 0), 0);
+            setTotalIncome({ dailyIncome: dailyTotal, weeklyIncome: weeklyTotal });
+            setIsIncomeLoading(false);
             return;
         }
 
@@ -1255,8 +1353,8 @@ export default function MobileLedgerPage() {
                                     key={character.id}
                                     className={`${styles.charCard} ${index > 0 ? styles.charCardCollapsed : ''}`}
                                 >
-                                    {/* 캐릭터 헤더 - 클릭시 상세 페이지로 이동 */}
-                                    <div className={styles.charHeader} onClick={() => openCharacterDetail(character)}>
+                                    {/* 캐릭터 헤더 - 클릭시 진행현황 펼치기/접기 */}
+                                    <div className={styles.charHeader} onClick={(e) => toggleProgressExpand(character.id, e)}>
                                         <div className={`${styles.profileImg} ${index > 0 ? styles.profileInactive : ''}`}>
                                             {character.profile_image && (
                                                 <img
@@ -1276,24 +1374,19 @@ export default function MobileLedgerPage() {
                                             <div className={styles.incomeArrow}>▲</div>
                                             <div className={styles.charIncome}>{formatMoney(character.todayIncome || 0)}</div>
                                         </div>
+                                        {/* 펼침/접힘 아이콘 */}
+                                        <div className={styles.expandIcon}>
+                                            {expandedProgressIds.has(character.id) ? '▲' : '▼'}
+                                        </div>
                                     </div>
 
-                                    {/* 진행 현황 - 펼치기/접기 */}
+                                    {/* 진행 현황 - 카드 클릭시 펼치기/접기 */}
                                     {(() => {
                                         const progress = getCharacterProgress(character.id);
                                         if (progress.mission.length === 0 && progress.dungeon.length === 0 && progress.daily.length === 0) return null;
                                         const isExpanded = expandedProgressIds.has(character.id);
                                         return (
                                             <div className={styles.progressSection}>
-                                                {/* 펼치기/접기 버튼 */}
-                                                <div
-                                                    className={styles.progressToggle}
-                                                    onClick={(e) => toggleProgressExpand(character.id, e)}
-                                                >
-                                                    <span className={styles.progressToggleText}>진행현황</span>
-                                                    <span className={styles.progressToggleIcon}>{isExpanded ? '▲' : '▼'}</span>
-                                                </div>
-
                                                 {/* 펼쳐진 상태일 때만 컨텐츠 표시 */}
                                                 {isExpanded && (
                                                     <>
