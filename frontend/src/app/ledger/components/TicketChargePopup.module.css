@@ -33,7 +33,7 @@
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
   animation: slideUp 0.3s ease;
-  max-height: 70vh;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
 }
@@ -130,45 +130,45 @@
 }
 
 .settingsContent {
-  padding: 16px;
+  padding: 12px;
 }
 
 .settingsDescription {
   text-align: center;
   color: #9CA3AF;
-  font-size: 14px;
-  margin-bottom: 20px;
-  padding: 12px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  padding: 8px 10px;
   background: rgba(250, 204, 21, 0.1);
-  border-radius: 8px;
+  border-radius: 6px;
   border: 1px solid rgba(250, 204, 21, 0.2);
 }
 
 .settingSection {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   background: #212227;
-  border-radius: 12px;
-  padding: 16px;
+  border-radius: 10px;
+  padding: 10px 12px;
   border: 1px solid #333333;
 }
 
 .sectionTitle {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 700;
   color: #FACC15;
-  margin: 0 0 16px 0;
+  margin: 0 0 8px 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .settingRow {
   display: grid;
   grid-template-columns: 1fr auto auto;
   align-items: center;
-  gap: 12px;
-  padding: 10px 0;
-  border-bottom: 1px solid #333333;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #2a2a2a;
 }
 
 .settingRow:last-child {
@@ -176,21 +176,21 @@
 }
 
 .settingLabel {
-  font-size: 14px;
+  font-size: 13px;
   color: #E5E7EB;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .settingInput {
-  width: 80px;
-  padding: 8px 12px;
+  width: 65px;
+  padding: 6px 8px;
   background: #161618;
   border: 1px solid #444444;
-  border-radius: 6px;
+  border-radius: 5px;
   color: #E5E7EB;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   text-align: center;
   transition: all 0.2s ease;
@@ -203,23 +203,23 @@
 }
 
 .maxLabel {
-  font-size: 13px;
+  font-size: 12px;
   color: #6B7280;
-  min-width: 60px;
+  min-width: 50px;
 }
 
 .settingsFooter {
-  padding: 16px 0 0 0;
+  padding: 10px 0 0 0;
 }
 
 .applyBtn {
   width: 100%;
-  padding: 14px;
+  padding: 12px;
   background: linear-gradient(135deg, #FACC15 0%, #F59E0B 100%);
   border: none;
   border-radius: 8px;
   color: #000000;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -412,7 +412,7 @@
 }
 
 .ticketIcon {
-  font-size: 18px;
+  font-size: 15px;
 }
 
 .ticketStatus {
@@ -520,9 +520,13 @@
 
 /* 반응형 */
 @media (max-width: 768px) {
+  .overlay {
+    padding-bottom: 80px;
+  }
+
   .popup {
     width: 95%;
-    max-height: 60vh;
+    max-height: 80vh;
   }
 
   .ticketRow {
@@ -532,5 +536,18 @@
 
   .controls {
     justify-content: flex-end;
+  }
+
+  .header {
+    padding: 14px 16px;
+  }
+
+  .title {
+    font-size: 16px;
+  }
+
+  .tab {
+    padding: 10px;
+    font-size: 14px;
   }
 }
