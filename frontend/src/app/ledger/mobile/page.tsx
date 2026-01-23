@@ -389,6 +389,7 @@ export default function MobileLedgerPage() {
     });
     const weeklyContentLoadingRef = useRef(false);
     const weeklyContentSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const weeklyContentLastLoadedRef = useRef<string | null>(null);  // 중복 호출 방지
 
     // 대시보드 데이터 (모든 캐릭터의 진행현황)
     const [dashboardData, setDashboardData] = useState<Record<string, any>>({});
@@ -686,40 +687,48 @@ export default function MobileLedgerPage() {
     }, [selectedCharacterId, isReady, getAuthHeader]);
 
     // 주간 컨텐츠 로드 (사명/주간지령서/어비스지령서 - PC와 동기화)
-    const loadWeeklyContent = useCallback(async () => {
+    useEffect(() => {
         if (!selectedCharacterId || !isReady) return;
 
         const weekKey = getWeekKey(new Date(selectedDate));
         const gameDate = getGameDate(new Date(selectedDate));
+        const loadKey = `${selectedCharacterId}-${weekKey}-${gameDate}`;
 
-        weeklyContentLoadingRef.current = true;
-        try {
-            const res = await fetch(
-                `/api/ledger/weekly-content?characterId=${selectedCharacterId}&weekKey=${weekKey}&gameDate=${gameDate}`,
-                { headers: getAuthHeader() }
-            );
-
-            if (res.ok) {
-                const data = await res.json();
-                setWeeklyContent({
-                    missionCount: data.mission?.count ?? 0,
-                    weeklyOrderCount: data.weekly?.weeklyOrderCount ?? 0,
-                    abyssOrderCount: data.weekly?.abyssOrderCount ?? 0,
-                    shugoTickets: data.weekly?.shugoTickets ?? { base: 14, bonus: 0 }
-                });
-            }
-        } catch (error) {
-            console.error('[Mobile Ledger] Failed to load weekly content:', error);
-        } finally {
-            setTimeout(() => {
-                weeklyContentLoadingRef.current = false;
-            }, 100);
+        // 중복 호출 방지
+        if (weeklyContentLastLoadedRef.current === loadKey) {
+            return;
         }
-    }, [selectedCharacterId, selectedDate, isReady, getAuthHeader]);
 
-    useEffect(() => {
+        const loadWeeklyContent = async () => {
+            weeklyContentLoadingRef.current = true;
+            weeklyContentLastLoadedRef.current = loadKey;
+
+            try {
+                const res = await fetch(
+                    `/api/ledger/weekly-content?characterId=${selectedCharacterId}&weekKey=${weekKey}&gameDate=${gameDate}`,
+                    { headers: getAuthHeader() }
+                );
+
+                if (res.ok) {
+                    const data = await res.json();
+                    setWeeklyContent({
+                        missionCount: data.mission?.count ?? 0,
+                        weeklyOrderCount: data.weekly?.weeklyOrderCount ?? 0,
+                        abyssOrderCount: data.weekly?.abyssOrderCount ?? 0,
+                        shugoTickets: data.weekly?.shugoTickets ?? { base: 14, bonus: 0 }
+                    });
+                }
+            } catch (error) {
+                console.error('[Mobile Ledger] Failed to load weekly content:', error);
+            } finally {
+                setTimeout(() => {
+                    weeklyContentLoadingRef.current = false;
+                }, 100);
+            }
+        };
+
         loadWeeklyContent();
-    }, [loadWeeklyContent]);
+    }, [selectedCharacterId, selectedDate, isReady, getAuthHeader]);
 
     // 주간 컨텐츠 저장 (디바운스)
     const saveWeeklyContent = useCallback(async () => {
