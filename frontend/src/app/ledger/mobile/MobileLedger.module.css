@@ -491,6 +491,11 @@
     margin-left: 2px;
 }
 
+/* 완료된 컨텐츠 흐릿하게 */
+.statusChipComplete {
+    opacity: 0.4;
+}
+
 /* 추가 색상 칩 */
 .chipGreen {
     border-left: 3px solid #10B981;

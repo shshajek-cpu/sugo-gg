@@ -1943,52 +1943,61 @@ export default function MobileLedgerPage() {
                                                         {/* 섹션1: 미션/지령서 */}
                                                         <div className={styles.progressLabel}>미션/지령서</div>
                                                         <div className={styles.chipContainerGrid}>
-                                                            {progress.mission.map(content => (
-                                                                <div
-                                                                    key={content.id}
-                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                                >
-                                                                    <span className={styles.chipTxt}>{content.name}</span>
-                                                                    <span className={styles.chipVal}>
-                                                                        {content.current}/{content.max}
-                                                                        {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
+                                                            {progress.mission.map(content => {
+                                                                const isComplete = content.current <= 0 && (content.bonus || 0) <= 0;
+                                                                return (
+                                                                    <div
+                                                                        key={content.id}
+                                                                        className={`${styles.statusChipCompact} ${getChipColorClass(content.color)} ${isComplete ? styles.statusChipComplete : ''}`}
+                                                                    >
+                                                                        <span className={styles.chipTxt}>{content.name}</span>
+                                                                        <span className={styles.chipVal}>
+                                                                            {content.current}/{content.max}
+                                                                            {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
 
                                                         {/* 섹션2: 던전 컨텐츠 */}
                                                         <div className={styles.progressLabel}>던전 컨텐츠</div>
                                                         <div className={styles.chipContainerGrid}>
-                                                            {progress.dungeon.map(content => (
-                                                                <div
-                                                                    key={content.id}
-                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                                >
-                                                                    <span className={styles.chipTxt}>{content.name}</span>
-                                                                    <span className={styles.chipVal}>
-                                                                        {content.current}/{content.max}
-                                                                        {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
+                                                            {progress.dungeon.map(content => {
+                                                                const isComplete = content.current <= 0 && (content.bonus || 0) <= 0;
+                                                                return (
+                                                                    <div
+                                                                        key={content.id}
+                                                                        className={`${styles.statusChipCompact} ${getChipColorClass(content.color)} ${isComplete ? styles.statusChipComplete : ''}`}
+                                                                    >
+                                                                        <span className={styles.chipTxt}>{content.name}</span>
+                                                                        <span className={styles.chipVal}>
+                                                                            {content.current}/{content.max}
+                                                                            {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
 
                                                         {/* 섹션3: 일일 컨텐츠 */}
                                                         <div className={styles.progressLabel}>일일 컨텐츠</div>
                                                         <div className={styles.chipContainerGrid}>
-                                                            {progress.daily.map(content => (
-                                                                <div
-                                                                    key={content.id}
-                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                                >
-                                                                    <span className={styles.chipTxt}>{content.name}</span>
-                                                                    <span className={styles.chipVal}>
-                                                                        {content.current}/{content.max}
-                                                                        {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
-                                                                    </span>
-                                                                </div>
-                                                            ))}
+                                                            {progress.daily.map(content => {
+                                                                const isComplete = content.current <= 0 && (content.bonus || 0) <= 0;
+                                                                return (
+                                                                    <div
+                                                                        key={content.id}
+                                                                        className={`${styles.statusChipCompact} ${getChipColorClass(content.color)} ${isComplete ? styles.statusChipComplete : ''}`}
+                                                                    >
+                                                                        <span className={styles.chipTxt}>{content.name}</span>
+                                                                        <span className={styles.chipVal}>
+                                                                            {content.current}/{content.max}
+                                                                            {content.bonus > 0 && <span className={styles.chipBonus}>(+{content.bonus})</span>}
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                         </div>
                                                     </>
                                                 )}
