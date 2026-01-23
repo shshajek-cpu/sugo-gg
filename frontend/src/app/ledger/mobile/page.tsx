@@ -2903,18 +2903,8 @@ export default function MobileLedgerPage() {
                         <div className={styles.charSubview}>
                             {/* 요약 통계 */}
                             <div className={styles.itemSummaryBox}>
-                                <div
-                                    className={`${styles.itemSummaryStat} ${itemStatusFilter === 'unsold' ? styles.itemStatActive : ''}`}
-                                    onClick={() => setItemStatusFilter('unsold')}
-                                >
-                                    <div className={styles.itemSummaryLabel}>보유 아이템</div>
-                                    <div className={styles.itemSummaryValue}>{unsoldItems.length}건</div>
-                                </div>
-                                <div
-                                    className={`${styles.itemSummaryStat} ${styles.noBorder} ${itemStatusFilter === 'sold' ? styles.itemStatActive : ''}`}
-                                    onClick={() => setItemStatusFilter('sold')}
-                                >
-                                    <div className={styles.itemSummaryLabel}>판매 완료</div>
+                                <div className={`${styles.itemSummaryStat} ${styles.noBorder} ${styles.itemStatActive}`}>
+                                    <div className={styles.itemSummaryLabel}>등록 아이템</div>
                                     <div className={styles.itemSummaryValueWhite}>
                                         {soldItems.length}건
                                     </div>
@@ -2981,55 +2971,7 @@ export default function MobileLedgerPage() {
                             </div>
 
                             {/* 아이템 목록 */}
-                            {itemStatusFilter === 'unsold' ? (
-                                unsoldItems.length === 0 ? (
-                                    <div className={styles.noItemsBox}>
-                                        <div className={styles.noItemsText}>보유 중인 아이템이 없습니다</div>
-                                        <div className={styles.noItemsHint}>위 검색창에서 아이템을 검색하여 등록하세요</div>
-                                    </div>
-                                ) : (
-                                    <div className={styles.itemListContainer}>
-                                        {unsoldItems.map((item) => (
-                                            <div
-                                                key={item.id}
-                                                className={styles.itemListCard}
-                                                onClick={() => {
-                                                    setSelectedItemForAction(item);
-                                                    setSellPrice(item.total_price?.toString() || '');
-                                                    setShowItemActionSheet(true);
-                                                }}
-                                            >
-                                                <div
-                                                    className={styles.itemListIcon}
-                                                    style={{ borderColor: GRADE_COLORS[item.item_grade] || '#9CA3AF' }}
-                                                >
-                                                    {item.icon_url ? (
-                                                        <img src={item.icon_url} alt={item.item_name} />
-                                                    ) : (
-                                                        <span>📦</span>
-                                                    )}
-                                                    {item.quantity > 1 && (
-                                                        <span className={styles.itemListBadge}>x{item.quantity}</span>
-                                                    )}
-                                                </div>
-                                                <div className={styles.itemListInfo}>
-                                                    <div
-                                                        className={styles.itemListName}
-                                                        style={{ color: GRADE_COLORS[item.item_grade] || '#E5E7EB' }}
-                                                    >
-                                                        {item.item_name}
-                                                    </div>
-                                                    <div className={styles.itemListMeta}>
-                                                        {item.total_price ? `${item.total_price.toLocaleString()} 키나` : '가격 미정'}
-                                                    </div>
-                                                </div>
-                                                <div className={styles.itemListAction}>▶</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )
-                            ) : (
-                                soldItems.length === 0 ? (
+                            {soldItems.length === 0 ? (
                                     <div className={styles.noItemsBox}>
                                         <div className={styles.noItemsText}>등록된 아이템이 없습니다</div>
                                     </div>
@@ -3076,8 +3018,7 @@ export default function MobileLedgerPage() {
                                             </div>
                                         ))}
                                     </div>
-                                )
-                            )}
+                                )}
                         </div>
                     )}
 
