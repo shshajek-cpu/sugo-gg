@@ -1371,7 +1371,6 @@ export default function MobileLedgerPage() {
                                             </div>
                                         </div>
                                         <div className={styles.charIncomeArea}>
-                                            <div className={styles.incomeArrow}>▲</div>
                                             <div className={styles.charIncome}>{formatMoney(character.todayIncome || 0)}</div>
                                         </div>
                                         {/* 펼침/접힘 아이콘 */}
