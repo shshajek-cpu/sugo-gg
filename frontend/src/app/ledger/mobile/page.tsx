@@ -2025,7 +2025,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.incomeStatDetail}>
                                     <span className={styles.label}>오드에너지</span>
                                     <span className={styles.value}>
-                                        {characterState.odEnergy.timeEnergy + characterState.odEnergy.ticketEnergy}
+                                        {characterState.odEnergy.timeEnergy}
                                         {characterState.odEnergy.ticketEnergy > 0 && (
                                             <span style={{ color: '#3b82f6', fontSize: '0.8rem', marginLeft: '2px' }}>(+{characterState.odEnergy.ticketEnergy})</span>
                                         )}
@@ -2063,7 +2063,7 @@ export default function MobileLedgerPage() {
                             {/* 오드 에너지 */}
                             <div className={styles.odEnergyBox}>
                                 <span className={styles.odValue}>
-                                    {characterState.odEnergy.timeEnergy + characterState.odEnergy.ticketEnergy}
+                                    {characterState.odEnergy.timeEnergy}
                                     {characterState.odEnergy.ticketEnergy > 0 && (
                                         <span className={styles.odValueBonus}>(+{characterState.odEnergy.ticketEnergy})</span>
                                     )}
