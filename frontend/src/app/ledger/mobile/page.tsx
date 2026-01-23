@@ -2683,7 +2683,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, characterState.baseTickets.daily_dungeon - (records.find(r => r.content_type === 'daily_dungeon')?.completion_count || 0))}/
-                                        {characterState.baseTickets.daily_dungeon}
+                                        {MAX_TICKETS.daily_dungeon}
                                         {(characterState.bonusTickets.daily_dungeon || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.daily_dungeon})</span>
                                         )}
@@ -2703,7 +2703,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, characterState.baseTickets.awakening - (records.find(r => r.content_type === 'awakening_battle')?.completion_count || 0))}/
-                                        {characterState.baseTickets.awakening}
+                                        {MAX_TICKETS.awakening}
                                         {(characterState.bonusTickets.awakening || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.awakening})</span>
                                         )}
@@ -2723,7 +2723,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, characterState.baseTickets.nightmare - (records.find(r => r.content_type === 'nightmare')?.completion_count || 0))}/
-                                        {characterState.baseTickets.nightmare}
+                                        {MAX_TICKETS.nightmare}
                                         {(characterState.bonusTickets.nightmare || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.nightmare})</span>
                                         )}
@@ -2743,7 +2743,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, characterState.baseTickets.dimension - (records.find(r => r.content_type === 'dimension_invasion')?.completion_count || 0))}/
-                                        {characterState.baseTickets.dimension}
+                                        {MAX_TICKETS.dimension}
                                         {(characterState.bonusTickets.dimension || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.dimension})</span>
                                         )}
@@ -2763,7 +2763,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, characterState.baseTickets.subjugation - (records.find(r => r.content_type === 'subjugation')?.completion_count || 0))}/
-                                        {characterState.baseTickets.subjugation}
+                                        {MAX_TICKETS.subjugation}
                                         {(characterState.bonusTickets.subjugation || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.subjugation})</span>
                                         )}
