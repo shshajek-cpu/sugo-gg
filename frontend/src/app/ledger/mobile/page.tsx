@@ -76,6 +76,22 @@ const MAX_TICKETS = {
     subjugation: 3      // 토벌전: 주간 리셋
 }
 
+// 캐릭터 상태 기본값 (캐릭터 변경 시 fallback용)
+const DEFAULT_CHARACTER_STATE = {
+    baseTickets: {
+        transcend: 14, expedition: 21, sanctuary: 4,
+        daily_dungeon: 7, awakening: 3, nightmare: 14, dimension: 14, subjugation: 3
+    },
+    bonusTickets: {
+        transcend: 0, expedition: 0, sanctuary: 0,
+        daily_dungeon: 0, awakening: 0, nightmare: 0, dimension: 0, subjugation: 0
+    },
+    chargeSettings: {
+        transcend: 1, expedition: 1, nightmare: 2, dimension: 1, shugo: 2, od_energy: 15
+    },
+    odEnergy: { timeEnergy: 840, ticketEnergy: 0 }
+}
+
 // 모바일 전용 가계부 뷰 - 조건부 렌더링용 컴포넌트
 export default function MobileLedgerPage() {
     const router = useRouter()
@@ -390,6 +406,7 @@ export default function MobileLedgerPage() {
     const weeklyContentLoadingRef = useRef(false);
     const weeklyContentSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const weeklyContentLastLoadedRef = useRef<string | null>(null);  // 중복 호출 방지
+    const characterStateLastLoadedRef = useRef<string | null>(null);  // 캐릭터 상태 중복 호출 방지
 
     // 대시보드 데이터 (모든 캐릭터의 진행현황)
     const [dashboardData, setDashboardData] = useState<Record<string, any>>({});
@@ -658,7 +675,14 @@ export default function MobileLedgerPage() {
     useEffect(() => {
         if (!selectedCharacterId || !isReady) return;
 
+        // 중복 호출 방지
+        if (characterStateLastLoadedRef.current === selectedCharacterId) {
+            return;
+        }
+
         const loadCharacterState = async () => {
+            characterStateLastLoadedRef.current = selectedCharacterId;
+
             try {
                 const authHeaders = getAuthHeader();
                 const res = await fetch(
@@ -668,18 +692,23 @@ export default function MobileLedgerPage() {
 
                 if (res.ok) {
                     const data = await res.json();
+                    // 기본값을 이전 캐릭터 상태가 아닌 DEFAULT_CHARACTER_STATE에서 가져옴
                     setCharacterState({
-                        baseTickets: data.baseTickets || characterState.baseTickets,
-                        bonusTickets: data.bonusTickets || characterState.bonusTickets,
-                        chargeSettings: data.chargeSettings || characterState.chargeSettings,
+                        baseTickets: data.baseTickets || DEFAULT_CHARACTER_STATE.baseTickets,
+                        bonusTickets: data.bonusTickets || DEFAULT_CHARACTER_STATE.bonusTickets,
+                        chargeSettings: data.chargeSettings || DEFAULT_CHARACTER_STATE.chargeSettings,
                         odEnergy: {
-                            timeEnergy: data.odEnergy?.timeEnergy || 840,
-                            ticketEnergy: data.odEnergy?.ticketEnergy || 0
+                            timeEnergy: data.odEnergy?.timeEnergy ?? DEFAULT_CHARACTER_STATE.odEnergy.timeEnergy,
+                            ticketEnergy: data.odEnergy?.ticketEnergy ?? DEFAULT_CHARACTER_STATE.odEnergy.ticketEnergy
                         }
                     });
+                } else {
+                    // API 실패 시 기본값으로 초기화
+                    setCharacterState(DEFAULT_CHARACTER_STATE);
                 }
             } catch (error) {
                 console.error('[Mobile Ledger] Failed to load character state:', error);
+                setCharacterState(DEFAULT_CHARACTER_STATE);
             }
         };
 
