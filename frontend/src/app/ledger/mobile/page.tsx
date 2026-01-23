@@ -2415,6 +2415,9 @@ export default function MobileLedgerPage() {
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, MAX_TICKETS.daily_dungeon - (records.find(r => r.content_type === 'daily_dungeon')?.completion_count || 0))}/
                                         {MAX_TICKETS.daily_dungeon}
+                                        {(characterState.bonusTickets.daily_dungeon || 0) > 0 && (
+                                            <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.daily_dungeon})</span>
+                                        )}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('daily_dungeon')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('daily_dungeon')}>-</button>
@@ -2432,6 +2435,9 @@ export default function MobileLedgerPage() {
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, MAX_TICKETS.awakening - (records.find(r => r.content_type === 'awakening_battle')?.completion_count || 0))}/
                                         {MAX_TICKETS.awakening}
+                                        {(characterState.bonusTickets.awakening || 0) > 0 && (
+                                            <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.awakening})</span>
+                                        )}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('awakening_battle')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('awakening_battle')}>-</button>
@@ -2449,6 +2455,9 @@ export default function MobileLedgerPage() {
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, MAX_TICKETS.nightmare - (records.find(r => r.content_type === 'nightmare')?.completion_count || 0))}/
                                         {MAX_TICKETS.nightmare}
+                                        {(characterState.bonusTickets.nightmare || 0) > 0 && (
+                                            <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.nightmare})</span>
+                                        )}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('nightmare')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('nightmare')}>-</button>
@@ -2466,6 +2475,9 @@ export default function MobileLedgerPage() {
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, MAX_TICKETS.dimension - (records.find(r => r.content_type === 'dimension_invasion')?.completion_count || 0))}/
                                         {MAX_TICKETS.dimension}
+                                        {(characterState.bonusTickets.dimension || 0) > 0 && (
+                                            <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.dimension})</span>
+                                        )}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('dimension_invasion')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('dimension_invasion')}>-</button>
@@ -2483,6 +2495,9 @@ export default function MobileLedgerPage() {
                                     <span className={styles.simpleCardCount}>
                                         {Math.max(0, MAX_TICKETS.subjugation - (records.find(r => r.content_type === 'subjugation')?.completion_count || 0))}/
                                         {MAX_TICKETS.subjugation}
+                                        {(characterState.bonusTickets.subjugation || 0) > 0 && (
+                                            <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.subjugation})</span>
+                                        )}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('subjugation')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('subjugation')}>-</button>
