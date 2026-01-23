@@ -1243,6 +1243,16 @@ export default function MobileLedgerPage() {
         const boss = dungeonData.transcend.bosses.find(b => b.id === transcendBoss);
         if (!boss) return;
 
+        // 잔여 횟수 확인 (기본 + 보너스)
+        const baseRemaining = characterState.baseTickets.transcend;
+        const bonusRemaining = characterState.bonusTickets.transcend || 0;
+        const totalAvailable = baseRemaining + bonusRemaining;
+
+        if (totalAvailable < 1) {
+            alert('잔여 횟수가 부족합니다!');
+            return;
+        }
+
         const tierData = boss.tiers?.find(t => t.tier === transcendTier);
         const kina = tierData?.kina || 0;
         const multiplier = transcendDouble ? 2 : 1;
@@ -1267,13 +1277,52 @@ export default function MobileLedgerPage() {
             return [...prev, newRecord];
         });
 
+        // 티켓 차감 (기본 먼저, 기본이 0이면 보너스)
+        setCharacterState(prev => {
+            if (prev.baseTickets.transcend > 0) {
+                return {
+                    ...prev,
+                    baseTickets: {
+                        ...prev.baseTickets,
+                        transcend: prev.baseTickets.transcend - 1
+                    }
+                };
+            } else {
+                return {
+                    ...prev,
+                    bonusTickets: {
+                        ...prev.bonusTickets,
+                        transcend: Math.max(0, (prev.bonusTickets.transcend || 0) - 1)
+                    }
+                };
+            }
+        });
+
         setShowDungeonModal(null);
     };
 
     // 초월 기록 삭제
     const handleDeleteTranscendRecord = (recordId: string) => {
         if (!canEdit) return;
+
+        // 삭제되는 기록의 count 찾기
+        const record = transcendRecords.find(r => r.id === recordId);
+        const countToRestore = record?.count || 1;
+
         setTranscendRecords(prev => prev.filter(r => r.id !== recordId));
+
+        // 티켓 복구 (기본 티켓 최대치까지)
+        setCharacterState(prev => {
+            const maxBase = MAX_TICKETS.transcend;
+            const newBase = Math.min(maxBase, prev.baseTickets.transcend + countToRestore);
+            return {
+                ...prev,
+                baseTickets: {
+                    ...prev.baseTickets,
+                    transcend: newBase
+                }
+            };
+        });
     };
 
     // 원정 기록 추가
@@ -1283,6 +1332,16 @@ export default function MobileLedgerPage() {
         const category = dungeonData.expedition.categories.find(c => c.id === expeditionCategory);
         const boss = category?.bosses.find(b => b.id === expeditionBoss);
         if (!boss) return;
+
+        // 잔여 횟수 확인 (기본 + 보너스)
+        const baseRemaining = characterState.baseTickets.expedition;
+        const bonusRemaining = characterState.bonusTickets.expedition || 0;
+        const totalAvailable = baseRemaining + bonusRemaining;
+
+        if (totalAvailable < 1) {
+            alert('잔여 횟수가 부족합니다!');
+            return;
+        }
 
         const multiplier = expeditionDouble ? 2 : 1;
 
@@ -1306,13 +1365,52 @@ export default function MobileLedgerPage() {
             return [...prev, newRecord];
         });
 
+        // 티켓 차감 (기본 먼저, 기본이 0이면 보너스)
+        setCharacterState(prev => {
+            if (prev.baseTickets.expedition > 0) {
+                return {
+                    ...prev,
+                    baseTickets: {
+                        ...prev.baseTickets,
+                        expedition: prev.baseTickets.expedition - 1
+                    }
+                };
+            } else {
+                return {
+                    ...prev,
+                    bonusTickets: {
+                        ...prev.bonusTickets,
+                        expedition: Math.max(0, (prev.bonusTickets.expedition || 0) - 1)
+                    }
+                };
+            }
+        });
+
         setShowDungeonModal(null);
     };
 
     // 원정 기록 삭제
     const handleDeleteExpeditionRecord = (recordId: string) => {
         if (!canEdit) return;
+
+        // 삭제되는 기록의 count 찾기
+        const record = expeditionRecords.find(r => r.id === recordId);
+        const countToRestore = record?.count || 1;
+
         setExpeditionRecords(prev => prev.filter(r => r.id !== recordId));
+
+        // 티켓 복구 (기본 티켓 최대치까지)
+        setCharacterState(prev => {
+            const maxBase = MAX_TICKETS.expedition;
+            const newBase = Math.min(maxBase, prev.baseTickets.expedition + countToRestore);
+            return {
+                ...prev,
+                baseTickets: {
+                    ...prev.baseTickets,
+                    expedition: newBase
+                }
+            };
+        });
     };
 
     // 성역 기록 추가
@@ -1322,6 +1420,16 @@ export default function MobileLedgerPage() {
         const category = dungeonData.sanctuary.categories[0];
         const boss = category?.bosses.find(b => b.id === sanctuaryBoss);
         if (!boss) return;
+
+        // 잔여 횟수 확인 (기본 + 보너스)
+        const baseRemaining = characterState.baseTickets.sanctuary;
+        const bonusRemaining = characterState.bonusTickets.sanctuary || 0;
+        const totalAvailable = baseRemaining + bonusRemaining;
+
+        if (totalAvailable < 1) {
+            alert('잔여 횟수가 부족합니다!');
+            return;
+        }
 
         const multiplier = sanctuaryDouble ? 2 : 1;
 
@@ -1344,13 +1452,52 @@ export default function MobileLedgerPage() {
             return [...prev, newRecord];
         });
 
+        // 티켓 차감 (기본 먼저, 기본이 0이면 보너스)
+        setCharacterState(prev => {
+            if (prev.baseTickets.sanctuary > 0) {
+                return {
+                    ...prev,
+                    baseTickets: {
+                        ...prev.baseTickets,
+                        sanctuary: prev.baseTickets.sanctuary - 1
+                    }
+                };
+            } else {
+                return {
+                    ...prev,
+                    bonusTickets: {
+                        ...prev.bonusTickets,
+                        sanctuary: Math.max(0, (prev.bonusTickets.sanctuary || 0) - 1)
+                    }
+                };
+            }
+        });
+
         setShowDungeonModal(null);
     };
 
     // 성역 기록 삭제
     const handleDeleteSanctuaryRecord = (recordId: string) => {
         if (!canEdit) return;
+
+        // 삭제되는 기록의 count 찾기
+        const record = sanctuaryRecords.find(r => r.id === recordId);
+        const countToRestore = record?.count || 1;
+
         setSanctuaryRecords(prev => prev.filter(r => r.id !== recordId));
+
+        // 티켓 복구 (기본 티켓 최대치까지)
+        setCharacterState(prev => {
+            const maxBase = MAX_TICKETS.sanctuary;
+            const newBase = Math.min(maxBase, prev.baseTickets.sanctuary + countToRestore);
+            return {
+                ...prev,
+                baseTickets: {
+                    ...prev.baseTickets,
+                    sanctuary: newBase
+                }
+            };
+        });
     };
 
     // 원정 카테고리 변경 시 보스 초기화
@@ -2100,7 +2247,7 @@ export default function MobileLedgerPage() {
                                     </div>
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
-                                            {transcendRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.transcend}/
                                             {MAX_TICKETS.transcend}
                                             {characterState.bonusTickets.transcend > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.transcend})</span>
@@ -2202,7 +2349,7 @@ export default function MobileLedgerPage() {
                                     </div>
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
-                                            {expeditionRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.expedition}/
                                             {MAX_TICKETS.expedition}
                                             {characterState.bonusTickets.expedition > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.expedition})</span>
@@ -2317,7 +2464,7 @@ export default function MobileLedgerPage() {
                                     </div>
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
-                                            {sanctuaryRecords.reduce((sum, r) => sum + r.count, 0)}/
+                                            {characterState.baseTickets.sanctuary}/
                                             {MAX_TICKETS.sanctuary}
                                             {characterState.bonusTickets.sanctuary > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.sanctuary})</span>
