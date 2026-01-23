@@ -344,7 +344,13 @@
 .charIncome {
     color: #f59e0b;
     font-weight: 700;
-    font-size: 1.1rem;
+    font-size: 1rem;
+}
+
+.charIncomeWeekly {
+    color: #9CA3AF;
+    font-size: 0.75rem;
+    margin-top: 2px;
 }
 
 .expandIcon {

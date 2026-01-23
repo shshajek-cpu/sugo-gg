@@ -1922,7 +1922,8 @@ export default function MobileLedgerPage() {
                                             </div>
                                         </div>
                                         <div className={styles.charIncomeArea}>
-                                            <div className={styles.charIncome}>{formatMoney(character.todayIncome || 0)}</div>
+                                            <div className={styles.charIncome}>{formatMoney(dashboardData[character.id]?.todayIncome || 0)}</div>
+                                            <div className={styles.charIncomeWeekly}>{formatMoney(dashboardData[character.id]?.weeklyIncome || 0)}</div>
                                         </div>
                                         {/* 펼침/접힘 아이콘 */}
                                         <div className={styles.expandIcon}>
@@ -2046,16 +2047,11 @@ export default function MobileLedgerPage() {
                             <div className={styles.incomeStatsArea}>
                                 <div className={styles.incomeStatDetail}>
                                     <span className={styles.label}>일일수입</span>
-                                    <span className={styles.value}>{formatMoney(selectedCharacter.todayIncome || 0)}</span>
+                                    <span className={styles.value}>{formatMoney(dashboardData[selectedCharacter.id]?.todayIncome || 0)}</span>
                                 </div>
                                 <div className={styles.incomeStatDetail}>
-                                    <span className={styles.label}>오드에너지</span>
-                                    <span className={styles.value}>
-                                        {characterState.odEnergy.timeEnergy}
-                                        {characterState.odEnergy.ticketEnergy > 0 && (
-                                            <span style={{ color: '#3b82f6', fontSize: '0.8rem', marginLeft: '2px' }}>(+{characterState.odEnergy.ticketEnergy})</span>
-                                        )}
-                                    </span>
+                                    <span className={styles.label}>주간수입</span>
+                                    <span className={styles.value}>{formatMoney(dashboardData[selectedCharacter.id]?.weeklyIncome || 0)}</span>
                                 </div>
                             </div>
                         </div>
