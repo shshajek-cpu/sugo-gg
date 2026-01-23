@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
 
     const [
       itemsResult,
+      soldItemsResult,
       contentResult,
       dungeonResult,
       weeklyContentResult,
@@ -87,6 +88,14 @@ export async function GET(request: NextRequest) {
         .select('ledger_character_id, item_grade, item_name, quantity, expected_price')
         .in('ledger_character_id', ownedCharIds)
         .is('sold_price', null),
+
+      // 오늘 판매된 아이템 (템수입)
+      supabase
+        .from('ledger_items')
+        .select('ledger_character_id, sold_price')
+        .in('ledger_character_id', ownedCharIds)
+        .not('sold_price', 'is', null)
+        .eq('sold_date', today),
 
       // 오늘 컨텐츠 기록 (모든 캐릭터)
       supabase
@@ -142,6 +151,7 @@ export async function GET(request: NextRequest) {
 
     // 3. 데이터 매핑
     const itemsByChar = new Map<string, any[]>()
+    const soldItemIncomeByChar = new Map<string, number>()
     const contentByChar = new Map<string, any[]>()
     const dungeonByChar = new Map<string, any>()
     const stateByChar = new Map<string, any>()
@@ -154,6 +164,12 @@ export async function GET(request: NextRequest) {
       const arr = itemsByChar.get(item.ledger_character_id) || []
       arr.push(item)
       itemsByChar.set(item.ledger_character_id, arr)
+    })
+
+    // 판매 아이템 수입(템수입) 매핑
+    soldItemsResult.data?.forEach(item => {
+      const current = soldItemIncomeByChar.get(item.ledger_character_id) || 0
+      soldItemIncomeByChar.set(item.ledger_character_id, current + (item.sold_price || 0))
     })
 
     // 컨텐츠 기록 매핑
@@ -255,9 +271,12 @@ export async function GET(request: NextRequest) {
         contentMap[c.content_type] = c.completion_count || 0
       })
 
+      const itemIncome = soldItemIncomeByChar.get(charId) || 0
+
       characters[charId] = {
         name: charNameMap.get(charId) || '',
         todayIncome,
+        itemIncome,
         weeklyIncome: weeklyIncomeByChar.get(charId) || 0,
         unsoldItemCount: items.length,
         unsoldItemsByGrade: unsoldByGrade,

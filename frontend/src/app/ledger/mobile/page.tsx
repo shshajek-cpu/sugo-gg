@@ -2108,7 +2108,7 @@ export default function MobileLedgerPage() {
                                             </div>
                                         </div>
                                         <div className={styles.charIncomeArea}>
-                                            <div className={styles.charIncome}>{formatMoney(dashboardData[character.id]?.todayIncome || 0)}</div>
+                                            <div className={styles.charIncome}>{formatMoney((dashboardData[character.id]?.todayIncome || 0) + (dashboardData[character.id]?.itemIncome || 0))}</div>
                                             <div className={styles.charIncomeWeekly}>{formatMoney(dashboardData[character.id]?.weeklyIncome || 0)}</div>
                                         </div>
                                         {/* 펼침/접힘 아이콘 */}
@@ -2233,7 +2233,7 @@ export default function MobileLedgerPage() {
                             </div>
                             <div className={styles.incomeStatsArea}>
                                 <div className={styles.incomeStatSmall}>
-                                    <span className={styles.labelSmall}>일일수입</span>
+                                    <span className={styles.labelSmall}>컨텐츠 수입</span>
                                     <span className={styles.valueSmall}>{formatMoney(dashboardData[selectedCharacter.id]?.todayIncome || 0)}</span>
                                 </div>
                                 <div className={styles.incomeStatSmall}>
