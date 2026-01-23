@@ -308,6 +308,9 @@ export default function MobileLedgerPage() {
     const [dashboardData, setDashboardData] = useState<Record<string, any>>({});
     const [isDashboardLoading, setIsDashboardLoading] = useState(false);
 
+    // 진행현황 펼치기/접기 상태 (캐릭터 ID Set)
+    const [expandedProgressIds, setExpandedProgressIds] = useState<Set<string>>(new Set());
+
     // 전체 캐릭터 합산 수입 (API 호출)
     const [totalIncome, setTotalIncome] = useState({ dailyIncome: 0, weeklyIncome: 0 });
     const [isIncomeLoading, setIsIncomeLoading] = useState(false);
@@ -474,6 +477,20 @@ export default function MobileLedgerPage() {
         });
 
         return { mission: missionProgress, dungeon: dungeonProgress, daily: dailyProgress };
+    };
+
+    // 진행현황 펼치기/접기 토글
+    const toggleProgressExpand = (characterId: string, e: React.MouseEvent) => {
+        e.stopPropagation(); // 카드 클릭 이벤트 전파 방지
+        setExpandedProgressIds(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(characterId)) {
+                newSet.delete(characterId);
+            } else {
+                newSet.add(characterId);
+            }
+            return newSet;
+        });
     };
 
     // 컨텐츠 칩 색상 클래스
@@ -1237,9 +1254,9 @@ export default function MobileLedgerPage() {
                                 <div
                                     key={character.id}
                                     className={`${styles.charCard} ${index > 0 ? styles.charCardCollapsed : ''}`}
-                                    onClick={() => openCharacterDetail(character)}
                                 >
-                                    <div className={styles.charHeader}>
+                                    {/* 캐릭터 헤더 - 클릭시 상세 페이지로 이동 */}
+                                    <div className={styles.charHeader} onClick={() => openCharacterDetail(character)}>
                                         <div className={`${styles.profileImg} ${index > 0 ? styles.profileInactive : ''}`}>
                                             {character.profile_image && (
                                                 <img
@@ -1261,54 +1278,69 @@ export default function MobileLedgerPage() {
                                         </div>
                                     </div>
 
-                                    {/* 모든 캐릭터에 진행 현황 표시 */}
+                                    {/* 진행 현황 - 펼치기/접기 */}
                                     {(() => {
                                         const progress = getCharacterProgress(character.id);
                                         if (progress.mission.length === 0 && progress.dungeon.length === 0 && progress.daily.length === 0) return null;
+                                        const isExpanded = expandedProgressIds.has(character.id);
                                         return (
-                                            <>
-                                                {/* 섹션1: 미션/지령서 */}
-                                                <div className={styles.progressLabel}>미션/지령서</div>
-                                                <div className={styles.chipContainerGrid}>
-                                                    {progress.mission.map(content => (
-                                                        <div
-                                                            key={content.id}
-                                                            className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                        >
-                                                            <span className={styles.chipTxt}>{content.name}</span>
-                                                            <span className={styles.chipVal}>{content.current}/{content.max}</span>
-                                                        </div>
-                                                    ))}
+                                            <div className={styles.progressSection}>
+                                                {/* 펼치기/접기 버튼 */}
+                                                <div
+                                                    className={styles.progressToggle}
+                                                    onClick={(e) => toggleProgressExpand(character.id, e)}
+                                                >
+                                                    <span className={styles.progressToggleText}>진행현황</span>
+                                                    <span className={styles.progressToggleIcon}>{isExpanded ? '▲' : '▼'}</span>
                                                 </div>
 
-                                                {/* 섹션2: 던전 컨텐츠 */}
-                                                <div className={styles.progressLabel}>던전 컨텐츠</div>
-                                                <div className={styles.chipContainerGrid}>
-                                                    {progress.dungeon.map(content => (
-                                                        <div
-                                                            key={content.id}
-                                                            className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                        >
-                                                            <span className={styles.chipTxt}>{content.name}</span>
-                                                            <span className={styles.chipVal}>{content.current}/{content.max}</span>
+                                                {/* 펼쳐진 상태일 때만 컨텐츠 표시 */}
+                                                {isExpanded && (
+                                                    <>
+                                                        {/* 섹션1: 미션/지령서 */}
+                                                        <div className={styles.progressLabel}>미션/지령서</div>
+                                                        <div className={styles.chipContainerGrid}>
+                                                            {progress.mission.map(content => (
+                                                                <div
+                                                                    key={content.id}
+                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
+                                                                >
+                                                                    <span className={styles.chipTxt}>{content.name}</span>
+                                                                    <span className={styles.chipVal}>{content.current}/{content.max}</span>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
 
-                                                {/* 섹션3: 일일 컨텐츠 */}
-                                                <div className={styles.progressLabel}>일일 컨텐츠</div>
-                                                <div className={styles.chipContainerGrid}>
-                                                    {progress.daily.map(content => (
-                                                        <div
-                                                            key={content.id}
-                                                            className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
-                                                        >
-                                                            <span className={styles.chipTxt}>{content.name}</span>
-                                                            <span className={styles.chipVal}>{content.current}/{content.max}</span>
+                                                        {/* 섹션2: 던전 컨텐츠 */}
+                                                        <div className={styles.progressLabel}>던전 컨텐츠</div>
+                                                        <div className={styles.chipContainerGrid}>
+                                                            {progress.dungeon.map(content => (
+                                                                <div
+                                                                    key={content.id}
+                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
+                                                                >
+                                                                    <span className={styles.chipTxt}>{content.name}</span>
+                                                                    <span className={styles.chipVal}>{content.current}/{content.max}</span>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            </>
+
+                                                        {/* 섹션3: 일일 컨텐츠 */}
+                                                        <div className={styles.progressLabel}>일일 컨텐츠</div>
+                                                        <div className={styles.chipContainerGrid}>
+                                                            {progress.daily.map(content => (
+                                                                <div
+                                                                    key={content.id}
+                                                                    className={`${styles.statusChipCompact} ${getChipColorClass(content.color)}`}
+                                                                >
+                                                                    <span className={styles.chipTxt}>{content.name}</span>
+                                                                    <span className={styles.chipVal}>{content.current}/{content.max}</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         );
                                     })()}
                                 </div>

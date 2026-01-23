@@ -354,6 +354,32 @@
     font-weight: bold;
 }
 
+/* --- 진행현황 펼치기/접기 --- */
+.progressSection {
+    margin-top: 12px;
+    border-top: 1px solid #222;
+    padding-top: 8px;
+}
+
+.progressToggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    cursor: pointer;
+}
+
+.progressToggleText {
+    font-size: 0.85rem;
+    color: #9CA3AF;
+    font-weight: 500;
+}
+
+.progressToggleIcon {
+    font-size: 0.7rem;
+    color: #6B7280;
+}
+
 /* --- Status Chips --- */
 .chipContainer {
     display: flex;
