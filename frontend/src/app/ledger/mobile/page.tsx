@@ -2213,9 +2213,14 @@ export default function MobileLedgerPage() {
                                         <span className={styles.odValueBonus}>(+{characterState.odEnergy.ticketEnergy})</span>
                                     )}
                                 </span>
-                                <span className={styles.odLabel}>
-                                    시간충전: {characterState.odEnergy.timeEnergy} / 충전권: {characterState.odEnergy.ticketEnergy}
-                                </span>
+                                <div className={styles.odInfoRow}>
+                                    <span className={styles.odLabel}>
+                                        시간: {characterState.odEnergy.timeEnergy} / 충전권: {characterState.odEnergy.ticketEnergy}
+                                    </span>
+                                    <span className={styles.odTimer}>
+                                        {formatTimeRemaining(chargeTimers['charge3h'])}
+                                    </span>
+                                </div>
                             </div>
 
                             {/* 주간 컨텐츠 */}

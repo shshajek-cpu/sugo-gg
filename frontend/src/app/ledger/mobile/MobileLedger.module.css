@@ -1185,14 +1185,23 @@
     margin-left: 4px;
 }
 
+.odInfoRow {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+}
+
 .odLabel {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
     color: #9CA3AF;
 }
 
 .odTimer {
+    font-size: 0.9rem;
     color: #A78BFA;
-    font-weight: bold;
+    font-weight: 600;
+    font-family: 'Consolas', 'Monaco', monospace;
 }
 
 /* --- Dual Card Grid (Shugo & Abyss) --- */
