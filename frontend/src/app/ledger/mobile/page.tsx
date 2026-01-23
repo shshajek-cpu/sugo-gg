@@ -92,59 +92,6 @@ const DEFAULT_CHARACTER_STATE = {
     odEnergy: { timeEnergy: 840, ticketEnergy: 0 }
 }
 
-// 컨텐츠별 리셋 타입 정의
-const CONTENT_RESET_TYPES: Record<string, 'daily' | 'weekly' | 'charge24h'> = {
-    daily_dungeon: 'weekly',      // 수요일 05시 주간 리셋
-    awakening_battle: 'weekly',   // 수요일 05시 주간 리셋
-    subjugation: 'weekly',        // 수요일 05시 주간 리셋
-    nightmare: 'daily',           // 매일 05시 리셋 (2회 충전)
-    dimension_invasion: 'charge24h' // 24시간마다 1회 충전
-}
-
-// 다음 리셋/충전 시간 계산
-function getNextResetTime(resetType: 'daily' | 'weekly' | 'charge24h'): Date {
-    const now = new Date()
-    const reset = new Date(now)
-
-    if (resetType === 'charge24h') {
-        // 24시간마다 충전 - 다음 충전까지 표시
-        reset.setTime(now.getTime() + 24 * 60 * 60 * 1000)
-    } else if (resetType === 'daily') {
-        // 매일 새벽 5시
-        reset.setHours(5, 0, 0, 0)
-        if (now >= reset) {
-            reset.setDate(reset.getDate() + 1)
-        }
-    } else {
-        // 수요일 새벽 5시
-        reset.setHours(5, 0, 0, 0)
-        const dayOfWeek = reset.getDay()
-        let daysUntilWed = (3 - dayOfWeek + 7) % 7
-        if (daysUntilWed === 0 && now >= reset) {
-            daysUntilWed = 7
-        }
-        reset.setDate(reset.getDate() + daysUntilWed)
-    }
-
-    return reset
-}
-
-// 남은 시간 포맷팅
-function formatTimeRemaining(ms: number): string {
-    if (ms <= 0) return '00:00:00'
-    const totalSeconds = Math.floor(ms / 1000)
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    if (hours >= 24) {
-        const days = Math.floor(hours / 24)
-        const remainingHours = hours % 24
-        return `${days}일 ${remainingHours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`
-    }
-    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
-}
-
 // 모바일 전용 가계부 뷰 - 조건부 렌더링용 컴포넌트
 export default function MobileLedgerPage() {
     const router = useRouter()
@@ -225,26 +172,6 @@ export default function MobileLedgerPage() {
     const [selectedCharacter, setSelectedCharacter] = useState<LedgerCharacter | null>(null);
     const [selectedSubTab, setSelectedSubTab] = useState<'homework' | 'items' | 'stats'>('homework');
     const [selectedDate, setSelectedDate] = useState<string>(getGameDate(new Date()));
-
-    // 충전시간 상태 (1초마다 업데이트)
-    const [chargeTimers, setChargeTimers] = useState<Record<string, string>>({});
-
-    // 충전시간 업데이트 useEffect
-    useEffect(() => {
-        const updateTimers = () => {
-            const timers: Record<string, string> = {};
-            Object.entries(CONTENT_RESET_TYPES).forEach(([contentType, resetType]) => {
-                const nextReset = getNextResetTime(resetType);
-                const remaining = nextReset.getTime() - Date.now();
-                timers[contentType] = formatTimeRemaining(remaining);
-            });
-            setChargeTimers(timers);
-        };
-
-        updateTimers();
-        const interval = setInterval(updateTimers, 1000);
-        return () => clearInterval(interval);
-    }, []);
 
     // 캐릭터 추가 모달 상태
     const [showAddModal, setShowAddModal] = useState(false);
@@ -2474,7 +2401,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
                                     <span className={styles.simpleCardTitle}>일일던전</span>
-                                    <span className={styles.simpleCardTimer}>{chargeTimers['daily_dungeon'] || ''}</span>
+                                    <span className={styles.simpleCardTimer}>{formatTimeRemaining(chargeTimers['weekly'])}</span>
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
@@ -2491,7 +2418,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
                                     <span className={styles.simpleCardTitle}>각성전</span>
-                                    <span className={styles.simpleCardTimer}>{chargeTimers['awakening_battle'] || ''}</span>
+                                    <span className={styles.simpleCardTimer}>{formatTimeRemaining(chargeTimers['weekly'])}</span>
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
@@ -2508,7 +2435,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
                                     <span className={styles.simpleCardTitle}>악몽</span>
-                                    <span className={styles.simpleCardTimer}>{chargeTimers['nightmare'] || ''}</span>
+                                    <span className={styles.simpleCardTimer}>{formatTimeRemaining(chargeTimers['daily'])}</span>
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
@@ -2525,7 +2452,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
                                     <span className={styles.simpleCardTitle}>차원침공</span>
-                                    <span className={styles.simpleCardTimer}>{chargeTimers['dimension_invasion'] || ''}</span>
+                                    <span className={styles.simpleCardTimer}>{formatTimeRemaining(chargeTimers['daily'])}</span>
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
@@ -2542,7 +2469,7 @@ export default function MobileLedgerPage() {
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
                                     <span className={styles.simpleCardTitle}>토벌전</span>
-                                    <span className={styles.simpleCardTimer}>{chargeTimers['subjugation'] || ''}</span>
+                                    <span className={styles.simpleCardTimer}>{formatTimeRemaining(chargeTimers['weekly'])}</span>
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
