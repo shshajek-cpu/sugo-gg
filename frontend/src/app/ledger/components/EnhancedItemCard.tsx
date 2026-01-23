@@ -157,29 +157,6 @@ export default function EnhancedItemCard({
       className={`${styles.card} ${item.is_sold ? styles.cardSold : ''} ${isSelected ? styles.cardSelected : ''}`}
       onClick={handleCardClick}
     >
-      {/* 판매취소 버튼 (판매완료 아이템만) */}
-      {item.is_sold && (
-        <button
-          className={styles.unsellBtn}
-          onClick={handleUnsell}
-          disabled={isUpdating}
-          title="판매취소"
-        >
-          ×
-        </button>
-      )}
-
-      {/* 선택 체크박스 (미판매만) */}
-      {!item.is_sold && onSelect ? (
-        <div className={styles.selectCheckbox} onClick={handleCheckboxClick}>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={() => {}}
-            className={styles.checkbox}
-          />
-        </div>
-      ) : null}
 
       {/* 아이템 이미지 */}
       <div
@@ -216,28 +193,14 @@ export default function EnhancedItemCard({
 
       {/* 우측 하단 버튼들 */}
       <div className={styles.actions}>
-        {!item.is_sold ? (
-          <>
-            <button
-              className={styles.sellBtn}
-              onClick={handleSell}
-              disabled={isUpdating}
-              title="판매완료"
-            >
-              ✓
-            </button>
-            <button
-              className={styles.deleteBtn}
-              onClick={handleDelete}
-              disabled={isUpdating}
-              title="삭제"
-            >
-              ×
-            </button>
-          </>
-        ) : (
-          <span className={styles.soldBadge}>판매</span>
-        )}
+        <button
+          className={styles.deleteBtn}
+          onClick={handleDelete}
+          disabled={isUpdating}
+          title="삭제"
+        >
+          ×
+        </button>
       </div>
 
       {/* 툴팁 팝업 (fixed position) */}

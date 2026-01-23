@@ -1065,6 +1065,7 @@ export default function MobileLedgerPage() {
             const localGrade = GRADE_TO_LOCAL[selectedItemForRegister.grade] || 'common';
             const localCategory = getCategoryType(selectedItemForRegister.category);
 
+            const totalPrice = registerQuantity * registerPrice;
             await addItem({
                 item_id: selectedItemForRegister.id,
                 item_name: selectedItemForRegister.name,
@@ -1072,9 +1073,11 @@ export default function MobileLedgerPage() {
                 item_category: localCategory,
                 quantity: registerQuantity,
                 unit_price: registerPrice,
-                total_price: registerQuantity * registerPrice,
-                icon_url: selectedItemForRegister.icon_url
-            });
+                total_price: totalPrice,
+                icon_url: selectedItemForRegister.icon_url,
+                sold_price: totalPrice,  // 등록 시 바로 판매 완료 처리
+                sold_date: undefined      // API에서 현재 날짜로 설정
+            } as any);
 
             setShowItemRegisterModal(false);
             setSelectedItemForRegister(null);
@@ -2027,6 +2030,14 @@ export default function MobileLedgerPage() {
                                 <div className={styles.incomeValue}>{unsoldItems.length}건</div>
                             </div>
                         </div>
+
+                        {/* 월간 통계 버튼 */}
+                        <button
+                            className={styles.statsButton}
+                            onClick={() => router.push('/ledger/mobile/stats')}
+                        >
+                            {new Date(selectedDate).getMonth() + 1}월 키나 수입 통계 보기
+                        </button>
                     </div>
 
                     {/* 아이템 현황 */}
@@ -3603,42 +3614,6 @@ export default function MobileLedgerPage() {
 
                         {/* 액션 버튼들 */}
                         <div className={styles.actionSheetButtons}>
-                            {!selectedItemForAction.sold_price ? (
-                                <>
-                                    {/* 미판매 아이템: 판매 완료 */}
-                                    <div className={styles.actionSheetSellSection}>
-                                        <input
-                                            type="text"
-                                            className={styles.actionSheetSellInput}
-                                            placeholder="판매 금액 입력"
-                                            value={sellPrice}
-                                            onChange={(e) => {
-                                                const value = e.target.value.replace(/,/g, '');
-                                                setSellPrice(value);
-                                            }}
-                                        />
-                                        <button
-                                            className={styles.actionSheetSellBtn}
-                                            onClick={handleSellItem}
-                                            disabled={isProcessing}
-                                        >
-                                            {isProcessing ? '처리 중...' : '판매 완료'}
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <>
-                                    {/* 판매완료 아이템: 판매 취소 */}
-                                    <button
-                                        className={styles.actionSheetUnsellBtn}
-                                        onClick={handleUnsellItem}
-                                        disabled={isProcessing}
-                                    >
-                                        {isProcessing ? '처리 중...' : '판매 취소'}
-                                    </button>
-                                </>
-                            )}
-
                             <button
                                 className={styles.actionSheetDeleteBtn}
                                 onClick={handleDeleteItem}

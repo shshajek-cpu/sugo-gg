@@ -317,6 +317,7 @@ export default function ItemManagementTab({
     const localGrade = GRADE_TO_LOCAL[selectedSearchItem.grade] || 'common'
     const localCategory = getCategoryType(selectedSearchItem.category)
 
+    const totalPrice = data.quantity * data.unitPrice
     const itemData = {
       item_id: selectedSearchItem.id,
       item_name: selectedSearchItem.name,
@@ -324,8 +325,10 @@ export default function ItemManagementTab({
       item_category: localCategory,
       quantity: data.quantity,
       unit_price: data.unitPrice,
-      total_price: data.quantity * data.unitPrice,
-      icon_url: selectedSearchItem.icon_url
+      total_price: totalPrice,
+      icon_url: selectedSearchItem.icon_url,
+      sold_price: totalPrice,  // 등록 시 바로 판매 완료 처리
+      sold_date: undefined     // API에서 현재 날짜로 설정
     }
     console.log('[ItemManagementTab] Calling onAddItem with:', itemData)
 
@@ -650,22 +653,6 @@ export default function ItemManagementTab({
             </div>
           </div>
 
-          {/* 일괄 처리 버튼 */}
-          {unsoldCount > 0 && (
-            <div className={styles.bulkActions}>
-              <button className={styles.bulkBtn} onClick={toggleSelectAll}>
-                {selectedItems.size === unsoldCount ? '선택 해제' : '전체 선택'}
-              </button>
-              {selectedItems.size > 0 && (
-                <button className={styles.bulkSellBtn} onClick={handleSellSelected}>
-                  선택 완료 ({selectedItems.size}개)
-                </button>
-              )}
-              <button className={styles.bulkSellAllBtn} onClick={handleSellAll}>
-                전체 완료
-              </button>
-            </div>
-          )}
 
           {/* 날짜별 아이템 목록 */}
           <div className={styles.dateGroupContainer}>

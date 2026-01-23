@@ -79,7 +79,9 @@ export async function POST(request: NextRequest) {
       total_price,
       source_content,
       item_id,
-      icon_url
+      icon_url,
+      sold_price,
+      sold_date
     } = body
 
     if (!characterId || !item_name || !item_category || !item_grade) {
@@ -99,7 +101,7 @@ export async function POST(request: NextRequest) {
     const supabase = getSupabase()
 
     // icon_url 컬럼이 없을 수 있으므로 fallback 처리
-    const insertDataWithIcon = {
+    const insertDataWithIcon: any = {
       ledger_character_id: characterId,
       item_id,
       item_name,
@@ -111,6 +113,12 @@ export async function POST(request: NextRequest) {
       obtained_date: getKoreanGameDate(),
       source_content,
       icon_url
+    }
+
+    // 판매 완료 상태로 등록하는 경우
+    if (sold_price !== undefined && sold_price !== null) {
+      insertDataWithIcon.sold_price = sold_price
+      insertDataWithIcon.sold_date = sold_date || getKoreanGameDate()
     }
 
     let result = await supabase
