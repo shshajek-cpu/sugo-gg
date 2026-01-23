@@ -14,6 +14,7 @@ import { getGameDate, getWeekKey, isEditable } from '../utils/dateUtils';
 import { LedgerCharacter } from '@/types/ledger';
 import { SERVERS, SERVER_MAP } from '@/app/constants/servers';
 import { supabaseApi } from '@/lib/supabaseApi';
+import TicketChargePopup from '../components/TicketChargePopup';
 import styles from './MobileLedger.module.css';
 
 // 던전 데이터 타입 정의
@@ -59,6 +60,20 @@ interface DungeonRecord {
     count: number;
     kina: number;
     usedFromBonus?: number;
+}
+
+// 고정된 최대 횟수 상수 (PC와 동일)
+const MAX_TICKETS = {
+    // 던전 컨텐츠
+    transcend: 14,      // 초월: 8시간 충전 (05/13/21시)
+    expedition: 21,     // 원정: 8시간 충전
+    sanctuary: 4,       // 성역: 주간 리셋 (수요일 05시)
+    // 일일 컨텐츠
+    daily_dungeon: 7,   // 일일던전: 주간 리셋
+    awakening: 3,       // 각성전: 주간 리셋
+    nightmare: 14,      // 악몽: 매일 05시에 2회 충전
+    dimension: 14,      // 차원침공: 24시간마다 1회 충전
+    subjugation: 3      // 토벌전: 주간 리셋
 }
 
 // 모바일 전용 가계부 뷰 - 조건부 렌더링용 컴포넌트
@@ -155,6 +170,9 @@ export default function MobileLedgerPage() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [characterToDelete, setCharacterToDelete] = useState<LedgerCharacter | null>(null);
     const [isDeletingCharacter, setIsDeletingCharacter] = useState(false);
+
+    // 설정/충전 팝업 상태
+    const [showChargePopup, setShowChargePopup] = useState(false);
 
     // 던전 데이터 상태
     const [dungeonData, setDungeonData] = useState<DungeonData | null>(null);
@@ -1453,6 +1471,108 @@ export default function MobileLedgerPage() {
         }
     };
 
+    // 이용권 충전 핸들러 (보너스 티켓 추가)
+    const handleTicketCharge = (charges: Record<string, number>) => {
+        if (!selectedCharacterId) return;
+
+        // 보너스 티켓 업데이트
+        setCharacterState(prev => {
+            const newBonusTickets = { ...prev.bonusTickets };
+            Object.keys(charges).forEach(key => {
+                if (charges[key] > 0) {
+                    newBonusTickets[key] = (newBonusTickets[key] || 0) + charges[key];
+                }
+            });
+            return {
+                ...prev,
+                bonusTickets: newBonusTickets
+            };
+        });
+
+        // DB에 저장
+        fetch('/api/ledger/character-state', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeader()
+            },
+            body: JSON.stringify({
+                characterId: selectedCharacterId,
+                bonusTickets: Object.keys(charges).reduce((acc, key) => {
+                    if (charges[key] > 0) {
+                        acc[key] = (characterState.bonusTickets[key] || 0) + charges[key];
+                    }
+                    return acc;
+                }, { ...characterState.bonusTickets })
+            })
+        }).catch(err => console.error('[Mobile] 보너스 티켓 저장 실패:', err));
+    };
+
+    // 초기설정 동기화 핸들러
+    const handleInitialSync = async (settings: {
+        odTimeEnergy: number;
+        odTicketEnergy: number;
+        tickets: Record<string, number>;
+    }) => {
+        if (!selectedCharacterId) {
+            console.error('[Mobile] 캐릭터가 선택되지 않음');
+            return;
+        }
+
+        const newBaseTickets = {
+            ...characterState.baseTickets,
+            ...settings.tickets
+        };
+
+        const newBonusTickets = {
+            transcend: 0,
+            expedition: 0,
+            sanctuary: 0,
+            daily_dungeon: 0,
+            awakening: 0,
+            nightmare: 0,
+            dimension: 0,
+            subjugation: 0
+        };
+
+        // API로 저장
+        try {
+            const res = await fetch('/api/ledger/character-state', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...getAuthHeader()
+                },
+                body: JSON.stringify({
+                    characterId: selectedCharacterId,
+                    baseTickets: newBaseTickets,
+                    bonusTickets: newBonusTickets,
+                    odEnergy: {
+                        timeEnergy: settings.odTimeEnergy,
+                        ticketEnergy: settings.odTicketEnergy,
+                        lastChargeTime: new Date().toISOString()
+                    }
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error('초기설정 저장 실패');
+            }
+
+            // 상태 업데이트
+            setCharacterState(prev => ({
+                ...prev,
+                baseTickets: newBaseTickets,
+                bonusTickets: newBonusTickets
+            }));
+
+            console.log('[Mobile] 초기설정 동기화 완료');
+        } catch (error) {
+            console.error('[Mobile] 초기설정 동기화 실패:', error);
+            throw error;
+        }
+    };
+
     // 전체 캐릭터 합산 일일/주간 수입 (API에서 로드됨)
     const { dailyIncome, weeklyIncome } = totalIncome;
 
@@ -1696,6 +1816,14 @@ export default function MobileLedgerPage() {
                                             className={styles.profileImgLargeActual}
                                         />
                                     )}
+                                    {/* 설정 버튼 */}
+                                    <button
+                                        className={styles.settingsBtn}
+                                        onClick={() => setShowChargePopup(true)}
+                                        title="초기설정 및 이용권 충전"
+                                    >
+                                        ⚙️
+                                    </button>
                                 </div>
                             </div>
                             <div className={styles.charInfoArea}>
@@ -1927,7 +2055,7 @@ export default function MobileLedgerPage() {
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
                                             {transcendRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                            {characterState.baseTickets.transcend}
+                                            {MAX_TICKETS.transcend}
                                             {characterState.bonusTickets.transcend > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.transcend})</span>
                                             )}
@@ -2029,7 +2157,7 @@ export default function MobileLedgerPage() {
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
                                             {expeditionRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                            {characterState.baseTickets.expedition}
+                                            {MAX_TICKETS.expedition}
                                             {characterState.bonusTickets.expedition > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.expedition})</span>
                                             )}
@@ -2144,7 +2272,7 @@ export default function MobileLedgerPage() {
                                     <div className={styles.dungeonCardRight}>
                                         <span className={styles.dungeonCardCount}>
                                             {sanctuaryRecords.reduce((sum, r) => sum + r.count, 0)}/
-                                            {characterState.baseTickets.sanctuary}
+                                            {MAX_TICKETS.sanctuary}
                                             {characterState.bonusTickets.sanctuary > 0 && (
                                                 <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.sanctuary})</span>
                                             )}
@@ -2238,8 +2366,8 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.daily_dungeon - (records.find(r => r.content_type === 'daily_dungeon')?.completion_count || 0))}/
-                                        {characterState.baseTickets.daily_dungeon}
+                                        {Math.max(0, MAX_TICKETS.daily_dungeon - (records.find(r => r.content_type === 'daily_dungeon')?.completion_count || 0))}/
+                                        {MAX_TICKETS.daily_dungeon}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('daily_dungeon')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('daily_dungeon')}>-</button>
@@ -2254,8 +2382,8 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.awakening - (records.find(r => r.content_type === 'awakening_battle')?.completion_count || 0))}/
-                                        {characterState.baseTickets.awakening}
+                                        {Math.max(0, MAX_TICKETS.awakening - (records.find(r => r.content_type === 'awakening_battle')?.completion_count || 0))}/
+                                        {MAX_TICKETS.awakening}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('awakening_battle')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('awakening_battle')}>-</button>
@@ -2270,8 +2398,8 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.nightmare - (records.find(r => r.content_type === 'nightmare')?.completion_count || 0))}/
-                                        {characterState.baseTickets.nightmare}
+                                        {Math.max(0, MAX_TICKETS.nightmare - (records.find(r => r.content_type === 'nightmare')?.completion_count || 0))}/
+                                        {MAX_TICKETS.nightmare}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('nightmare')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('nightmare')}>-</button>
@@ -2286,8 +2414,8 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.dimension - (records.find(r => r.content_type === 'dimension_invasion')?.completion_count || 0))}/
-                                        {characterState.baseTickets.dimension}
+                                        {Math.max(0, MAX_TICKETS.dimension - (records.find(r => r.content_type === 'dimension_invasion')?.completion_count || 0))}/
+                                        {MAX_TICKETS.dimension}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('dimension_invasion')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('dimension_invasion')}>-</button>
@@ -2302,8 +2430,8 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.subjugation - (records.find(r => r.content_type === 'subjugation')?.completion_count || 0))}/
-                                        {characterState.baseTickets.subjugation}
+                                        {Math.max(0, MAX_TICKETS.subjugation - (records.find(r => r.content_type === 'subjugation')?.completion_count || 0))}/
+                                        {MAX_TICKETS.subjugation}
                                     </span>
                                     <button className={styles.btnStepSmall} onClick={() => incrementCompletion('subjugation')}>+</button>
                                     <button className={styles.btnStepSmall} onClick={() => decrementCompletion('subjugation')}>-</button>
@@ -2663,6 +2791,28 @@ export default function MobileLedgerPage() {
                     </div>
                 </div>
             )}
+
+            {/* 초기설정 & 이용권 충전 팝업 */}
+            <TicketChargePopup
+                isOpen={showChargePopup}
+                onClose={() => setShowChargePopup(false)}
+                onCharge={handleTicketCharge}
+                currentTickets={{
+                    transcend: { base: characterState.baseTickets.transcend, bonus: characterState.bonusTickets.transcend || 0 },
+                    expedition: { base: characterState.baseTickets.expedition, bonus: characterState.bonusTickets.expedition || 0 },
+                    sanctuary: { base: characterState.baseTickets.sanctuary, bonus: characterState.bonusTickets.sanctuary || 0 },
+                    daily_dungeon: { base: characterState.baseTickets.daily_dungeon, bonus: characterState.bonusTickets.daily_dungeon || 0 },
+                    awakening: { base: characterState.baseTickets.awakening, bonus: characterState.bonusTickets.awakening || 0 },
+                    nightmare: { base: characterState.baseTickets.nightmare, bonus: characterState.bonusTickets.nightmare || 0 },
+                    dimension: { base: characterState.baseTickets.dimension, bonus: characterState.bonusTickets.dimension || 0 },
+                    subjugation: { base: characterState.baseTickets.subjugation, bonus: characterState.bonusTickets.subjugation || 0 }
+                }}
+                odEnergy={{
+                    timeEnergy: characterState.odEnergy.timeEnergy,
+                    ticketEnergy: characterState.odEnergy.ticketEnergy
+                }}
+                onInitialSync={handleInitialSync}
+            />
 
             {/* 던전 기록 추가 모달 - 초월 */}
             {showDungeonModal === 'transcend' && dungeonData && (

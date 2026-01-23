@@ -545,6 +545,7 @@
 }
 
 .profileImgLarge {
+    position: relative;
     width: 100%;
     height: 100%;
     border-radius: 50%;
@@ -1328,6 +1329,34 @@
     height: 100%;
     object-fit: cover;
     border-radius: 12px;
+}
+
+/* --- Settings Button --- */
+.settingsBtn {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 28px;
+    height: 28px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+
+.settingsBtn:hover {
+    background: #222;
+    border-color: #f59e0b;
+}
+
+.settingsBtn:active {
+    transform: scale(0.95);
 }
 
 /* --- Item Price --- */
