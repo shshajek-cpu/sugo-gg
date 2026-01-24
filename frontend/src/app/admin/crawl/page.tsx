@@ -482,7 +482,12 @@ export default function CrawlPage() {
                 saveDailyRequests()
                 updateStats('totalRequests')
 
-                if (result.success && result.data.data) {
+                // API 에러 응답 확인 (result.data.error)
+                if (result.success && result.data?.error) {
+                    updateStats('errors')
+                    consecutiveErrorsRef.current++
+                    addLog(`[${contentName}] ${serverName} - ${result.data.error}`, 'error')
+                } else if (result.success && result.data?.data) {
                     const count = result.data.data.length
                     allCharacters = [...allCharacters, ...result.data.data]
                     updateStats('inserted', count)
@@ -500,7 +505,7 @@ export default function CrawlPage() {
                 } else {
                     updateStats('errors')
                     consecutiveErrorsRef.current++
-                    addLog(`[${contentName}] ${serverName} - ${result.error || '알 수 없는 오류'}`, 'error')
+                    addLog(`[${contentName}] ${serverName} - ${result.error || result.data?.error || '알 수 없는 오류'}`, 'error')
 
                     // Auto slowdown on error
                     if (settings.smart.autoSlowdown) {
