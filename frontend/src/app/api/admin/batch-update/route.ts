@@ -6,7 +6,7 @@ import { aggregateStats } from '../../../../lib/statsAggregator'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Vercel serverless timeout (최대 60초)
 
-const BATCH_SIZE = 15 // 한 번에 조회할 캐릭터 수 (기존 10 → 15)
+const BATCH_SIZE = 50 // 한 번에 조회할 캐릭터 수 (분당 1000명 목표: 50명 × 20회/분)
 
 // 차단/에러 타입 정의
 type ErrorType = 'blocked' | 'rate_limit' | 'maintenance' | 'network' | 'unknown'
@@ -176,8 +176,8 @@ export async function GET(request: NextRequest) {
                 results.push({ name: char.name, success: false, error: e.message })
             }
 
-            // Rate Limit 방지 딜레이 (100ms)
-            await new Promise(resolve => setTimeout(resolve, 100))
+            // Rate Limit 방지 딜레이 (50ms)
+            await new Promise(resolve => setTimeout(resolve, 50))
         }
 
         // 남은 캐릭터 수 확인
