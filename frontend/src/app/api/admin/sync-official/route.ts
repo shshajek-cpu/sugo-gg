@@ -67,31 +67,52 @@ export async function GET(request: NextRequest) {
         // Note: Check if range is correct. Based on server list, 1xxx and 2xxx.
         const raceName = (serverIdNum >= 1000 && serverIdNum < 2000) ? 'Elyos' : 'Asmodian'
 
-        const upsertData = list.map((item: any) => ({
-            character_id: item.characterId, // Use official ID as external ID
-            name: item.characterName,
-            server_id: serverId,
-            race_name: raceName,
-            class_name: item.className,
-            // ranking_ap: item.point, // Map point to ranking_ap
-            // If type is 1 (Abyss), map to ranking_ap. For others, maybe just save to rankings json?
-            // For now, let's map type 1 to ranking_ap.
-            ...(type === '1' ? { ranking_ap: item.point } : {}),
-            profile_image: item.profileImage,
-            level: 0, // API doesn't provide level in this list, default to 0
-            updated_at: new Date().toISOString(),
-            // 상세 조회용 랭킹 순위 (DB에는 저장 안 됨, 응답에만 포함)
-            rank: item.rank,
-            // Ensure other required fields have defaults or are nullable
-            rankings: {
-                // Store the raw rank and point for this specific type
+        // 기존 캐릭터의 rankings 조회 (merge를 위해)
+        const characterIds = list.map((item: any) => item.characterId)
+        const { data: existingChars } = await supabase
+            .from('characters')
+            .select('character_id, rankings')
+            .in('character_id', characterIds)
+
+        // 기존 rankings를 Map으로 변환
+        const existingRankingsMap = new Map<string, any>()
+        if (existingChars) {
+            existingChars.forEach((char: any) => {
+                existingRankingsMap.set(char.character_id, char.rankings || {})
+            })
+        }
+
+        const upsertData = list.map((item: any) => {
+            // 기존 rankings와 새 랭킹 merge
+            const existingRankings = existingRankingsMap.get(item.characterId) || {}
+            const mergedRankings = {
+                ...existingRankings,
                 [`type_${type}`]: {
                     rank: item.rank,
                     point: item.point,
                     updated_at: new Date().toISOString()
                 }
             }
-        }))
+
+            return {
+                character_id: item.characterId, // Use official ID as external ID
+                name: item.characterName,
+                server_id: serverId,
+                race_name: raceName,
+                class_name: item.className,
+                // ranking_ap: item.point, // Map point to ranking_ap
+                // If type is 1 (Abyss), map to ranking_ap. For others, maybe just save to rankings json?
+                // For now, let's map type 1 to ranking_ap.
+                ...(type === '1' ? { ranking_ap: item.point } : {}),
+                profile_image: item.profileImage,
+                level: 0, // API doesn't provide level in this list, default to 0
+                updated_at: new Date().toISOString(),
+                // 상세 조회용 랭킹 순위 (DB에는 저장 안 됨, 응답에만 포함)
+                rank: item.rank,
+                // Merged rankings (기존 랭킹 유지 + 새 랭킹 추가)
+                rankings: mergedRankings
+            }
+        })
 
         // Upsert options
         // We use upsert to update existing records or insert new ones.
