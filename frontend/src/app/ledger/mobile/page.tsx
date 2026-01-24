@@ -633,16 +633,18 @@ export default function MobileLedgerPage() {
         });
 
         // 섹션3: 일일 컨텐츠 진행률
+        // contentRecords에서 완료 횟수를 가져와 잔여 횟수 계산
+        const contentRecords = charData.contentRecords || {};
         const dailyProgress = DAILY_CONTENT_DEFS.map(def => {
             let bonus = 0;
             if (def.ticketKey) {
                 bonus = bonusTickets[def.ticketKey] || 0;
             }
 
-            let remaining = def.maxPerChar;
-            if (def.ticketKey && baseTickets[def.ticketKey] !== undefined) {
-                remaining = baseTickets[def.ticketKey];
-            }
+            // 완료 횟수 = contentRecords[contentType]
+            // 잔여 횟수 = 최대값 - 완료횟수
+            const completionCount = contentRecords[def.contentType] || 0;
+            const remaining = Math.max(0, def.maxPerChar - completionCount);
 
             return { ...def, current: remaining, max: def.maxPerChar, bonus };
         });
