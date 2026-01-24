@@ -1917,12 +1917,17 @@ export default function MobileLedgerPage() {
                 { key: 'subjugation', contentType: 'subjugation', max: MAX_TICKETS.subjugation }
             ];
 
-            const today = getGameDate();
+            // selectedDate 사용 (화면에 표시되는 날짜와 동기화)
+            const targetDate = selectedDate;
+            console.log('[Mobile] 초기설정 적용 날짜:', targetDate);
+
             for (const { key, contentType, max } of dailyContentMapping) {
                 const remaining = settings.tickets[key];
                 if (remaining !== undefined) {
                     const completionCount = Math.max(0, max - remaining);
-                    await fetch('/api/ledger/content-records', {
+                    console.log(`[Mobile] 초기설정: ${contentType}, 잔여=${remaining}, 완료=${completionCount}`);
+
+                    const recordRes = await fetch('/api/ledger/content-records', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -1930,7 +1935,7 @@ export default function MobileLedgerPage() {
                         },
                         body: JSON.stringify({
                             characterId: selectedCharacterId,
-                            date: today,
+                            date: targetDate,
                             content_type: contentType,
                             dungeon_tier: contentType,
                             max_count: max,
@@ -1939,6 +1944,10 @@ export default function MobileLedgerPage() {
                             base_kina: 0
                         })
                     });
+
+                    if (!recordRes.ok) {
+                        console.error(`[Mobile] 초기설정 저장 실패: ${contentType}`, await recordRes.text());
+                    }
                 }
             }
 
