@@ -23,14 +23,18 @@ export async function GET(request: NextRequest) {
     const order = searchParams.get('order') || 'desc'
     const onlyWithoutDetail = searchParams.get('onlyWithoutDetail') === 'true'
     const onlyRankers = searchParams.get('onlyRankers') !== 'false' // 기본값: true (랭커만)
+    const contentType = searchParams.get('contentType') // 특정 컨텐츠 타입만 (예: 1, 21, 3 등)
 
     try {
+        // 컨텐츠 타입 지정 시 더 많이 가져와서 클라이언트에서 정렬
+        const fetchLimit = contentType ? Math.min(limit * 3, 500) : limit
+
         let query = supabase
             .from('characters')
             .select('character_id, name, server_id, race_name, class_name, ranking_ap, rankings, profile_image, equipment, pve_score, pvp_score, updated_at')
             .not('character_id', 'is', null) // character_id가 있는 것만 (상세 조회 가능)
             .order(orderBy, { ascending: order === 'asc' })
-            .limit(limit)
+            .limit(fetchLimit)
 
         // 크롤링된 랭커만 (rankings 필드가 있는 캐릭터)
         if (onlyRankers) {
@@ -49,10 +53,32 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: error.message }, { status: 500 })
         }
 
+        let filteredData = data || []
+
+        // 특정 컨텐츠 타입 필터링 및 정렬
+        if (contentType && filteredData.length > 0) {
+            const rankKey = `type_${contentType}`
+
+            // 해당 컨텐츠 랭킹이 있는 캐릭터만 필터링
+            filteredData = filteredData.filter((char: any) =>
+                char.rankings && char.rankings[rankKey] && char.rankings[rankKey].rank
+            )
+
+            // 해당 컨텐츠의 rank 기준으로 정렬
+            filteredData.sort((a: any, b: any) => {
+                const rankA = a.rankings[rankKey]?.rank || 999
+                const rankB = b.rankings[rankKey]?.rank || 999
+                return rankA - rankB
+            })
+
+            // limit 적용
+            filteredData = filteredData.slice(0, limit)
+        }
+
         return NextResponse.json({
-            data,
-            count: data?.length || 0,
-            filters: { limit, orderBy, order, onlyWithoutDetail }
+            data: filteredData,
+            count: filteredData.length,
+            filters: { limit, orderBy, order, onlyWithoutDetail, contentType }
         })
     } catch (error: any) {
         console.error('[Admin Characters] Error:', error)

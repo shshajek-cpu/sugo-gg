@@ -194,6 +194,7 @@ export default function CrawlPage() {
     const [detailFetchCount, setDetailFetchCount] = useState(30)
     const [isDetailRunning, setIsDetailRunning] = useState(false)
     const [detailProgress, setDetailProgress] = useState({ current: 0, total: 0 })
+    const [loadContentType, setLoadContentType] = useState<number>(1) // DB 불러오기 시 컨텐츠 타입
     const detailAbortRef = useRef(false)
 
     // Refs for async control
@@ -695,11 +696,14 @@ export default function CrawlPage() {
     }
 
     // DB에서 랭커 불러오기
-    const handleLoadFromDB = async () => {
-        addLog('DB에서 랭커 목록 불러오는 중...', 'info')
+    const handleLoadFromDB = async (contentTypeOverride?: number) => {
+        const targetContentType = contentTypeOverride ?? loadContentType
+        const contentName = CONTENT_TYPES.find(c => c.id === targetContentType)?.name || `Type ${targetContentType}`
+
+        addLog(`DB에서 [${contentName}] 랭커 불러오는 중...`, 'info')
 
         try {
-            const res = await fetch('/api/admin/characters?limit=100&orderBy=ranking_ap&order=desc')
+            const res = await fetch(`/api/admin/characters?limit=100&contentType=${targetContentType}`)
             if (!res.ok) {
                 throw new Error(`HTTP ${res.status}`)
             }
@@ -713,7 +717,7 @@ export default function CrawlPage() {
             const characters = data.data || data || []
 
             if (characters.length === 0) {
-                addLog('DB에 저장된 캐릭터가 없습니다. 먼저 크롤링을 실행하세요.', 'warning')
+                addLog(`[${contentName}] 랭커가 없습니다. 해당 컨텐츠 크롤링을 먼저 실행하세요.`, 'warning')
                 return
             }
 
@@ -721,7 +725,7 @@ export default function CrawlPage() {
             const validCharacters = characters.filter((c: any) => c.character_id && c.server_id)
 
             setCollectedCharacters(validCharacters)
-            addLog(`크롤링된 랭커 ${validCharacters.length}명 불러옴 (어비스 포인트 순)`, 'success')
+            addLog(`[${contentName}] 랭커 ${validCharacters.length}명 불러옴 (순위 순)`, 'success')
         } catch (error: any) {
             addLog(`DB 불러오기 실패: ${error.message}`, 'error')
         }
@@ -919,13 +923,32 @@ export default function CrawlPage() {
                                 상세 조회할 캐릭터가 없습니다.<br />
                                 크롤링을 실행하거나 DB에서 불러오세요.
                             </div>
-                            <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                <DSButton variant="secondary" onClick={handleLoadFromDB}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <select
+                                    value={loadContentType}
+                                    onChange={(e) => setLoadContentType(parseInt(e.target.value))}
+                                    style={{
+                                        padding: '0.5rem 0.75rem',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '6px',
+                                        color: 'var(--brand-white)',
+                                        fontSize: '0.85rem',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    {CONTENT_TYPES.map(content => (
+                                        <option key={content.id} value={content.id}>
+                                            {content.icon} {content.name}
+                                        </option>
+                                    ))}
+                                </select>
+                                <DSButton variant="secondary" onClick={() => handleLoadFromDB()}>
                                     📥 DB에서 랭커 불러오기
                                 </DSButton>
                             </div>
                             <div style={{ fontSize: '0.7rem', color: 'var(--text-disabled)' }}>
-                                크롤링된 랭커 중 어비스 포인트 상위 100명을 불러옵니다
+                                선택한 컨텐츠의 크롤링된 랭커 상위 100명을 불러옵니다
                             </div>
                         </div>
                     ) : (
