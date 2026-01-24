@@ -144,6 +144,22 @@ export async function GET(request: NextRequest) {
 
                 try {
                     const aggregatedStats = aggregateStats(equipmentForCalc, titles, daevanion, stats, equippedTitleId)
+
+                    // 디버그: 첫 번째 캐릭터의 스탯 정보 로깅
+                    if (results.length === 0) {
+                        console.log(`[Batch Debug] ${char.name} - Equipment count:`, equipmentForCalc.length)
+                        console.log(`[Batch Debug] ${char.name} - StatList count:`, statList.length)
+                        console.log(`[Batch Debug] ${char.name} - AggregatedStats count:`, aggregatedStats.length)
+
+                        // 주요 스탯 확인
+                        const attackStat = aggregatedStats.find(s => s.name === '공격력')
+                        const critStat = aggregatedStats.find(s => s.name === '치명타')
+                        const accStat = aggregatedStats.find(s => s.name === '명중')
+                        console.log(`[Batch Debug] ${char.name} - 공격력:`, attackStat?.totalValue || 0)
+                        console.log(`[Batch Debug] ${char.name} - 치명타:`, critStat?.totalValue || 0)
+                        console.log(`[Batch Debug] ${char.name} - 명중:`, accStat?.totalValue || 0)
+                    }
+
                     const combatResult = calculateDualCombatPowerFromStats(aggregatedStats, stats)
                     pveScore = combatResult.pve
                     pvpScore = combatResult.pvp
