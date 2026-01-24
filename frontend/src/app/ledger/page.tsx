@@ -38,7 +38,7 @@ import styles from './ledger.module.css'
 
 export default function LedgerPage() {
   // 모바일 감지 (조건부 렌더링)
-  const [isMobile, setIsMobile] = useState(false)
+  const [isMobile, setIsMobile] = useState<boolean | null>(null) // null = 감지 전
 
   useEffect(() => {
     const checkMobile = () => {
@@ -762,6 +762,21 @@ export default function LedgerPage() {
     const weekdays = ['일', '월', '화', '수', '목', '금', '토']
     const weekday = weekdays[date.getDay()]
     return `${month}/${day} (${weekday})`
+  }
+
+  // 모바일 감지 완료 전에는 빈 화면 (깜빡임 방지)
+  if (isMobile === null) {
+    return (
+      <div style={{
+        minHeight: '100vh',
+        backgroundColor: '#000',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center'
+      }}>
+        <div style={{ color: '#666', fontSize: '14px' }}>로딩 중...</div>
+      </div>
+    )
   }
 
   // Google 로그인 필수 - 비로그인 시 안내 화면 표시
