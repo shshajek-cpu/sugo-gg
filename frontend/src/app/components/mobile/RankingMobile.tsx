@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
+import useSWRInfinite from 'swr/infinite'
 import styles from './RankingMobile.module.css'
 import { SERVER_MAP } from '../../constants/servers'
 import { getValidScore } from '../../utils/ranking'
@@ -13,18 +14,21 @@ interface RankingMobileProps {
     type: 'combat' | 'content' | 'hiton' | 'cp' // hiton, cp는 하위 호환
 }
 
+// SWR fetcher
+const fetcher = async (url: string) => {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('API Error')
+    const json = await res.json()
+    if (json.error) throw new Error(json.error)
+    return json
+}
+
 export default function RankingMobile({ type }: RankingMobileProps) {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const [data, setData] = useState<RankingCharacter[]>([])
-    const [loading, setLoading] = useState(true)
-    const [page, setPage] = useState(1)
-    const [hasMore, setHasMore] = useState(false)
-    const [isLoadingMore, setIsLoadingMore] = useState(false)
 
     // 타입 정규화
     const normalizedType = (type === 'hiton' || type === 'cp') ? 'combat' : type
-    const isCombatTab = normalizedType === 'combat'
 
     // 필터 상태
     const [selectedServer, setSelectedServer] = useState('all')
@@ -64,76 +68,56 @@ export default function RankingMobile({ type }: RankingMobileProps) {
         { id: 'Asmodian', name: '마족' },
     ]
 
-    useEffect(() => {
-        setData([])  // 이전 데이터 즉시 제거 → 로딩 스켈레톤 표시
-        setPage(1)
-        fetchRanking(1, true)
-    }, [activeType, selectedServer, selectedRace, sortBy])
+    // SWR Infinite로 페이지네이션 + 캐싱
+    const getKey = (pageIndex: number, previousPageData: any) => {
+        if (previousPageData && !previousPageData.data?.length) return null
 
-    const fetchRanking = async (pageNum: number, isReset: boolean = false) => {
-        if (isReset) {
-            setLoading(true)
-        } else {
-            setIsLoadingMore(true)
+        const params = new URLSearchParams()
+        params.set('type', activeType)
+        params.set('page', (pageIndex + 1).toString())
+        params.set('limit', '30')
+
+        if (activeType === 'combat') {
+            params.set('sort', sortBy)
+        }
+        if (selectedServer !== 'all') {
+            params.set('server', selectedServer)
+        }
+        if (selectedRace !== 'all') {
+            params.set('race', selectedRace)
         }
 
-        try {
-            const params = new URLSearchParams()
-            params.set('type', activeType)
-            params.set('page', pageNum.toString())
-            params.set('limit', '30')
-
-            if (activeType === 'combat') {
-                params.set('sort', sortBy)
-            }
-
-            if (selectedServer !== 'all') {
-                params.set('server', selectedServer)
-            }
-            if (selectedRace !== 'all') {
-                params.set('race', selectedRace)
-            }
-
-            const res = await fetch(`/api/ranking?${params.toString()}`)
-
-            // HTTP 상태 확인 - 에러 시 기존 데이터 유지
-            if (!res.ok) {
-                console.error('[RankingMobile] API Error:', res.status)
-                return
-            }
-
-            const json = await res.json()
-
-            // 에러 응답 확인
-            if (json.error) {
-                console.error('[RankingMobile] API returned error:', json.error)
-                return
-            }
-
-            // 데이터 처리
-            if (json.data && Array.isArray(json.data)) {
-                if (isReset) {
-                    setData(json.data)
-                } else {
-                    setData(prev => [...prev, ...json.data])
-                }
-
-                const totalPages = json.meta?.totalPages || 0
-                setHasMore(pageNum < totalPages)
-                if (!isReset) setPage(pageNum)
-            }
-        } catch (error) {
-            console.error('[RankingMobile] Failed to fetch:', error)
-        } finally {
-            setLoading(false)
-            setIsLoadingMore(false)
-        }
+        return `/api/ranking?${params.toString()}`
     }
 
+    const {
+        data: pages,
+        error,
+        size,
+        setSize,
+        isLoading,
+        isValidating
+    } = useSWRInfinite(getKey, fetcher, {
+        revalidateFirstPage: false,
+        revalidateOnFocus: false,
+        dedupingInterval: 60000,
+        keepPreviousData: true
+    })
+
+    // 모든 페이지의 데이터를 합침
+    const data: RankingCharacter[] = pages?.flatMap(page => page.data || []) || []
+
+    // 더보기 가능 여부
+    const lastPage = pages?.[pages.length - 1]
+    const totalPages = lastPage?.meta?.totalPages || 0
+    const hasMore = size < totalPages
+
+    // 더보기 로딩 중
+    const isLoadingMore = isValidating && size > 1
+    const loading = isLoading && data.length === 0
+
     const handleLoadMore = () => {
-        const nextPage = page + 1
-        setPage(nextPage)
-        fetchRanking(nextPage, false)
+        setSize(size + 1)
     }
 
     const handleTypeChange = (newType: 'combat' | 'content') => {
@@ -209,7 +193,7 @@ export default function RankingMobile({ type }: RankingMobileProps) {
                             </div>
                         </div>
                     ))
-                ) : data.length === 0 ? (
+                ) : !isLoading && data.length === 0 ? (
                     <div className={styles.emptyState}>
                         <p>검색 결과가 없습니다</p>
                         <span>필터 설정을 변경해보세요</span>

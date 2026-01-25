@@ -9,6 +9,7 @@ import Footer from '@/components/Footer'
 import { SyncProvider } from '../../context/SyncContext'
 import { AuthProvider } from '../../context/AuthContext'
 import GatePage from '../../components/GatePage'
+import Prefetcher from './Prefetcher'
 import { Agentation } from 'agentation'
 
 // 게이트 페이지 활성화 여부 (true: 비밀코드 입력 필요, false: 바로 접근 가능)
@@ -65,6 +66,9 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
             {GATE_ENABLED ? (
                 <GatePage>
                     <SyncProvider>
+                        {/* 백그라운드 프리페칭 */}
+                        <Prefetcher />
+
                         {/* Header - Mobile vs Desktop */}
                         {isMobile ? <MobileHeader /> : <Header />}
 
@@ -82,6 +86,9 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
                 </GatePage>
             ) : (
                 <SyncProvider>
+                    {/* 백그라운드 프리페칭 */}
+                    <Prefetcher />
+
                     {/* Header - Mobile vs Desktop */}
                     {isMobile ? <MobileHeader /> : <Header />}
 

@@ -364,7 +364,7 @@ export default function CharacterDetailMobile({
                     <span className={styles.statName}>{stat.name}</span>
                     <span className={styles.statValue}>
                       {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
-                      {stat.isOcrOverride && <span className={styles.ocrBadge}>OCR</span>}
+                      {stat.isOcrOverride && <span className={styles.ocrBadge}>검증</span>}
                     </span>
                   </div>
                 ))}

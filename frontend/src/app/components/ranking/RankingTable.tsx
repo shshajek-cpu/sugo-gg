@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Trophy } from 'lucide-react'
+import useSWRInfinite from 'swr/infinite'
 import styles from './Ranking.module.css'
 import { SERVER_MAP } from '../../constants/servers'
 import { RankingCharacter } from '../../../types/character'
@@ -12,6 +13,15 @@ import { getValidScore } from '../../utils/ranking'
 
 interface RankingTableProps {
     type: 'combat' | 'content' | 'hiton' | 'cp' // hiton, cp는 하위 호환
+}
+
+// SWR fetcher
+const fetcher = async (url: string) => {
+    const res = await fetch(url)
+    if (!res.ok) throw new Error('API Error')
+    const json = await res.json()
+    if (json.error) throw new Error(json.error)
+    return json
 }
 
 const RankingSkeleton = () => (
@@ -63,79 +73,54 @@ const RankingSkeleton = () => (
 
 export default function RankingTable({ type }: RankingTableProps) {
     const searchParams = useSearchParams()
-    const [data, setData] = useState<RankingCharacter[]>([])
-    const [loading, setLoading] = useState(true)
-    const [page, setPage] = useState(1)
-    const [hasMore, setHasMore] = useState(false)
-    const [isLoadingMore, setIsLoadingMore] = useState(false)
 
     // 타입 정규화 (hiton, cp → combat)
     const normalizedType = (type === 'hiton' || type === 'cp') ? 'combat' : type
     const isCombatTab = normalizedType === 'combat'
 
-    // searchParams를 문자열로 변환하여 실제 값이 변경될 때만 트리거
+    // searchParams를 문자열로 변환
     const searchParamsString = searchParams.toString()
 
-    // Reset and fetch when filters change
-    useEffect(() => {
-        setData([])  // 이전 데이터 즉시 제거 → 로딩 스켈레톤 표시
-        setPage(1)
-        fetchRanking(1, true)
-    }, [searchParamsString, normalizedType])
+    // SWR Infinite로 페이지네이션 + 캐싱
+    const getKey = (pageIndex: number, previousPageData: any) => {
+        // 이전 페이지가 마지막이면 null 반환 (더 이상 요청 안 함)
+        if (previousPageData && !previousPageData.data?.length) return null
 
-    const fetchRanking = async (pageNum: number, isReset: boolean = false) => {
-        if (isReset) {
-            setLoading(true)
-        } else {
-            setIsLoadingMore(true)
-        }
+        const params = new URLSearchParams(searchParamsString)
+        params.set('type', normalizedType)
+        params.set('page', (pageIndex + 1).toString())
+        params.set('limit', '50')
 
-        try {
-            const params = new URLSearchParams(searchParams.toString())
-            params.set('type', normalizedType)
-            params.set('page', pageNum.toString())
-            params.set('limit', '50')
-
-            const res = await fetch(`/api/ranking?${params.toString()}`)
-
-            // HTTP 상태 확인 - 에러 시 기존 데이터 유지
-            if (!res.ok) {
-                console.error('[Ranking] API Error:', res.status)
-                return
-            }
-
-            const json = await res.json()
-
-            // 에러 응답 확인
-            if (json.error) {
-                console.error('[Ranking] API returned error:', json.error)
-                return
-            }
-
-            // 데이터 처리
-            if (json.data && Array.isArray(json.data)) {
-                if (isReset) {
-                    setData(json.data)
-                } else {
-                    setData(prev => [...prev, ...json.data])
-                }
-
-                const totalPages = json.meta?.totalPages || 0
-                setHasMore(pageNum < totalPages)
-                if (!isReset) setPage(pageNum)
-            }
-        } catch (error) {
-            console.error('[Ranking] Failed to fetch:', error)
-        } finally {
-            setLoading(false)
-            setIsLoadingMore(false)
-        }
+        return `/api/ranking?${params.toString()}`
     }
 
+    const {
+        data: pages,
+        error,
+        size,
+        setSize,
+        isLoading,
+        isValidating
+    } = useSWRInfinite(getKey, fetcher, {
+        revalidateFirstPage: false,  // 첫 페이지 재검증 안 함
+        revalidateOnFocus: false,    // 포커스 시 재검증 안 함
+        dedupingInterval: 60000,     // 1분간 중복 요청 방지
+        keepPreviousData: true       // 필터 변경 시 이전 데이터 유지
+    })
+
+    // 모든 페이지의 데이터를 합침
+    const data: RankingCharacter[] = pages?.flatMap(page => page.data || []) || []
+
+    // 더보기 가능 여부
+    const lastPage = pages?.[pages.length - 1]
+    const totalPages = lastPage?.meta?.totalPages || 0
+    const hasMore = size < totalPages
+
+    // 더보기 로딩 중
+    const isLoadingMore = isValidating && size > 1
+
     const handleLoadMore = () => {
-        const nextPage = page + 1
-        setPage(nextPage)
-        fetchRanking(nextPage, false)
+        setSize(size + 1)
     }
 
     const getRankIcon = (index: number) => {
@@ -149,11 +134,12 @@ export default function RankingTable({ type }: RankingTableProps) {
     // 현재 정렬 기준 (RankingFilterBar와 동일하게 pvp 기본값)
     const currentSort = searchParams.get('sort') || 'pvp'
 
-    if (loading && page === 1) {
+    // 첫 로딩 시에만 스켈레톤 표시 (캐시된 데이터 없을 때)
+    if (isLoading && data.length === 0) {
         return <RankingSkeleton />
     }
 
-    if (!data || data.length === 0) {
+    if (!isLoading && (!data || data.length === 0)) {
         return (
             <div style={{ padding: '4rem', textAlign: 'center', color: '#6B7280' }}>
                 <div style={{ fontSize: '1.2rem', marginBottom: '0.5rem' }}>검색 결과가 없습니다.</div>
