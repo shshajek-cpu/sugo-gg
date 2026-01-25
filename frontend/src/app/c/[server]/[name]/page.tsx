@@ -713,6 +713,15 @@ export default function CharacterDetailPage() {
 
       if (!match) {
         addDebugLog(`ERROR: 매칭 실패 - 검색결과 서버: ${searchResults.map(r => r.server).join(', ')}`)
+
+        // 다른 서버에서 발견된 경우 자동 리다이렉트
+        if (searchResults.length > 0 && searchResults[0].server && searchResults[0].server !== serverName) {
+          const foundServer = searchResults[0].server
+          addDebugLog(`다른 서버에서 발견: ${foundServer}, 리다이렉트 중...`)
+          window.location.href = `/c/${encodeURIComponent(foundServer)}/${encodeURIComponent(charName)}`
+          return
+        }
+
         throw new Error(`'${serverName}' 서버에서 '${charName}' 캐릭터를 찾을 수 없습니다. (ID: ${targetSearchServerId || 'unknown'})`)
       }
       addDebugLog(`매칭 성공: characterId=${match.characterId}`)
