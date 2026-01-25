@@ -123,21 +123,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Character ID is required' }, { status: 400 })
     }
 
-    // UPSERT (있으면 업데이트, 없으면 생성)
+    // 부분 업데이트 지원: 제공된 필드만 업데이트
     const upsertData: any = {
       user_id: userData.id,
-      character_id: characterId,
-      base_tickets: baseTickets,
-      bonus_tickets: bonusTickets,
-      od_time_energy: odEnergy.timeEnergy,
-      od_ticket_energy: odEnergy.ticketEnergy,
-      od_last_charge_time: odEnergy.lastChargeTime,
-      last_charge_time: lastChargeTime,
-      last_sanctuary_charge_time: lastSanctuaryChargeTime
+      character_id: characterId
     }
 
-    // chargeSettings가 있으면 추가
-    if (chargeSettings) {
+    // 각 필드는 제공된 경우에만 추가
+    if (baseTickets !== undefined) {
+      upsertData.base_tickets = baseTickets
+    }
+    if (bonusTickets !== undefined) {
+      upsertData.bonus_tickets = bonusTickets
+    }
+    if (odEnergy !== undefined) {
+      upsertData.od_time_energy = odEnergy.timeEnergy
+      upsertData.od_ticket_energy = odEnergy.ticketEnergy
+      upsertData.od_last_charge_time = odEnergy.lastChargeTime
+    }
+    if (lastChargeTime !== undefined) {
+      upsertData.last_charge_time = lastChargeTime
+    }
+    if (lastSanctuaryChargeTime !== undefined) {
+      upsertData.last_sanctuary_charge_time = lastSanctuaryChargeTime
+    }
+    if (chargeSettings !== undefined) {
       upsertData.charge_settings = chargeSettings
     }
 

@@ -433,6 +433,28 @@ export default function MobileLedgerPage() {
     // 전체 캐릭터 합산 수입 (API 호출)
     const [totalIncome, setTotalIncome] = useState({ dailyIncome: 0, weeklyIncome: 0 });
     const [isIncomeLoading, setIsIncomeLoading] = useState(false);
+    const [incomeRefreshKey, setIncomeRefreshKey] = useState(0);
+
+    // 페이지 포커스/가시성 변경 시 수입 새로고침 (상세페이지에서 돌아올 때)
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === 'visible') {
+                setIncomeRefreshKey(prev => prev + 1);
+            }
+        };
+
+        const handleFocus = () => {
+            setIncomeRefreshKey(prev => prev + 1);
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
+
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, []);
 
     // 섹션1: 미션/지령서 컨텐츠
     const MISSION_CONTENT_DEFS = [
@@ -524,7 +546,7 @@ export default function MobileLedgerPage() {
         };
 
         loadDashboardData();
-    }, [isReady, characters, selectedDate, getAuthHeader]);
+    }, [isReady, characters, selectedDate, getAuthHeader, incomeRefreshKey]);
 
     // 전체 캐릭터 합산 수입 로드 (선택 날짜 기준)
     useEffect(() => {
@@ -584,7 +606,7 @@ export default function MobileLedgerPage() {
         };
 
         loadTotalIncome();
-    }, [isReady, characters, selectedDate, getAuthHeader]);
+    }, [isReady, characters, selectedDate, getAuthHeader, incomeRefreshKey]);
 
     // 캐릭터별 진행현황 계산 함수
     const getCharacterProgress = (characterId: string) => {
@@ -1665,6 +1687,8 @@ export default function MobileLedgerPage() {
         setSelectedCharacter(null);
         setCurrentView('main');
         window.scrollTo(0, 0);
+        // 대시보드 데이터 새로고침 (충전/기록 후 진행현황 반영)
+        setIncomeRefreshKey(prev => prev + 1);
     };
 
     // 금액 포맷
