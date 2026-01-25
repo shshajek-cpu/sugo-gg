@@ -375,9 +375,8 @@ export default memo(function PartyCard({
             <div className={styles.partyStats}>
               {partyStats.totalPower > 0 && (
                 <div className={styles.partyStatItem}>
-                  <div className={styles.partyStatIcon} style={{ color: '#f59e0b' }}>⚔️</div>
                   <div className={styles.partyStatContent}>
-                    <span className={styles.partyStatLabel}>파티 전투력</span>
+                    <span className={styles.partyStatLabel}>파티전투력</span>
                     <span className={styles.partyStatValue}>
                       {(partyStats.totalPower / 10000).toFixed(0)}만
                     </span>
@@ -432,7 +431,7 @@ export default memo(function PartyCard({
         <div className={styles.footerRight}>
           {partyStats.totalPower > 0 && (
             <span className={styles.footerTotalPower}>
-              ⚔️ {(partyStats.totalPower / 10000).toFixed(0)}만
+              파티전투력 {(partyStats.totalPower / 10000).toFixed(0)}만
             </span>
           )}
           <span className={styles.timeAgo}>{getRelativeTime(party.created_at)}</span>
