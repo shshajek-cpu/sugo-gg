@@ -1,33 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import styles from './RankingMobile.module.css'
 import { SERVER_MAP } from '../../constants/servers'
+import { getValidScore } from '../../utils/ranking'
 import { RankingCharacter } from '../../../types/character'
 
 interface RankingMobileProps {
     type: 'combat' | 'content' | 'hiton' | 'cp' // hiton, cp는 하위 호환
 }
 
-// 전투력 표시 유효성 검사
-const getValidScore = (char: RankingCharacter, scoreType: 'pve' | 'pvp'): number | null => {
-    const level = char.level || char.item_level || 0
-    const isValidLevel = level >= 45
-    const isAbnormalScore = char.pve_score === 177029 && char.pvp_score === 177029
-
-    if (!isValidLevel || isAbnormalScore) return null
-
-    if (scoreType === 'pve') {
-        return char.pve_score || 0
-    }
-    return char.pvp_score || 0
-}
-
 export default function RankingMobile({ type }: RankingMobileProps) {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const [data, setData] = useState<RankingCharacter[]>([])
     const [loading, setLoading] = useState(true)
     const [page, setPage] = useState(1)
@@ -42,7 +30,26 @@ export default function RankingMobile({ type }: RankingMobileProps) {
     const [selectedServer, setSelectedServer] = useState('all')
     const [selectedRace, setSelectedRace] = useState('all')
     const [activeType, setActiveType] = useState<'combat' | 'content'>(normalizedType)
-    const [sortBy, setSortBy] = useState<'pve' | 'pvp'>('pve')
+
+    // URL params에서 sort 값 읽기 (새로고침/공유 시 유지)
+    const sortFromUrl = searchParams.get('sort') as 'pve' | 'pvp' | null
+    const [sortBy, setSortBy] = useState<'pve' | 'pvp'>(sortFromUrl || 'pve')
+
+    // URL params 변경 시 sortBy 동기화
+    useEffect(() => {
+        const urlSort = searchParams.get('sort') as 'pve' | 'pvp' | null
+        if (urlSort && urlSort !== sortBy) {
+            setSortBy(urlSort)
+        }
+    }, [searchParams])
+
+    // sortBy 변경 시 URL 업데이트
+    const handleSortChange = (newSort: 'pve' | 'pvp') => {
+        setSortBy(newSort)
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('sort', newSort)
+        router.push(`?${params.toString()}`, { scroll: false })
+    }
 
     const servers = [
         { id: 'all', name: '전체 서버' },
@@ -146,13 +153,13 @@ export default function RankingMobile({ type }: RankingMobileProps) {
                 <div className={styles.sortToggle}>
                     <button
                         className={`${styles.sortBtn} ${sortBy === 'pve' ? styles.sortBtnActive : ''}`}
-                        onClick={() => setSortBy('pve')}
+                        onClick={() => handleSortChange('pve')}
                     >
                         PVE
                     </button>
                     <button
                         className={`${styles.sortBtn} ${sortBy === 'pvp' ? styles.sortBtnActive : ''}`}
-                        onClick={() => setSortBy('pvp')}
+                        onClick={() => handleSortChange('pvp')}
                     >
                         PVP
                     </button>
