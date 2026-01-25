@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import CharacterShowcase from './profile/CharacterShowcase'
 import styles from './ProfileSection.module.css'
 import { aggregateStats } from '../../lib/statsAggregator'
@@ -18,6 +18,21 @@ interface ProfileSectionProps {
     ocrStats?: OcrStat[]  // OCR 스탯 (최종값 오버라이드)
 }
 
+// 전투력 저장 API 호출 (디바운스)
+const saveScoreToDb = async (characterId: string, pveScore: number, pvpScore: number) => {
+    if (!characterId || pveScore <= 0) return
+
+    try {
+        await fetch('/api/character/save-score', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ characterId, pveScore, pvpScore })
+        })
+    } catch (error) {
+        console.error('[ProfileSection] Failed to save score:', error)
+    }
+}
+
 const formatNumber = (num: number) => {
     return new Intl.NumberFormat('ko-KR').format(num)
 }
@@ -26,6 +41,7 @@ export default function ProfileSection({ character, arcana, onArcanaClick, stats
     const [hoveredArcana, setHoveredArcana] = useState<any | null>(null)
     const [showDebug, setShowDebug] = useState(false)
     const [copied, setCopied] = useState(false)
+    const savedScoreRef = useRef<string | null>(null) // 중복 저장 방지
 
     // PVE/PVP 전투력 계산
     const dualCombatPower = useMemo(() => {
@@ -51,14 +67,33 @@ export default function ProfileSection({ character, arcana, onArcanaClick, stats
     const isAbnormalScore = character.pve_score === 177029 && character.pvp_score === 177029
     const shouldShowCombatPower = isValidLevel && !isAbnormalScore
 
+    // 새로 계산된 전투력 사용 (DB 값보다 우선)
     const pveCombatPower = shouldShowCombatPower
-        ? (character.pve_score || dualCombatPower?.pve || character.power || 0)
+        ? (dualCombatPower?.pve || character.pve_score || character.power || 0)
         : 0
     const pvpCombatPower = shouldShowCombatPower
-        ? (character.pvp_score || dualCombatPower?.pvp || 0)
+        ? (dualCombatPower?.pvp || character.pvp_score || 0)
         : 0
     // 호환성 유지
     const combatPower = pveCombatPower
+
+    // 전투력이 계산되면 DB에 저장 (랭킹 반영)
+    useEffect(() => {
+        const characterId = character.characterId || character.character_id
+        if (!characterId || !dualCombatPower || !isValidLevel) return
+
+        const pve = dualCombatPower.pve || 0
+        const pvp = dualCombatPower.pvp || 0
+        if (pve <= 0) return
+
+        // 같은 값이면 저장 안 함 (중복 방지)
+        const scoreKey = `${characterId}-${pve}-${pvp}`
+        if (savedScoreRef.current === scoreKey) return
+        savedScoreRef.current = scoreKey
+
+        // DB에 저장
+        saveScoreToDb(characterId, pve, pvp)
+    }, [character.characterId, character.character_id, dualCombatPower, isValidLevel])
 
     // Calculate Percentile / Tier
     const tierInfo = useMemo(() => {
