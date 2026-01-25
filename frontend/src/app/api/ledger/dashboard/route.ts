@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
     const [
       itemsResult,
       soldItemsResult,
+      weeklySoldItemsResult,
       contentResult,
       dungeonResult,
       weeklyContentResult,
@@ -96,6 +97,15 @@ export async function GET(request: NextRequest) {
         .in('ledger_character_id', ownedCharIds)
         .not('sold_price', 'is', null)
         .eq('sold_date', today),
+
+      // 주간 판매된 아이템 (주간 수입용)
+      supabase
+        .from('ledger_items')
+        .select('ledger_character_id, sold_price')
+        .in('ledger_character_id', ownedCharIds)
+        .not('sold_price', 'is', null)
+        .gte('sold_date', weekStartDate)
+        .lte('sold_date', weekEndDate),
 
       // 오늘 컨텐츠 기록 (모든 캐릭터)
       supabase
@@ -220,6 +230,12 @@ export async function GET(request: NextRequest) {
       }
       const current = weeklyIncomeByChar.get(r.character_id) || 0
       weeklyIncomeByChar.set(r.character_id, current + dungeonIncome)
+    })
+
+    // 주간 아이템 판매 수입 추가
+    weeklySoldItemsResult.data?.forEach(item => {
+      const current = weeklyIncomeByChar.get(item.ledger_character_id) || 0
+      weeklyIncomeByChar.set(item.ledger_character_id, current + (item.sold_price || 0))
     })
 
     // 4. 캐릭터별 결과 생성
