@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { checkRateLimit, RATE_LIMITS } from '@/lib/rateLimit'
 
-export const dynamic = 'force-dynamic' // No caching for rankings to ensure freshness
+// 30초 캐싱 (ISR) - 랭킹은 실시간일 필요 없음
+export const revalidate = 30
 
 export async function GET(request: NextRequest) {
     // Rate Limiting
@@ -43,9 +44,25 @@ export async function GET(request: NextRequest) {
 
         const supabase = createClient(supabaseUrl, supabaseKey)
 
+        // 필요한 컬럼만 선택 (성능 최적화)
+        const selectColumns = `
+            character_id,
+            name,
+            server_id,
+            class_name,
+            race_name,
+            level,
+            item_level,
+            pve_score,
+            pvp_score,
+            ranking_ap,
+            profile_image
+        `.replace(/\s+/g, '')
+
+        // count: 'estimated' 사용 (정확한 카운트 대신 추정치로 속도 개선)
         let query = supabase
             .from('characters')
-            .select('*', { count: 'exact' })
+            .select(selectColumns, { count: 'estimated' })
 
         // Apply Filters
         if (server) query = query.eq('server_id', parseInt(server))
