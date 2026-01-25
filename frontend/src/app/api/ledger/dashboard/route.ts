@@ -144,9 +144,9 @@ export async function GET(request: NextRequest) {
       // 일일 사명
       supabase
         .from('ledger_daily_mission')
-        .select('character_id, count')
+        .select('character_id, mission_count')
         .in('character_id', ownedCharIds)
-        .eq('record_date', today)
+        .eq('game_date', today)
     ])
 
     // 3. 데이터 매핑
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
 
     // 일일 사명 매핑
     dailyMissionResult.data?.forEach(mission => {
-      missionByChar.set(mission.character_id, mission.count || 0)
+      missionByChar.set(mission.character_id, mission.mission_count || 0)
     })
 
     // 주간 수입 계산 (던전 제외 컨텐츠)

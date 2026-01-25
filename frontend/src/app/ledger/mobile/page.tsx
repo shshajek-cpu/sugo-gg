@@ -1683,11 +1683,48 @@ export default function MobileLedgerPage() {
     };
 
     // 캐릭터 상세 뷰 닫기
-    const closeCharacterDetail = () => {
+    const closeCharacterDetail = async () => {
+        // 디바운스된 저장 취소하고 즉시 저장 (selectedCharacterId가 null이 되기 전에)
+        if (weeklyContentSaveTimeoutRef.current) {
+            clearTimeout(weeklyContentSaveTimeoutRef.current);
+            weeklyContentSaveTimeoutRef.current = null;
+        }
+
+        // 현재 캐릭터 ID를 저장하기 전에 캡처
+        const currentCharId = selectedCharacterId;
+
+        // 저장이 필요하면 즉시 저장 (canEdit이고 캐릭터가 선택된 경우)
+        if (currentCharId && canEdit && !weeklyContentLoadingRef.current) {
+            const weekKey = getWeekKey(new Date(selectedDate));
+            const gameDate = getGameDate(new Date(selectedDate));
+
+            try {
+                await fetch('/api/ledger/weekly-content', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeader()
+                    },
+                    body: JSON.stringify({
+                        characterId: currentCharId,
+                        weekKey,
+                        gameDate,
+                        weeklyOrderCount: weeklyContent.weeklyOrderCount,
+                        abyssOrderCount: weeklyContent.abyssOrderCount,
+                        shugoTickets: weeklyContent.shugoTickets,
+                        abyssRegions: [],
+                        missionCount: weeklyContent.missionCount
+                    })
+                });
+            } catch (error) {
+                console.error('[Mobile Ledger] Failed to save on close:', error);
+            }
+        }
+
         setSelectedCharacter(null);
         setCurrentView('main');
         window.scrollTo(0, 0);
-        // 대시보드 데이터 새로고침 (충전/기록 후 진행현황 반영)
+        // 대시보드 데이터 새로고침 (저장 후 진행현황 반영)
         setIncomeRefreshKey(prev => prev + 1);
     };
 
