@@ -161,15 +161,12 @@ export default function CollectorPage() {
                     setBatchLastResult(`${successCount}/${data.results.length} 성공`)
                 }
 
-                // 차단 상태 업데이트
+                // 차단 상태 업데이트 (표시만 하고 중단하지 않음)
                 if (data.status) {
                     setBatchStatus(data.status)
-
-                    // 차단 감지 시 자동 중지
-                    if (data.status.shouldPause || data.status.isBlocked) {
-                        setIsBatchRunning(false)
-                        setBatchLastResult('🚫 차단 감지! 자동 중지됨')
-                        return
+                    // 차단 감지 시 문구만 표시 (계속 진행)
+                    if (data.status.blocked > 0 || data.status.rateLimited > 0) {
+                        setBatchLastResult(`⚠️ 차단 ${data.status.blocked}건, 제한 ${data.status.rateLimited}건 (계속 진행 중)`)
                     }
                 }
 

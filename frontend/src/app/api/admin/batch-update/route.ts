@@ -96,12 +96,7 @@ export async function GET(request: NextRequest) {
                     if (errorType === 'blocked') blockedCount++
                     if (errorType === 'rate_limit') rateLimitCount++
                     results.push({ name: char.name, success: false, error: errorType, errorType })
-
-                    // 연속 5회 차단/에러 시 조기 종료
-                    if (consecutiveErrors >= 5) {
-                        console.warn(`[Batch] 연속 ${consecutiveErrors}회 에러, 조기 종료`)
-                        break
-                    }
+                    // 에러 발생해도 계속 진행 (중단하지 않음)
                     continue
                 }
 
@@ -203,19 +198,16 @@ export async function GET(request: NextRequest) {
             .or('stats.is.null,pve_score.is.null')
 
         const successCount = results.filter(r => r.success).length
-        const isBlocked = blockedCount >= 3 || rateLimitCount >= 3 || consecutiveErrors >= 5
 
         return NextResponse.json({
             message: `Updated ${successCount}/${results.length} characters`,
             results,
             remaining: count || 0,
-            // 차단 감지 정보
+            // 차단 감지 정보 (표시용, 중단하지 않음)
             status: {
                 blocked: blockedCount,
                 rateLimited: rateLimitCount,
-                consecutiveErrors,
-                isBlocked,
-                shouldPause: isBlocked
+                consecutiveErrors
             }
         })
 

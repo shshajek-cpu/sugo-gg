@@ -16,6 +16,7 @@ import { LedgerCharacter } from '@/types/ledger';
 import { SERVERS, SERVER_MAP } from '@/app/constants/servers';
 import { supabaseApi } from '@/lib/supabaseApi';
 import TicketChargePopup from '../components/TicketChargePopup';
+import LedgerLoginRequired from '../components/LedgerLoginRequired';
 import styles from './MobileLedger.module.css';
 
 // 던전 데이터 타입 정의
@@ -2060,6 +2061,11 @@ export default function MobileLedgerPage() {
                 </div>
             </div>
         );
+    }
+
+    // Google 로그인 필수 - 비로그인 시 안내 화면 표시
+    if (isGoogleLoading || !isGoogleAuth) {
+        return <LedgerLoginRequired onLogin={signInWithGoogle} isLoading={isGoogleLoading} />;
     }
 
     // 캐릭터 없음 안내
