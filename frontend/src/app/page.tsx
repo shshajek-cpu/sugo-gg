@@ -16,7 +16,8 @@ import styles from './Home.module.css'
 export default function Home() {
     const router = useRouter()
     const [recentCharacters, setRecentCharacters] = useState<RecentCharacter[]>([])
-    const [isMobile, setIsMobile] = useState(false)
+    // null = 감지 전, true/false = 감지 완료 (플래시 방지)
+    const [isMobile, setIsMobile] = useState<boolean | null>(null)
 
     // 모바일 감지
     useEffect(() => {
@@ -107,6 +108,11 @@ export default function Home() {
         const updated = recentCharacters.filter(c => c.id !== id)
         setRecentCharacters(updated)
         localStorage.setItem('recent_characters', JSON.stringify(updated))
+    }
+
+    // 모바일 감지 전 로딩 (플래시 방지)
+    if (isMobile === null) {
+        return null // LayoutClient에서 로딩 화면 표시
     }
 
     // 모바일 뷰

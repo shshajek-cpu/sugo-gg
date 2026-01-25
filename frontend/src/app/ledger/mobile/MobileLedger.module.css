@@ -373,6 +373,12 @@
     margin-top: 2px;
 }
 
+.incomeLabel {
+    font-size: 0.65rem;
+    color: #6B7280;
+    margin-right: 4px;
+}
+
 .expandIcon {
     display: flex;
     align-items: center;

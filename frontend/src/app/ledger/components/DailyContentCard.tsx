@@ -17,6 +17,7 @@ export interface DailyContent {
   colorGlow: string
   imageUrl?: string
   resetType?: 'daily' | 'weekly' | 'charge3h' | 'charge24h'  // daily: 매일 5시, weekly: 수요일 5시, charge3h: 3시간마다 충전, charge24h: 24시간마다 충전
+  dailyChargeAmount?: number  // 매일 충전되는 횟수 (악몽 2회, 차원침공 1회)
 }
 
 // 다음 리셋/충전 시간 계산

@@ -16,8 +16,8 @@ const GATE_ENABLED = false
 
 export default function LayoutClient({ children }: { children: React.ReactNode }) {
     const pathname = usePathname()
-    const [isMobile, setIsMobile] = useState(false)
-    const [isClient, setIsClient] = useState(false)
+    // null = 감지 전, true/false = 감지 완료 (플래시 방지)
+    const [isMobile, setIsMobile] = useState<boolean | null>(null)
 
     const isAdminPage = pathname?.startsWith('/admin')
     const isOcrTestPage = pathname?.startsWith('/ocr-test')
@@ -25,7 +25,6 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
 
     // 클라이언트 사이드 모바일 감지
     useEffect(() => {
-        setIsClient(true)
         const checkMobile = () => {
             setIsMobile(window.innerWidth < 1024)
         }
@@ -43,6 +42,23 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
         )
     }
 
+    // 모바일 감지 완료 전에는 로딩 화면 표시 (PC/모바일 플래시 방지)
+    if (isMobile === null) {
+        return (
+            <AuthProvider>
+                <div style={{
+                    minHeight: '100vh',
+                    backgroundColor: '#000',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                }}>
+                    <div style={{ color: '#666', fontSize: '14px' }}>로딩 중...</div>
+                </div>
+            </AuthProvider>
+        )
+    }
+
     // 일반 페이지 레이아웃 - Adaptive Design
     return (
         <AuthProvider>
@@ -50,7 +66,7 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
                 <GatePage>
                     <SyncProvider>
                         {/* Header - Mobile vs Desktop */}
-                        {isClient && isMobile ? <MobileHeader /> : <Header />}
+                        {isMobile ? <MobileHeader /> : <Header />}
 
                         {/* Hero Section - Desktop Only */}
                         {!isMobile && <HeroSection />}
@@ -67,7 +83,7 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
             ) : (
                 <SyncProvider>
                     {/* Header - Mobile vs Desktop */}
-                    {isClient && isMobile ? <MobileHeader /> : <Header />}
+                    {isMobile ? <MobileHeader /> : <Header />}
 
                     {/* Hero Section - Desktop Only */}
                     {!isMobile && <HeroSection />}

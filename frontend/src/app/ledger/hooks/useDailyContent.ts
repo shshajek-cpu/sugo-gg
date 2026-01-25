@@ -62,20 +62,22 @@ const DEFAULT_DAILY_CONTENTS: Omit<DailyContent, 'completionCount'>[] = [
     colorDark: '#7e22ce',
     colorGlow: 'rgba(147, 51, 234, 0.5)',
     imageUrl: '/메달/주간컨텐츠/악몽.png',
-    resetType: 'daily'
+    resetType: 'daily',
+    dailyChargeAmount: 2  // 매일 2회 충전
   },
   {
     id: 'dimension_invasion',
     name: '차원침공',
     icon: '',
-    maxCount: 14,  // 24시간마다 1회 충전
+    maxCount: 14,  // 매일 05:00에 1회 충전
     baseReward: 0,  // 키나 보상 없음
     color: '#ef4444',
     colorLight: '#f87171',
     colorDark: '#dc2626',
     colorGlow: 'rgba(239, 68, 68, 0.5)',
     imageUrl: TEMP_IMAGE_URL,
-    resetType: 'charge24h'
+    resetType: 'daily',
+    dailyChargeAmount: 1  // 매일 1회 충전 (악몽은 2회)
   }
 ]
 

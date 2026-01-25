@@ -512,7 +512,8 @@ export default function CharacterDetailPage() {
   const [apiCharacterId, setApiCharacterId] = useState<string | undefined>(undefined)
   const [apiServerId, setApiServerId] = useState<string | undefined>(undefined)
   const [selectedItem, setSelectedItem] = useState<any | null>(null)
-  const [isMobile, setIsMobile] = useState(false)
+  // null = 감지 전, true/false = 감지 완료 (플래시 방지)
+  const [isMobile, setIsMobile] = useState<boolean | null>(null)
 
   // --- Main Character for Comparison ---
   const [mainCharacter, setMainCharacter] = useState<MainCharacter | null>(null)
@@ -1133,6 +1134,11 @@ export default function CharacterDetailPage() {
         </div>
       </div>
     )
+  }
+
+  // 모바일 감지 전 로딩 (플래시 방지)
+  if (isMobile === null) {
+    return null // LayoutClient에서 로딩 화면 표시
   }
 
   // 모바일 뷰 렌더링
