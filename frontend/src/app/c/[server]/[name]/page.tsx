@@ -668,12 +668,14 @@ export default function CharacterDetailPage() {
         if (serverName === 'all' || serverName === '전체') {
           return true
         }
-        // If we have a verified server ID for the requested server, match strictly by ID
-        if (targetSearchServerId && r.server_id) {
-          return r.server_id === targetSearchServerId
+        // serverId로 매칭 (API는 serverId로 반환, DB는 server_id로 반환)
+        const resultServerId = r.serverId || r.server_id
+        if (targetSearchServerId && resultServerId) {
+          return resultServerId === targetSearchServerId
         }
-        // Fallback to name matching
-        return r.server === serverName
+        // serverName으로 매칭 (API는 serverName으로 반환, DB는 server로 반환)
+        const resultServerName = r.serverName || r.server
+        return resultServerName === serverName
       })
 
       // 검색 실패 시 DB 직접 조회 폴백
@@ -712,11 +714,12 @@ export default function CharacterDetailPage() {
       }
 
       if (!match) {
-        addDebugLog(`ERROR: 매칭 실패 - 검색결과 서버: ${searchResults.map(r => r.server).join(', ')}`)
+        const resultServers = searchResults.map(r => r.serverName || r.server).filter(Boolean)
+        addDebugLog(`ERROR: 매칭 실패 - 검색결과 서버: ${resultServers.join(', ')}`)
 
         // 다른 서버에서 발견된 경우 자동 리다이렉트
-        if (searchResults.length > 0 && searchResults[0].server && searchResults[0].server !== serverName) {
-          const foundServer = searchResults[0].server
+        const foundServer = searchResults[0]?.serverName || searchResults[0]?.server
+        if (searchResults.length > 0 && foundServer && foundServer !== serverName) {
           addDebugLog(`다른 서버에서 발견: ${foundServer}, 리다이렉트 중...`)
           window.location.href = `/c/${encodeURIComponent(foundServer)}/${encodeURIComponent(charName)}`
           return
@@ -727,7 +730,7 @@ export default function CharacterDetailPage() {
       addDebugLog(`매칭 성공: characterId=${match.characterId}`)
 
       // Step 2: Get Detail from Local API and OCR Stats in parallel
-      const serverId = match.server_id || SERVER_NAME_TO_ID[serverName] || 1
+      const serverId = match.serverId || match.server_id || SERVER_NAME_TO_ID[serverName] || 1
       const encodedCharacterId = encodeURIComponent(match.characterId)
       const forceParam = refresh ? '&force=true' : ''
       const apiUrl = `${getApiBaseUrl()}/api/character?id=${encodedCharacterId}&server=${serverId}${forceParam}`
