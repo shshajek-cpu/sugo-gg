@@ -618,20 +618,20 @@ export default function MobileLedgerPage() {
         const weeklyData = charData.weeklyData || {};
         const missionCount = charData.missionCount || 0;
 
-        // 섹션1: 미션/지령서 진행률 (완료/최대 형식)
+        // 섹션1: 미션/지령서 진행률 (남은횟수/최대 형식, 0/5 = 완료)
         const missionProgress = MISSION_CONTENT_DEFS.map(def => {
-            let completed = 0;
+            let remaining = def.maxPerChar;
             let max = def.maxPerChar;
 
             if (def.id === 'mission') {
-                completed = Math.min(missionCount, def.maxPerChar);
+                remaining = Math.max(0, def.maxPerChar - missionCount);
             } else if (def.id === 'weekly_order') {
-                completed = Math.min(weeklyData.weeklyOrderCount || 0, def.maxPerChar);
+                remaining = Math.max(0, def.maxPerChar - (weeklyData.weeklyOrderCount || 0));
             } else if (def.id === 'abyss_order') {
-                completed = Math.min(weeklyData.abyssOrderCount || 0, def.maxPerChar);
+                remaining = Math.max(0, def.maxPerChar - (weeklyData.abyssOrderCount || 0));
             }
 
-            return { ...def, current: completed, max, bonus: 0 };
+            return { ...def, current: remaining, max, bonus: 0 };
         });
 
         // 섹션2: 던전 컨텐츠 진행률 (이용권)
@@ -2175,12 +2175,12 @@ export default function MobileLedgerPage() {
                                                 {/* 펼쳐진 상태일 때만 컨텐츠 표시 */}
                                                 {isExpanded && (
                                                     <>
-                                                        {/* 섹션1: 미션/지령서 (완료/최대 형식) */}
+                                                        {/* 섹션1: 미션/지령서 (남은횟수/최대 형식, 0 = 완료) */}
                                                         <div className={styles.progressLabel}>미션/지령서</div>
                                                         <div className={styles.chipContainerGrid}>
                                                             {progress.mission.map(content => {
-                                                                // 미션은 완료/최대 형식이므로 current >= max 일 때 완료
-                                                                const isComplete = content.current >= content.max;
+                                                                // 남은횟수가 0이면 완료
+                                                                const isComplete = content.current <= 0;
                                                                 return (
                                                                     <div
                                                                         key={content.id}
@@ -2346,7 +2346,7 @@ export default function MobileLedgerPage() {
                                 <span className={styles.contentTitle}>주간 컨텐츠</span>
                             </div>
 
-                            {/* 사명 */}
+                            {/* 사명 (남은횟수/최대, 0/5 = 완료) */}
                             <div className={`${styles.wmCard} ${weeklyContent.missionCount >= 5 ? styles.wmCardCompleted : ''}`}>
                                 <div className={styles.wmHeader}>
                                     <div className={styles.wmTitleGroup}>
@@ -2364,7 +2364,7 @@ export default function MobileLedgerPage() {
                                             >전체완료</button>
                                         )}
                                         <span className={styles.wmCount}>
-                                            {weeklyContent.missionCount}/5
+                                            {5 - weeklyContent.missionCount}/5
                                         </span>
                                         <button
                                             className={styles.btnStep}
@@ -2392,7 +2392,7 @@ export default function MobileLedgerPage() {
                                 </div>
                             </div>
 
-                            {/* 주간 지령서 */}
+                            {/* 주간 지령서 (남은횟수/최대, 0/12 = 완료) */}
                             <div className={`${styles.wmCard} ${weeklyContent.weeklyOrderCount >= 12 ? styles.wmCardCompleted : ''}`}>
                                 <div className={styles.wmHeader}>
                                     <div className={styles.wmTitleGroup}>
@@ -2410,7 +2410,7 @@ export default function MobileLedgerPage() {
                                             >전체완료</button>
                                         )}
                                         <span className={styles.wmCount}>
-                                            {weeklyContent.weeklyOrderCount}/12
+                                            {12 - weeklyContent.weeklyOrderCount}/12
                                         </span>
                                         <button
                                             className={styles.btnStep}
@@ -2438,7 +2438,7 @@ export default function MobileLedgerPage() {
                                 </div>
                             </div>
 
-                            {/* 어비스 주간 지령서 */}
+                            {/* 어비스 주간 지령서 (남은횟수/최대, 0/20 = 완료) */}
                             <div className={`${styles.wmCard} ${weeklyContent.abyssOrderCount >= 20 ? styles.wmCardCompleted : ''}`}>
                                 <div className={styles.wmHeader}>
                                     <div className={styles.wmTitleGroup}>
@@ -2456,7 +2456,7 @@ export default function MobileLedgerPage() {
                                             >전체완료</button>
                                         )}
                                         <span className={styles.wmCount}>
-                                            {weeklyContent.abyssOrderCount}/20
+                                            {20 - weeklyContent.abyssOrderCount}/20
                                         </span>
                                         <button
                                             className={styles.btnStep}
