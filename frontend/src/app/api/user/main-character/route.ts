@@ -33,6 +33,32 @@ export async function GET(request: NextRequest) {
       })
     }
 
+    // 자동 보정: pve_score/pvp_score가 NULL이고 character_id가 있으면 characters 테이블에서 조회하여 업데이트
+    if (ledgerUser.main_character_id &&
+        (!ledgerUser.main_character_pve_score || !ledgerUser.main_character_pvp_score)) {
+      const { data: charData } = await supabase
+        .from('characters')
+        .select('pve_score, pvp_score, item_level, profile_image')
+        .eq('character_id', ledgerUser.main_character_id)
+        .single()
+
+      if (charData && (charData.pve_score || charData.pvp_score)) {
+        // DB 업데이트
+        await supabase.from('ledger_users').update({
+          main_character_pve_score: charData.pve_score,
+          main_character_pvp_score: charData.pvp_score,
+          main_character_item_level: charData.item_level || ledgerUser.main_character_item_level,
+          main_character_image_url: charData.profile_image || ledgerUser.main_character_image_url
+        }).eq('auth_user_id', user.id)
+
+        // 반환값 업데이트
+        ledgerUser.main_character_pve_score = charData.pve_score
+        ledgerUser.main_character_pvp_score = charData.pvp_score
+        if (charData.item_level) ledgerUser.main_character_item_level = charData.item_level
+        if (charData.profile_image) ledgerUser.main_character_image_url = charData.profile_image
+      }
+    }
+
     return NextResponse.json({
       mainCharacter: {
         characterId: ledgerUser.main_character_id,

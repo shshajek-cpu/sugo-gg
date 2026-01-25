@@ -154,8 +154,8 @@ export const usePartyScanner = () => {
         console.log('[Browser OCR] Iframe created');
     }, []);
 
-    // 브라우저 OCR 실행
-    const runBrowserOcr = useCallback(async (imageBase64: string): Promise<string> => {
+    // 브라우저 OCR 실행 (단일)
+    const runBrowserOcrSingle = useCallback(async (imageBase64: string): Promise<string> => {
         if (!browserOcrIframeRef.current || !browserOcrReady) {
             console.warn('[Browser OCR] Not ready');
             return '';
@@ -179,6 +179,164 @@ export const usePartyScanner = () => {
             }, 30000);
         });
     }, [browserOcrReady]);
+
+    // 이미지 변형 생성 (멀티스캔용)
+    const createImageVariants = useCallback(async (imageBase64: string): Promise<{ name: string; image: string }[]> => {
+        const variants: { name: string; image: string }[] = [];
+
+        // 1. 원본 (이미 전처리됨)
+        variants.push({ name: '기본', image: imageBase64 });
+
+        // 이미지를 캔버스에 로드
+        const loadImage = (src: string): Promise<HTMLImageElement> => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.src = src;
+            });
+        };
+
+        const img = await loadImage(imageBase64);
+
+        // 2. 샤프닝 적용
+        const sharpenCanvas = document.createElement('canvas');
+        sharpenCanvas.width = img.width;
+        sharpenCanvas.height = img.height;
+        const sharpenCtx = sharpenCanvas.getContext('2d');
+        if (sharpenCtx) {
+            sharpenCtx.drawImage(img, 0, 0);
+            const imageData = sharpenCtx.getImageData(0, 0, sharpenCanvas.width, sharpenCanvas.height);
+            const data = imageData.data;
+            const tempData = new Uint8ClampedArray(data);
+            const width = sharpenCanvas.width;
+            const height = sharpenCanvas.height;
+
+            // 샤프닝 (Unsharp Mask)
+            const sharpenAmount = 1.5;
+            for (let y = 1; y < height - 1; y++) {
+                for (let x = 1; x < width - 1; x++) {
+                    const idx = (y * width + x) * 4;
+                    const blur = (tempData[idx - width * 4] + tempData[idx + width * 4] + tempData[idx - 4] + tempData[idx + 4]) / 4;
+                    const sharpened = tempData[idx] + (tempData[idx] - blur) * sharpenAmount;
+                    const val = Math.max(0, Math.min(255, sharpened));
+                    data[idx] = val;
+                    data[idx + 1] = val;
+                    data[idx + 2] = val;
+                }
+            }
+            sharpenCtx.putImageData(imageData, 0, 0);
+            variants.push({ name: '샤프닝', image: sharpenCanvas.toDataURL('image/png') });
+        }
+
+        // 3. 대비 강화
+        const contrastCanvas = document.createElement('canvas');
+        contrastCanvas.width = img.width;
+        contrastCanvas.height = img.height;
+        const contrastCtx = contrastCanvas.getContext('2d');
+        if (contrastCtx) {
+            contrastCtx.drawImage(img, 0, 0);
+            const imageData = contrastCtx.getImageData(0, 0, contrastCanvas.width, contrastCanvas.height);
+            const data = imageData.data;
+            const contrast = 1.8;
+            for (let i = 0; i < data.length; i += 4) {
+                let val = ((data[i] / 255 - 0.5) * contrast + 0.5) * 255;
+                val = Math.max(0, Math.min(255, val));
+                data[i] = val;
+                data[i + 1] = val;
+                data[i + 2] = val;
+            }
+            contrastCtx.putImageData(imageData, 0, 0);
+            variants.push({ name: '대비강화', image: contrastCanvas.toDataURL('image/png') });
+        }
+
+        // 4. 이진화 (Otsu)
+        const binaryCanvas = document.createElement('canvas');
+        binaryCanvas.width = img.width;
+        binaryCanvas.height = img.height;
+        const binaryCtx = binaryCanvas.getContext('2d');
+        if (binaryCtx) {
+            binaryCtx.drawImage(img, 0, 0);
+            const imageData = binaryCtx.getImageData(0, 0, binaryCanvas.width, binaryCanvas.height);
+            const data = imageData.data;
+
+            // Otsu's method
+            const histogram = new Array(256).fill(0);
+            for (let i = 0; i < data.length; i += 4) {
+                histogram[Math.round(data[i])]++;
+            }
+            const totalPixels = data.length / 4;
+            let sum = 0;
+            for (let i = 0; i < 256; i++) sum += i * histogram[i];
+            let sumB = 0, wB = 0, maxVariance = 0, threshold = 128;
+            for (let t = 0; t < 256; t++) {
+                wB += histogram[t];
+                if (wB === 0) continue;
+                const wF = totalPixels - wB;
+                if (wF === 0) break;
+                sumB += t * histogram[t];
+                const mB = sumB / wB;
+                const mF = (sum - sumB) / wF;
+                const variance = wB * wF * (mB - mF) * (mB - mF);
+                if (variance > maxVariance) {
+                    maxVariance = variance;
+                    threshold = t;
+                }
+            }
+            for (let i = 0; i < data.length; i += 4) {
+                const val = data[i] > threshold ? 255 : 0;
+                data[i] = val;
+                data[i + 1] = val;
+                data[i + 2] = val;
+            }
+            binaryCtx.putImageData(imageData, 0, 0);
+            variants.push({ name: '이진화', image: binaryCanvas.toDataURL('image/png') });
+        }
+
+        return variants;
+    }, []);
+
+    // 브라우저 OCR 실행 (멀티스캔 + 다수결)
+    const runBrowserOcr = useCallback(async (imageBase64: string, addLog?: (msg: string) => void): Promise<string> => {
+        if (!browserOcrIframeRef.current || !browserOcrReady) {
+            console.warn('[Browser OCR] Not ready');
+            return '';
+        }
+
+        // 이미지 변형 생성
+        const variants = await createImageVariants(imageBase64);
+        addLog?.(`🔄 멀티스캔 시작 (${variants.length}개 변형)`);
+
+        // 각 변형에 대해 OCR 실행
+        const results: { name: string; text: string; parsed: any[] }[] = [];
+
+        for (let i = 0; i < variants.length; i++) {
+            const variant = variants[i];
+            addLog?.(`스캔 중 (${i + 1}/${variants.length}: ${variant.name})...`);
+
+            try {
+                const text = await runBrowserOcrSingle(variant.image);
+                // smartParse는 외부 함수이므로 여기서는 텍스트만 저장
+                results.push({ name: variant.name, text, parsed: [] });
+                console.log(`[Browser OCR] ${variant.name} 결과:`, text.substring(0, 100));
+            } catch (err) {
+                console.error(`[Browser OCR] ${variant.name} 실패:`, err);
+            }
+        }
+
+        // 가장 긴 텍스트 결과 선택 (더 많은 정보를 담고 있을 가능성)
+        let bestResult = results[0]?.text || '';
+        let maxLength = bestResult.length;
+
+        for (const result of results) {
+            if (result.text.length > maxLength) {
+                maxLength = result.text.length;
+                bestResult = result.text;
+            }
+        }
+
+        addLog?.(`✅ 멀티스캔 완료 - 최적 결과 선택 (${maxLength}자)`);
+        return bestResult;
+    }, [browserOcrReady, createImageVariants, runBrowserOcrSingle]);
 
     // 이미지 전처리 옵션
     interface PreprocessOptions {
@@ -1768,19 +1926,20 @@ export const usePartyScanner = () => {
                     // OCR 실행 (모드에 따라 분기)
                     const ocrStartTime = Date.now();
                     let text = '';
+                    const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
 
                     console.log('[usePartyScanner] OCR Mode:', ocrMode, 'Browser Ready:', browserOcrReady);
-                    setLogs(prev => [...prev, `🔍 OCR 모드: ${ocrMode}, 브라우저 준비: ${browserOcrReady}`]);
+                    addLog(`🔍 OCR 모드: ${ocrMode}, 브라우저 준비: ${browserOcrReady}`);
 
                     if (ocrMode === 'browser' && browserOcrReady) {
-                        // 브라우저 OCR (PP-OCRv5)
-                        console.log('[usePartyScanner] Using Browser OCR...');
-                        setLogs(prev => [...prev, '브라우저 OCR 실행 중... (PP-OCRv5)']);
-                        text = await runBrowserOcr(imageToScan);
+                        // 브라우저 OCR (멀티스캔)
+                        console.log('[usePartyScanner] Using Browser OCR with multi-scan...');
+                        addLog('브라우저 OCR 실행 중... (멀티스캔)');
+                        text = await runBrowserOcr(imageToScan, addLog);
                     } else {
                         // Gemini Vision API (기본)
                         console.log('[usePartyScanner] Using Gemini OCR...');
-                        setLogs(prev => [...prev, 'Gemini OCR 호출 중...']);
+                        addLog('Gemini OCR 호출 중...');
 
                         const ocrResponse = await fetch('/api/ocr', {
                             method: 'POST',
@@ -1799,9 +1958,8 @@ export const usePartyScanner = () => {
 
                     const ocrTime = Date.now() - ocrStartTime;
                     console.log('[usePartyScanner] OCR result:', text);
-                    setLogs(prev => [...prev, `⏱ OCR 응답 (${ocrMode}): ${ocrTime}ms`]);
+                    addLog(`⏱ OCR 응답 (${ocrMode}): ${ocrTime}ms`);
 
-                    const addLog = (msg: string) => setLogs(prev => [...prev, msg]);
                     const parsedMembers = smartParse(text, addLog);
                     console.log('[usePartyScanner] Parsed members:', parsedMembers);
                     addLog(`파싱 완료: ${parsedMembers.length}명 인식됨`);

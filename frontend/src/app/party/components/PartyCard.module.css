@@ -6,6 +6,7 @@
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -326,23 +327,27 @@
 }
 
 .profileImage {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid #333;
+  flex-shrink: 0;
+  border: 2px solid rgba(251, 219, 81, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .profilePlaceholder {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #1a1a1a;
-  border: 2px solid #333;
+  background: linear-gradient(135deg, #2a2d35 0%, #1a1c22 100%);
+  border: 2px solid rgba(251, 219, 81, 0.3);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 1.1rem;
+  color: #fbdb51;
 }
 
 .raceIndicator {
@@ -494,9 +499,12 @@
 
 /* 돌파 배지 (ProfileSection과 동일한 스타일) */
 @keyframes gemSparkle {
-  0%, 100% {
+
+  0%,
+  100% {
     filter: brightness(1);
   }
+
   50% {
     filter: brightness(1.15);
   }
@@ -511,9 +519,9 @@
   border: 1.5px solid #93C5FD;
   border-radius: 2px;
   box-shadow: 0 0 6px rgba(59, 130, 246, 0.8),
-      0 0 12px rgba(96, 165, 250, 0.4),
-      inset 0 -1px 3px rgba(0, 0, 0, 0.4),
-      inset 1px 1px 3px rgba(147, 197, 253, 0.6);
+    0 0 12px rgba(96, 165, 250, 0.4),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.4),
+    inset 1px 1px 3px rgba(147, 197, 253, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -694,12 +702,7 @@
     flex-shrink: 0;
   }
 
-  .profileImage,
-  .profilePlaceholder {
-    width: 44px;
-    height: 44px;
-    border-color: #222;
-  }
+
 
   .raceIndicator {
     width: 10px;

@@ -877,15 +877,141 @@ export default function StatUpdatePage() {
     })
   }
 
-  // 멀티 스케일 이미지 생성 (1x, 2x, 3x, 4x)
-  const preprocessImageMultiScale = async (base64Image: string): Promise<{ scale: number; image: string }[]> => {
+  // 강화 전처리 함수 (샤프닝 + 이진화)
+  const preprocessImageAtScaleEnhanced = async (base64Image: string, targetScale: number): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(base64Image)
+          return
+        }
+
+        const newWidth = Math.round(img.width * targetScale)
+        const newHeight = Math.round(img.height * targetScale)
+
+        canvas.width = newWidth
+        canvas.height = newHeight
+
+        ctx.imageSmoothingEnabled = true
+        ctx.imageSmoothingQuality = 'high'
+        ctx.drawImage(img, 0, 0, newWidth, newHeight)
+
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const data = imageData.data
+        const width = canvas.width
+        const height = canvas.height
+
+        // 1. 그레이스케일 변환
+        for (let i = 0; i < data.length; i += 4) {
+          const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+          data[i] = gray
+          data[i + 1] = gray
+          data[i + 2] = gray
+        }
+
+        // 2. 샤프닝 (Unsharp Mask)
+        const tempData = new Uint8ClampedArray(data)
+        const sharpenAmount = 1.5
+        for (let y = 1; y < height - 1; y++) {
+          for (let x = 1; x < width - 1; x++) {
+            const idx = (y * width + x) * 4
+            // 주변 픽셀 평균 (간단한 블러)
+            const blur = (
+              tempData[idx - width * 4] +
+              tempData[idx + width * 4] +
+              tempData[idx - 4] +
+              tempData[idx + 4]
+            ) / 4
+            // 언샤프 마스크 적용
+            const sharpened = tempData[idx] + (tempData[idx] - blur) * sharpenAmount
+            const val = Math.max(0, Math.min(255, sharpened))
+            data[idx] = val
+            data[idx + 1] = val
+            data[idx + 2] = val
+          }
+        }
+
+        // 3. 대비 강화 (더 강하게)
+        const contrast = 2.2
+        const brightness = 15
+        for (let i = 0; i < data.length; i += 4) {
+          let val = data[i]
+          val = ((val / 255 - 0.5) * contrast + 0.5) * 255 + brightness
+          val = Math.max(0, Math.min(255, val))
+          data[i] = val
+          data[i + 1] = val
+          data[i + 2] = val
+        }
+
+        // 4. 이진화 (Otsu's threshold 간소화 버전)
+        // 히스토그램 계산
+        const histogram = new Array(256).fill(0)
+        for (let i = 0; i < data.length; i += 4) {
+          histogram[Math.round(data[i])]++
+        }
+
+        // Otsu's method로 최적 임계값 찾기
+        const totalPixels = data.length / 4
+        let sum = 0
+        for (let i = 0; i < 256; i++) sum += i * histogram[i]
+
+        let sumB = 0
+        let wB = 0
+        let maxVariance = 0
+        let threshold = 128
+
+        for (let t = 0; t < 256; t++) {
+          wB += histogram[t]
+          if (wB === 0) continue
+          const wF = totalPixels - wB
+          if (wF === 0) break
+
+          sumB += t * histogram[t]
+          const mB = sumB / wB
+          const mF = (sum - sumB) / wF
+          const variance = wB * wF * (mB - mF) * (mB - mF)
+
+          if (variance > maxVariance) {
+            maxVariance = variance
+            threshold = t
+          }
+        }
+
+        // 이진화 적용
+        for (let i = 0; i < data.length; i += 4) {
+          const val = data[i] > threshold ? 255 : 0
+          data[i] = val
+          data[i + 1] = val
+          data[i + 2] = val
+        }
+
+        ctx.putImageData(imageData, 0, 0)
+        resolve(canvas.toDataURL('image/png'))
+      }
+      img.src = base64Image
+    })
+  }
+
+  // 멀티 스케일 이미지 생성 (1x, 2x, 3x, 4x) x (기본, 강화) = 8개
+  const preprocessImageMultiScale = async (base64Image: string): Promise<{ scale: number; image: string; enhanced?: boolean }[]> => {
     const scales = [1, 2, 3, 4]
-    const results = await Promise.all(
-      scales.map(async (scale) => ({
+    const results = await Promise.all([
+      // 기본 전처리 (4개)
+      ...scales.map(async (scale) => ({
         scale,
-        image: await preprocessImageAtScale(base64Image, scale)
+        image: await preprocessImageAtScale(base64Image, scale),
+        enhanced: false
+      })),
+      // 강화 전처리 (4개)
+      ...scales.map(async (scale) => ({
+        scale,
+        image: await preprocessImageAtScaleEnhanced(base64Image, scale),
+        enhanced: true
       }))
-    )
+    ])
     return results
   }
 
@@ -1026,26 +1152,30 @@ export default function StatUpdatePage() {
         [slotId]: { ...prev[slotId], processingProgress: '이미지 전처리 중...' }
       }))
 
-      // 4개 스케일로 이미지 전처리
+      // 8개 이미지 전처리 (4 스케일 x 2 전처리 = 기본 + 강화)
       const scaledImages = await preprocessImageMultiScale(base64Image)
-      addDebugLog(`[${slotId}] 멀티스케일 이미지 생성 완료 (1x, 2x, 3x, 4x)`)
+      addDebugLog(`[${slotId}] 멀티스케일 이미지 생성 완료 (1x~4x 기본 + 강화 = 8개)`)
 
       // 각 스케일별 OCR 실행 (순차 실행 - 병렬은 OCR 워커 충돌 가능)
       const multiScaleResults: MultiScaleOcrResult[] = []
+      let scanCount = 0
+      const totalScans = scaledImages.length
 
-      for (const { scale, image } of scaledImages) {
+      for (const { scale, image, enhanced } of scaledImages) {
+        scanCount++
+        const scanType = enhanced ? '강화' : '기본'
         setSlots(prev => ({
           ...prev,
-          [slotId]: { ...prev[slotId], processingProgress: `OCR 스캔 중 (${scale}x)...` }
+          [slotId]: { ...prev[slotId], processingProgress: `OCR 스캔 중 (${scanCount}/${totalScans}: ${scale}x ${scanType})...` }
         }))
 
         try {
           const text = await sendToOcrWorker(image, slotId)
           const stats = extractAllStats(text)
           multiScaleResults.push({ scale, stats, rawText: text })
-          addDebugLog(`[${slotId}] ${scale}x OCR 완료: ${stats.length}개 스탯`)
+          addDebugLog(`[${slotId}] ${scale}x ${scanType} OCR 완료: ${stats.length}개 스탯`)
         } catch (err) {
-          addDebugLog(`[${slotId}] ${scale}x OCR 실패: ${err}`)
+          addDebugLog(`[${slotId}] ${scale}x ${scanType} OCR 실패: ${err}`)
         }
       }
 
