@@ -67,31 +67,25 @@ export async function POST(request: NextRequest) {
         const supabase = createClient(supabaseUrl, supabaseKey)
 
         if (action === 'status') {
-            // 현재 상태 반환 - 장비 데이터가 있는 캐릭터만 카운트
+            // 현재 상태 반환 - estimated 사용으로 속도 개선
             const { count: totalCount } = await supabase
                 .from('characters')
-                .select('*', { count: 'exact', head: true })
+                .select('character_id', { count: 'estimated', head: true })
                 .not('equipment', 'is', null)
-
-            const { count: noEquipCount } = await supabase
-                .from('characters')
-                .select('*', { count: 'exact', head: true })
-                .is('equipment', null)
 
             return NextResponse.json({
                 total: totalCount || 0,
-                noEquipment: noEquipCount || 0,
                 message: 'Ready to recalculate combat power (using stored data)'
             })
         }
 
         if (action === 'recalculate') {
-            // 캐릭터 가져오기 (배치) - 장비 데이터 포함
+            // 캐릭터 가져오기 (배치) - character_id 순서로 (인덱스 활용)
             const { data: characters, error } = await supabase
                 .from('characters')
-                .select('character_id, server_id, name, pve_score, pvp_score, equipment, titles, daevanion, stats, profile')
+                .select('character_id, name, pve_score, pvp_score, equipment, titles, daevanion, stats, profile')
                 .not('equipment', 'is', null)
-                .order('scraped_at', { ascending: true, nullsFirst: true })  // 오래된 것부터 업데이트
+                .order('character_id', { ascending: true })
                 .range(offset, offset + batchSize - 1)
 
             if (error) {
@@ -156,13 +150,16 @@ export async function POST(request: NextRequest) {
                 }
             }
 
-            // 전체 캐릭터 수 확인
-            const { count: totalCount } = await supabase
+            // 다음 배치 확인 (count 쿼리 대신 다음 데이터 존재 여부로 판단)
+            const { data: nextCheck } = await supabase
                 .from('characters')
-                .select('*', { count: 'exact', head: true })
+                .select('character_id')
                 .not('equipment', 'is', null)
+                .order('character_id', { ascending: true })
+                .range(offset + batchSize, offset + batchSize)
+                .limit(1)
 
-            const hasMore = offset + batchSize < (totalCount || 0)
+            const hasMore = nextCheck && nextCheck.length > 0
 
             return NextResponse.json({
                 processed: results.length,
@@ -170,7 +167,6 @@ export async function POST(request: NextRequest) {
                 failed: failedCount,
                 nextOffset: offset + batchSize,
                 hasMore,
-                total: totalCount || 0,
                 results
             })
         }
@@ -190,16 +186,11 @@ export async function GET(request: NextRequest) {
 
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    // 통계 반환
+    // 통계 반환 - estimated 사용으로 속도 개선
     const { count: totalCount } = await supabase
         .from('characters')
-        .select('*', { count: 'exact', head: true })
+        .select('character_id', { count: 'estimated', head: true })
         .not('equipment', 'is', null)
-
-    const { count: noEquipCount } = await supabase
-        .from('characters')
-        .select('*', { count: 'exact', head: true })
-        .is('equipment', null)
 
     const { data: topChars } = await supabase
         .from('characters')
@@ -209,7 +200,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
         total: totalCount || 0,
-        noEquipment: noEquipCount || 0,
         topCharacters: topChars || [],
         message: 'POST with action="recalculate" to start recalculation (uses stored data, no external API calls)'
     })
