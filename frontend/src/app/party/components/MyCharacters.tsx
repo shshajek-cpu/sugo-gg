@@ -9,6 +9,7 @@ import { SERVERS } from '@/app/constants/servers'
 import styles from './MyCharacters.module.css'
 import PartyLoginRequired from './PartyLoginRequired'
 import BreakthroughBadge from './BreakthroughBadge'
+import AddCharacterModal from '@/app/ledger/components/AddCharacterModal'
 
 
 export default function MyCharacters({ isMobile = false }: { isMobile?: boolean }) {
@@ -24,7 +25,7 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     refreshCharacter
   } = useMyCharacters({ accessToken: session?.access_token })
 
-  // 검색 관련 (useCharacterSearch - 상단 검색과 동일한 로직)
+  // 검색 관련 (useCharacterSearch - PC에서만 사용)
   const {
     query: searchName,
     setQuery: setSearchName,
@@ -46,8 +47,12 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
   const [refreshing, setRefreshing] = useState<string | null>(null)
   const [refreshingAll, setRefreshingAll] = useState(false)
 
-  // 외부 클릭 감지
+  // 모바일용 모달 상태
+  const [showAddModal, setShowAddModal] = useState(false)
+
+  // 외부 클릭 감지 (PC용)
   useEffect(() => {
+    if (isMobile) return
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
         setShowResults(false)
@@ -55,10 +60,11 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     }
     document.addEventListener("mousedown", handleClickOutside)
     return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [setShowResults])
+  }, [setShowResults, isMobile])
 
-  // 종족 변경 시 서버 선택 초기화 (해당 종족에 맞지 않는 서버면 리셋)
+  // 종족 변경 시 서버 선택 초기화 (PC용)
   useEffect(() => {
+    if (isMobile) return
     if (!selectedServer || !selectedRace) return
     const serverObj = SERVERS.find(s => s.name === selectedServer)
     if (!serverObj) return
@@ -66,16 +72,15 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     const isElyosServer = serverObj.id.startsWith('1')
     const isAsmodianServer = serverObj.id.startsWith('2')
 
-    // 천족 선택했는데 마족 서버면 초기화
     if (selectedRace === 'elyos' && isAsmodianServer) {
       setSelectedServer('')
     }
-    // 마족 선택했는데 천족 서버면 초기화
     if (selectedRace === 'asmodian' && isElyosServer) {
       setSelectedServer('')
     }
-  }, [selectedRace, selectedServer, setSelectedServer])
+  }, [selectedRace, selectedServer, setSelectedServer, isMobile])
 
+  // PC용 검색 결과에서 등록
   const handleRegister = async (character: CharacterSearchResult) => {
     setRegistering(character.characterId)
     try {
@@ -86,6 +91,38 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
       alert(err instanceof Error ? err.message : '등록에 실패했습니다.')
     } finally {
       setRegistering(null)
+    }
+  }
+
+  // 모바일용 모달에서 등록
+  const handleAddFromModal = async (character: {
+    name: string
+    class_name: string
+    server_name: string
+    character_id?: string
+    profile_image?: string
+    race?: string
+    item_level?: number
+  }) => {
+    try {
+      const serverId = SERVERS.find(s => s.name === character.server_name)?.id
+
+      await registerFromSearch({
+        characterId: character.character_id || `manual_${Date.now()}`,
+        name: character.name,
+        server: character.server_name,
+        serverId: serverId ? parseInt(serverId) : undefined,
+        server_id: serverId ? parseInt(serverId) : undefined,
+        job: character.class_name,
+        className: character.class_name,
+        race: character.race || '',
+        level: 0,
+        imageUrl: character.profile_image,
+        profileImage: character.profile_image,
+        item_level: character.item_level
+      })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : '등록에 실패했습니다.')
     }
   }
 
@@ -105,7 +142,6 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     }
   }
 
-  // 전체 캐릭터 갱신
   const handleRefreshAll = async () => {
     if (characters.length === 0) return
 
@@ -144,7 +180,6 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     }
   }
 
-  // 전투력 포맷팅 (만 단위)
   const formatCombatPower = (cp?: number) => {
     if (!cp) return '-'
     if (cp >= 10000) {
@@ -153,7 +188,6 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     return cp.toLocaleString()
   }
 
-  // 서버명 가져오기 (검색 결과용)
   const getServerName = (char: CharacterSearchResult) => {
     if (char.server) return char.server
     const serverId = char.serverId ?? char.server_id
@@ -163,7 +197,6 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
     return ''
   }
 
-  // 종족 표시
   const getRaceDisplay = (char: CharacterSearchResult) => {
     const race = char.race || ''
     if (race === 'Elyos' || race === '천족') return { text: '천족', color: '#60a5fa' }
@@ -194,268 +227,268 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
         </>
       )}
 
-      {/* 검색 입력창 (상단 검색 스타일) */}
-      <div className={styles.searchWrapper} ref={wrapperRef}>
-        {/* 필터 영역 */}
-        <div className={styles.filterRow}>
-          {/* 종족 필터 토글 */}
-          <div className={styles.raceToggle}>
-            <button
-              className={`${styles.raceButton} ${selectedRace === 'elyos' ? styles.elyosActive : ''}`}
-              onClick={() => setSelectedRace(selectedRace === 'elyos' ? undefined : 'elyos')}
-            >
-              천족
-            </button>
-            <button
-              className={`${styles.raceButton} ${selectedRace === 'asmodian' ? styles.asmodianActive : ''}`}
-              onClick={() => setSelectedRace(selectedRace === 'asmodian' ? undefined : 'asmodian')}
-            >
-              마족
-            </button>
-          </div>
-
-          {/* 서버 필터 - 종족 선택에 따라 필터링 */}
-          <select
-            className={styles.serverSelect}
-            value={selectedServer}
-            onChange={(e) => setSelectedServer(e.target.value)}
-          >
-            <option value="">전체 서버</option>
-            {SERVERS
-              .filter(server => {
-                // 종족 선택 없으면 모든 서버 표시
-                if (!selectedRace) return true
-                // 천족 선택시 1xxx 서버만
-                if (selectedRace === 'elyos') return server.id.startsWith('1')
-                // 마족 선택시 2xxx 서버만
-                if (selectedRace === 'asmodian') return server.id.startsWith('2')
-                return true
-              })
-              .map(server => (
-                <option key={server.id} value={server.name}>{server.name}</option>
-              ))}
-          </select>
-        </div>
-
-        <div className={styles.searchInputWrapper}>
-          <span className={styles.searchIcon}>🔍</span>
-          <input
-            type="text"
-            className={styles.searchInput}
-            placeholder="캐릭터명 입력..."
-            value={searchName}
-            onChange={e => setSearchName(e.target.value)}
-            onFocus={() => {
-              if (searchName.length >= 1) setShowResults(true)
-            }}
-          />
-          {searchName && (
-            <button
-              className={styles.clearButton}
-              onClick={() => {
-                setSearchName('')
-                clearSearchResults()
-                setShowResults(false)
-              }}
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-        {/* 검색 결과 드롭다운 */}
-        {showResults && (searchResults.length > 0 || searching) && (
-          <div className={styles.searchDropdown}>
-            <div className={styles.searchDropdownHeader}>
-              <span>검색 결과 {searchResults.length > 0 && `(${searchResults.length})`}</span>
-              {searching && <span className={styles.searchingText}>검색 중...</span>}
+      {/* PC용 검색 UI */}
+      {!isMobile && (
+        <div className={styles.searchWrapper} ref={wrapperRef}>
+          <div className={styles.filterRow}>
+            <div className={styles.raceToggle}>
+              <button
+                className={`${styles.raceButton} ${selectedRace === 'elyos' ? styles.elyosActive : ''}`}
+                onClick={() => setSelectedRace(selectedRace === 'elyos' ? undefined : 'elyos')}
+              >
+                천족
+              </button>
+              <button
+                className={`${styles.raceButton} ${selectedRace === 'asmodian' ? styles.asmodianActive : ''}`}
+                onClick={() => setSelectedRace(selectedRace === 'asmodian' ? undefined : 'asmodian')}
+              >
+                마족
+              </button>
             </div>
 
-            <div className={styles.searchDropdownList}>
-              {searchResults.slice(0, 10).map(char => {
-                const serverName = getServerName(char)
-                const raceInfo = getRaceDisplay(char)
-                const itemLevel = char.item_level
-                // 프로필 이미지 URL 추출 (상단 검색과 동일)
-                const profileImage = char.imageUrl || char.profileImage || null
-                const isElyos = raceInfo.text === '천족'
+            <select
+              className={styles.serverSelect}
+              value={selectedServer}
+              onChange={(e) => setSelectedServer(e.target.value)}
+            >
+              <option value="">전체 서버</option>
+              {SERVERS
+                .filter(server => {
+                  if (!selectedRace) return true
+                  if (selectedRace === 'elyos') return server.id.startsWith('1')
+                  if (selectedRace === 'asmodian') return server.id.startsWith('2')
+                  return true
+                })
+                .map(server => (
+                  <option key={server.id} value={server.name}>{server.name}</option>
+                ))}
+            </select>
+          </div>
 
-                return (
-                  <div
-                    key={char.characterId}
-                    className={styles.searchResultItem}
-                    onClick={() => handleRegister(char)}
-                  >
-                    {/* 캐릭터 프로필 이미지 (상단 검색과 동일) */}
+          <div className={styles.searchInputWrapper}>
+            <span className={styles.searchIcon}>🔍</span>
+            <input
+              type="text"
+              className={styles.searchInput}
+              placeholder="캐릭터명 입력..."
+              value={searchName}
+              onChange={e => setSearchName(e.target.value)}
+              onFocus={() => {
+                if (searchName.length >= 1) setShowResults(true)
+              }}
+            />
+            {searchName && (
+              <button
+                className={styles.clearButton}
+                onClick={() => {
+                  setSearchName('')
+                  clearSearchResults()
+                  setShowResults(false)
+                }}
+              >
+                ×
+              </button>
+            )}
+          </div>
+
+          {showResults && (searchResults.length > 0 || searching) && (
+            <div className={styles.searchDropdown}>
+              <div className={styles.searchDropdownHeader}>
+                <span>검색 결과 {searchResults.length > 0 && `(${searchResults.length})`}</span>
+                {searching && <span className={styles.searchingText}>검색 중...</span>}
+              </div>
+
+              <div className={styles.searchDropdownList}>
+                {searchResults.slice(0, 10).map(char => {
+                  const serverName = getServerName(char)
+                  const raceInfo = getRaceDisplay(char)
+                  const itemLevel = char.item_level
+                  const profileImage = char.imageUrl || char.profileImage || null
+                  const isElyos = raceInfo.text === '천족'
+
+                  return (
                     <div
-                      className={styles.profileImageWrapper}
-                      style={{ borderColor: isElyos ? '#3b82f6' : '#ef4444' }}
+                      key={char.characterId}
+                      className={styles.searchResultItem}
+                      onClick={() => handleRegister(char)}
                     >
-                      {profileImage ? (
-                        <img
-                          src={profileImage}
-                          alt=""
-                          className={styles.profileImage}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none'
-                            const parent = (e.target as HTMLImageElement).parentElement
-                            if (parent) {
-                              parent.innerHTML = `<span style="font-size:14px;color:#9CA3AF">${char.name.charAt(0)}</span>`
-                            }
-                          }}
-                        />
-                      ) : (
-                        <span style={{ fontSize: '14px', color: '#9CA3AF' }}>{char.name.charAt(0)}</span>
-                      )}
-                    </div>
-                    <div className={styles.searchResultInfo}>
-                      {/* 1행: 캐릭터명 + PVE/PVP 점수 */}
-                      <div className={styles.searchResultMain}>
-                        <span className={styles.charName}>
-                          {char.name.replace(/<\/?[^>]+(>|$)/g, '')}
-                        </span>
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', fontSize: '0.75rem' }}>
-                          {char.pve_score && char.pve_score > 0 && (
-                            <span style={{ color: '#4ade80', fontWeight: 600 }}>
-                              PVE {char.pve_score.toLocaleString()}
-                            </span>
-                          )}
-                          {char.pvp_score && char.pvp_score > 0 && (
-                            <span style={{ color: '#f87171', fontWeight: 600 }}>
-                              PVP {char.pvp_score.toLocaleString()}
-                            </span>
+                      <div
+                        className={styles.profileImageWrapper}
+                        style={{ borderColor: isElyos ? '#3b82f6' : '#ef4444' }}
+                      >
+                        {profileImage ? (
+                          <img
+                            src={profileImage}
+                            alt=""
+                            className={styles.profileImage}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none'
+                              const parent = (e.target as HTMLImageElement).parentElement
+                              if (parent) {
+                                parent.innerHTML = `<span style="font-size:14px;color:#9CA3AF">${char.name.charAt(0)}</span>`
+                              }
+                            }}
+                          />
+                        ) : (
+                          <span style={{ fontSize: '14px', color: '#9CA3AF' }}>{char.name.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className={styles.searchResultInfo}>
+                        <div className={styles.searchResultMain}>
+                          <span className={styles.charName}>
+                            {char.name.replace(/<\/?[^>]+(>|$)/g, '')}
+                          </span>
+                          <div style={{ marginLeft: 'auto', display: 'flex', gap: '8px', fontSize: '0.75rem' }}>
+                            {char.pve_score && char.pve_score > 0 && (
+                              <span style={{ color: '#4ade80', fontWeight: 600 }}>
+                                PVE {char.pve_score.toLocaleString()}
+                              </span>
+                            )}
+                            {char.pvp_score && char.pvp_score > 0 && (
+                              <span style={{ color: '#f87171', fontWeight: 600 }}>
+                                PVP {char.pvp_score.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className={styles.searchResultMeta}>
+                          <span style={{ color: raceInfo.color, fontWeight: 500 }}>{raceInfo.text}</span>
+                          <span className={styles.separator}>|</span>
+                          <span>{serverName}</span>
+                          {itemLevel && itemLevel > 0 && (
+                            <>
+                              <span className={styles.separator}>|</span>
+                              <span style={{ color: '#a78bfa' }}>IL.{itemLevel}</span>
+                            </>
                           )}
                         </div>
                       </div>
-                      {/* 2행: 종족 | 서버 | 아이템레벨 */}
-                      <div className={styles.searchResultMeta}>
-                        <span style={{ color: raceInfo.color, fontWeight: 500 }}>{raceInfo.text}</span>
-                        <span className={styles.separator}>|</span>
-                        <span>{serverName}</span>
-                        {itemLevel && itemLevel > 0 && (
-                          <>
-                            <span className={styles.separator}>|</span>
-                            <span style={{ color: '#a78bfa' }}>IL.{itemLevel}</span>
-                          </>
-                        )}
-                      </div>
+                      <button
+                        className={styles.registerButton}
+                        disabled={registering === char.characterId}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRegister(char)
+                        }}
+                      >
+                        {registering === char.characterId ? '등록중...' : '등록'}
+                      </button>
                     </div>
-                    <button
-                      className={styles.registerButton}
-                      disabled={registering === char.characterId}
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRegister(char)
-                      }}
-                    >
-                      {registering === char.characterId ? '등록중...' : '등록'}
-                    </button>
-                  </div>
-                )
-              })}
+                  )
+                })}
 
-              {searchResults.length === 0 && !searching && searchName.length >= 1 && (
-                <div className={styles.noResults}>검색 결과가 없습니다.</div>
-              )}
+                {searchResults.length === 0 && !searching && searchName.length >= 1 && (
+                  <div className={styles.noResults}>검색 결과가 없습니다.</div>
+                )}
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
 
       {/* 등록된 캐릭터 목록 */}
       <div className={styles.characterSection}>
         {loading ? (
           <span className={styles.loading}>불러오는 중...</span>
-        ) : characters.length === 0 ? (
-          <span className={styles.empty}>등록된 캐릭터가 없습니다.</span>
         ) : (
           <>
-            <div className={styles.characterSectionHeader}>
-              <div className={styles.characterSectionTitle}>
-                등록된 캐릭터 ({characters.length})
-              </div>
-              <button
-                className={styles.refreshAllButton}
-                onClick={handleRefreshAll}
-                disabled={refreshingAll}
-                title="전체 캐릭터 스펙 갱신"
-              >
-                {refreshingAll ? '갱신 중...' : '🔄 전체 갱신'}
-              </button>
-            </div>
-            <div className={styles.characterList}>
-              {characters.map(char => {
-                // PC용 원래 디자인
-                if (!isMobile) {
-                  return (
-                    <div key={char.id} className={styles.characterCard}>
-                      <div className={styles.cardHeader}>
-                        <div className={styles.cardProfileWrapper}>
-                          {char.profile_image ? (
-                            <img
-                              src={char.profile_image}
-                              alt=""
-                              className={styles.cardProfileImage}
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).style.display = 'none'
-                              }}
-                            />
-                          ) : (
-                            <span className={styles.cardProfilePlaceholder}>{char.character_name.charAt(0)}</span>
-                          )}
-                        </div>
-                        <div className={styles.characterCardMain}>
-                          <div className={styles.charNameWrapper}>
-                            <div className={styles.charName}>{char.character_name}</div>
-                            {char.character_breakthrough && char.character_breakthrough > 0 && (
-                              <BreakthroughBadge value={char.character_breakthrough} size="small" />
-                            )}
-                          </div>
-                          <div className={styles.charMeta}>
-                            <span className={styles.className}>{char.character_class || '직업없음'}</span>
-                            <span className={styles.level}>Lv{char.character_level || '?'}</span>
-                          </div>
-                        </div>
+            {/* PC용: 헤더 + 캐릭터 리스트 */}
+            {!isMobile && (
+              <>
+                {characters.length === 0 ? (
+                  <span className={styles.empty}>등록된 캐릭터가 없습니다.</span>
+                ) : (
+                  <>
+                    <div className={styles.characterSectionHeader}>
+                      <div className={styles.characterSectionTitle}>
+                        등록된 캐릭터 ({characters.length})
                       </div>
-
-                      <div className={styles.characterCardStats}>
-                        <div className={styles.statRow}>
-                          <span className={styles.statLabelMini}>PVE</span>
-                          <span className={styles.statValuePve}>
-                            {formatCombatPower(char.character_pve_score)}
-                          </span>
-                        </div>
-                        <div className={styles.statRow}>
-                          <span className={styles.statLabelMini}>PVP</span>
-                          <span className={styles.statValuePvp}>
-                            {formatCombatPower(char.character_pvp_score)}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className={styles.characterCardActions}>
-                        <button
-                          className={styles.refreshButton}
-                          onClick={() => handleRefresh(char)}
-                          disabled={refreshing === char.id}
-                          title="최신 스펙으로 갱신"
-                        >
-                          {refreshing === char.id ? '...' : '🔄'}
-                        </button>
-                        <button
-                          className={styles.deleteButton}
-                          onClick={() => handleDelete(char.id)}
-                          title="삭제"
-                        >
-                          ×
-                        </button>
-                      </div>
+                      <button
+                        className={styles.refreshAllButton}
+                        onClick={handleRefreshAll}
+                        disabled={refreshingAll}
+                        title="전체 캐릭터 스펙 갱신"
+                      >
+                        {refreshingAll ? '갱신 중...' : '🔄 전체 갱신'}
+                      </button>
                     </div>
-                  )
-                }
+                    <div className={styles.characterList}>
+                      {characters.map(char => (
+                        <div key={char.id} className={styles.characterCard}>
+                          <div className={styles.cardHeader}>
+                            <div className={styles.cardProfileWrapper}>
+                              {char.profile_image ? (
+                                <img
+                                  src={char.profile_image}
+                                  alt=""
+                                  className={styles.cardProfileImage}
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).style.display = 'none'
+                                  }}
+                                />
+                              ) : (
+                                <span className={styles.cardProfilePlaceholder}>{char.character_name.charAt(0)}</span>
+                              )}
+                            </div>
+                            <div className={styles.characterCardMain}>
+                              <div className={styles.charNameWrapper}>
+                                <div className={styles.charName}>{char.character_name}</div>
+                                {char.character_breakthrough && char.character_breakthrough > 0 && (
+                                  <BreakthroughBadge value={char.character_breakthrough} size="small" />
+                                )}
+                              </div>
+                              <div className={styles.charMeta}>
+                                <span className={styles.className}>{char.character_class || '직업없음'}</span>
+                                <span className={styles.level}>Lv{char.character_level || '?'}</span>
+                              </div>
+                            </div>
+                          </div>
 
-                // 모바일용 인스타 스토리 디자인
-                return (
+                          <div className={styles.characterCardStats}>
+                            <div className={styles.statRow}>
+                              <span className={styles.statLabelMini}>PVE</span>
+                              <span className={styles.statValuePve}>
+                                {formatCombatPower(char.character_pve_score)}
+                              </span>
+                            </div>
+                            <div className={styles.statRow}>
+                              <span className={styles.statLabelMini}>PVP</span>
+                              <span className={styles.statValuePvp}>
+                                {formatCombatPower(char.character_pvp_score)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className={styles.characterCardActions}>
+                            <button
+                              className={styles.refreshButton}
+                              onClick={() => handleRefresh(char)}
+                              disabled={refreshing === char.id}
+                              title="최신 스펙으로 갱신"
+                            >
+                              {refreshing === char.id ? '...' : '🔄'}
+                            </button>
+                            <button
+                              className={styles.deleteButton}
+                              onClick={() => handleDelete(char.id)}
+                              title="삭제"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+
+            {/* 모바일용: 인스타 스토리 스타일 (가로 스크롤) */}
+            {isMobile && (
+              <div className={styles.characterList}>
+                {/* 등록된 캐릭터들 */}
+                {characters.map(char => (
                   <div key={char.id} className={styles.storyItem}>
                     <div className={styles.storyActions}>
                       <button
@@ -486,23 +519,37 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
 
                     <div className={styles.storyInfo}>
                       <div className={styles.storyName}>{char.character_name}</div>
-                      <div className={styles.storyStats}>
-                        <span className={styles.storyStatPve}>
-                          {formatCombatPower(char.character_pve_score)}
-                        </span>
-                        <span className={styles.storyStatPvp}>
-                          {formatCombatPower(char.character_pvp_score)}
-                        </span>
-                      </div>
+                      <div className={styles.storyClass}>{char.character_class || ''}</div>
                     </div>
                   </div>
-                )
-              })}
-            </div>
+                ))}
+
+                {/* 추가 버튼 (맨 뒤에) */}
+                <div
+                  className={`${styles.storyItem} ${styles.storyAddItem}`}
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <div className={styles.storyProfileWrapper}>
+                    <div className={styles.storyAddButton}>
+                      <span className={styles.storyAddIcon}>+</span>
+                    </div>
+                  </div>
+                  <div className={styles.storyInfo}>
+                    <div className={styles.storyName}>추가</div>
+                  </div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
 
+      {/* 모바일용 캐릭터 등록 모달 */}
+      <AddCharacterModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddFromModal}
+      />
     </div>
   )
 }
