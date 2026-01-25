@@ -46,8 +46,17 @@ export default function ProfileSection({ character, arcana, onArcanaClick, stats
 
     // PVE/PVP 전투력 - DB 값(서버 계산) 우선 사용
     // 서버 API(/api/character)에서 계산하여 DB에 저장한 값을 그대로 표시
-    const pveCombatPower = character.pve_score || dualCombatPower?.pve || character.power || 0
-    const pvpCombatPower = character.pvp_score || dualCombatPower?.pvp || 0
+    // 45레벨 미만이거나 비정상 전투력(177029)인 경우 표시 안 함
+    const isValidLevel = (character.level || 0) >= 45
+    const isAbnormalScore = character.pve_score === 177029 && character.pvp_score === 177029
+    const shouldShowCombatPower = isValidLevel && !isAbnormalScore
+
+    const pveCombatPower = shouldShowCombatPower
+        ? (character.pve_score || dualCombatPower?.pve || character.power || 0)
+        : 0
+    const pvpCombatPower = shouldShowCombatPower
+        ? (character.pvp_score || dualCombatPower?.pvp || 0)
+        : 0
     // 호환성 유지
     const combatPower = pveCombatPower
 

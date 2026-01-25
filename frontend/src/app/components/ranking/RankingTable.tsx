@@ -9,6 +9,19 @@ import styles from './Ranking.module.css'
 import { SERVER_MAP } from '../../constants/servers'
 import { RankingCharacter } from '../../../types/character'
 
+// 전투력 표시 유효성 검사 (45레벨 미만이거나 비정상 전투력인 경우 표시 안 함)
+const getValidScore = (char: RankingCharacter, scoreType: 'pve' | 'pvp'): number | null => {
+    const level = char.level || char.item_level || 0
+    const isValidLevel = level >= 45
+    const isAbnormalScore = char.pve_score === 177029 && char.pvp_score === 177029
+
+    if (!isValidLevel || isAbnormalScore) return null
+
+    if (scoreType === 'pve') {
+        return char.pve_score || char.hiton_score || 0
+    }
+    return char.pvp_score || 0
+}
 
 interface RankingTableProps {
     type: 'hiton' | 'cp' | 'content'
@@ -247,12 +260,12 @@ export default function RankingTable({ type }: RankingTableProps) {
                                         <>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div className={styles.scoreValue} style={{ color: '#4ade80' }}>
-                                                    {(char.pve_score || char.hiton_score || 0).toLocaleString()}
+                                                    {getValidScore(char, 'pve')?.toLocaleString() ?? '-'}
                                                 </div>
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div className={styles.scoreValue} style={{ color: '#f87171' }}>
-                                                    {char.pvp_score?.toLocaleString() || '-'}
+                                                    {getValidScore(char, 'pvp')?.toLocaleString() ?? '-'}
                                                 </div>
                                             </td>
                                         </>
@@ -318,10 +331,10 @@ export default function RankingTable({ type }: RankingTableProps) {
                                             {isHitonTab ? (
                                                 <>
                                                     <span className={styles.statTag} style={{ color: '#ef4444', background: 'rgba(239, 68, 68, 0.1)' }}>
-                                                        P {char.pvp_score?.toLocaleString() ?? '-'}
+                                                        P {getValidScore(char, 'pvp')?.toLocaleString() ?? '-'}
                                                     </span>
                                                     <span className={styles.statTag} style={{ color: '#3b82f6', background: 'rgba(59, 130, 246, 0.1)' }}>
-                                                        E {(char.pve_score || char.hiton_score || 0).toLocaleString()}
+                                                        E {getValidScore(char, 'pve')?.toLocaleString() ?? '-'}
                                                     </span>
                                                 </>
                                             ) : (
