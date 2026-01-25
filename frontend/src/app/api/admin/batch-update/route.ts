@@ -6,7 +6,7 @@ import { aggregateStats } from '../../../../lib/statsAggregator'
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60 // Vercel serverless timeout (최대 60초)
 
-const BATCH_SIZE = 20 // 한 번에 조회할 캐릭터 수 (~600명/분 목표)
+const BATCH_SIZE = 15 // 한 번에 조회할 캐릭터 수 (~450명/분)
 
 // 차단/에러 타입 정의
 type ErrorType = 'blocked' | 'rate_limit' | 'maintenance' | 'network' | 'unknown'
