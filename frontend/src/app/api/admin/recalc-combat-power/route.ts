@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { aggregateStats } from '@/lib/statsAggregator'
-import { calculateCombatPowerFromStats } from '@/lib/combatPower'
+import { calculateDualCombatPowerFromStats } from '@/lib/combatPower'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 300 // 5분 타임아웃
@@ -12,8 +12,8 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PU
 // DB에 저장된 데이터로 전투력 재계산 (외부 API 호출 없음 - 빠름)
 function recalculateFromStoredData(character: any): {
     success: boolean
-    newScore: number
-    grade?: string
+    pveScore: number
+    pvpScore: number
     error?: string
 } {
     try {
@@ -26,7 +26,7 @@ function recalculateFromStoredData(character: any): {
 
         // 장비 데이터가 없으면 스킵
         if (!equipment || equipment.length === 0) {
-            return { success: false, error: 'No equipment data', newScore: 0 }
+            return { success: false, error: 'No equipment data', pveScore: 0, pvpScore: 0 }
         }
 
         // 전투력 계산에서 제외할 아이템 필터링 (아르카나, 펫, 날개)
@@ -42,16 +42,16 @@ function recalculateFromStoredData(character: any): {
         // 스탯 집계
         const aggregatedStats = aggregateStats(equipmentForCalc, titles, daevanion, stats, equippedTitleId)
 
-        // 새 전투력 계산
-        const combatPowerResult = calculateCombatPowerFromStats(aggregatedStats, stats)
+        // PVE/PVP 전투력 계산
+        const dualScore = calculateDualCombatPowerFromStats(aggregatedStats, stats)
 
         return {
             success: true,
-            newScore: combatPowerResult.totalScore,
-            grade: combatPowerResult.grade
+            pveScore: dualScore.pve || 0,
+            pvpScore: dualScore.pvp || 0
         }
     } catch (err: any) {
-        return { success: false, error: err.message, newScore: 0 }
+        return { success: false, error: err.message, pveScore: 0, pvpScore: 0 }
     }
 }
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
             // 캐릭터 가져오기 (배치) - 장비 데이터 포함
             const { data: characters, error } = await supabase
                 .from('characters')
-                .select('character_id, server_id, name, noa_score, equipment, titles, daevanion, stats, profile')
+                .select('character_id, server_id, name, pve_score, pvp_score, equipment, titles, daevanion, stats, profile')
                 .not('equipment', 'is', null)
                 .order('scraped_at', { ascending: true, nullsFirst: true })  // 오래된 것부터 업데이트
                 .range(offset, offset + batchSize - 1)
@@ -113,13 +113,16 @@ export async function POST(request: NextRequest) {
 
             for (const char of characters) {
                 const result = recalculateFromStoredData(char)
-                const oldScore = char.noa_score || 0
+                const oldScore = char.pve_score || 0
 
-                if (result.success && result.newScore > 0) {
-                    // DB 업데이트
+                if (result.success && result.pveScore > 0) {
+                    // DB 업데이트 (pve_score, pvp_score)
                     const { error: updateError } = await supabase
                         .from('characters')
-                        .update({ noa_score: result.newScore })
+                        .update({
+                            pve_score: result.pveScore,
+                            pvp_score: result.pvpScore
+                        })
                         .eq('character_id', char.character_id)
 
                     if (updateError) {
@@ -127,8 +130,7 @@ export async function POST(request: NextRequest) {
                         results.push({
                             name: char.name,
                             oldScore,
-                            newScore: result.newScore,
-                            grade: result.grade,
+                            newScore: result.pveScore,
                             success: false,
                             error: updateError.message
                         })
@@ -137,8 +139,8 @@ export async function POST(request: NextRequest) {
                         results.push({
                             name: char.name,
                             oldScore,
-                            newScore: result.newScore,
-                            grade: result.grade,
+                            newScore: result.pveScore,
+                            pvpScore: result.pvpScore,
                             success: true
                         })
                     }
@@ -148,7 +150,6 @@ export async function POST(request: NextRequest) {
                         name: char.name,
                         oldScore,
                         newScore: 0,
-                        grade: '',
                         success: false,
                         error: result.error || 'Unknown error'
                     })
@@ -202,8 +203,8 @@ export async function GET(request: NextRequest) {
 
     const { data: topChars } = await supabase
         .from('characters')
-        .select('name, noa_score, server_id')
-        .order('noa_score', { ascending: false })
+        .select('name, pve_score, pvp_score, server_id')
+        .order('pve_score', { ascending: false })
         .limit(5)
 
     return NextResponse.json({
