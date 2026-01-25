@@ -33,7 +33,7 @@ export default function RankingMobile({ type }: RankingMobileProps) {
 
     // URL params에서 sort 값 읽기 (새로고침/공유 시 유지)
     const sortFromUrl = searchParams.get('sort') as 'pve' | 'pvp' | null
-    const [sortBy, setSortBy] = useState<'pve' | 'pvp'>(sortFromUrl || 'pve')
+    const [sortBy, setSortBy] = useState<'pve' | 'pvp'>(sortFromUrl || 'pvp')
 
     // URL params 변경 시 sortBy 동기화
     useEffect(() => {
@@ -94,9 +94,23 @@ export default function RankingMobile({ type }: RankingMobileProps) {
             }
 
             const res = await fetch(`/api/ranking?${params.toString()}`)
+
+            // HTTP 상태 확인 - 에러 시 기존 데이터 유지
+            if (!res.ok) {
+                console.error('[RankingMobile] API Error:', res.status)
+                return
+            }
+
             const json = await res.json()
 
-            if (json.data) {
+            // 에러 응답 확인
+            if (json.error) {
+                console.error('[RankingMobile] API returned error:', json.error)
+                return
+            }
+
+            // 데이터 처리
+            if (json.data && Array.isArray(json.data)) {
                 if (isReset) {
                     setData(json.data)
                 } else {
@@ -108,7 +122,7 @@ export default function RankingMobile({ type }: RankingMobileProps) {
                 if (!isReset) setPage(pageNum)
             }
         } catch (error) {
-            console.error('Failed to fetch ranking', error)
+            console.error('[RankingMobile] Failed to fetch:', error)
         } finally {
             setLoading(false)
             setIsLoadingMore(false)
@@ -148,18 +162,11 @@ export default function RankingMobile({ type }: RankingMobileProps) {
                 </button>
             </div>
 
-            {/* PVE/PVP 토글 (전투력 탭에서만) */}
+            {/* PVP 정렬 (전투력 탭에서만) */}
             {activeType === 'combat' && (
                 <div className={styles.sortToggle}>
                     <button
-                        className={`${styles.sortBtn} ${sortBy === 'pve' ? styles.sortBtnActive : ''}`}
-                        onClick={() => handleSortChange('pve')}
-                    >
-                        PVE
-                    </button>
-                    <button
-                        className={`${styles.sortBtn} ${sortBy === 'pvp' ? styles.sortBtnActive : ''}`}
-                        onClick={() => handleSortChange('pvp')}
+                        className={`${styles.sortBtn} ${styles.sortBtnActive}`}
                     >
                         PVP
                     </button>

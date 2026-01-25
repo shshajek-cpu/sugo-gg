@@ -96,9 +96,23 @@ export default function RankingTable({ type }: RankingTableProps) {
             params.set('limit', '50')
 
             const res = await fetch(`/api/ranking?${params.toString()}`)
+
+            // HTTP 상태 확인 - 에러 시 기존 데이터 유지
+            if (!res.ok) {
+                console.error('[Ranking] API Error:', res.status)
+                return
+            }
+
             const json = await res.json()
 
-            if (json.data) {
+            // 에러 응답 확인
+            if (json.error) {
+                console.error('[Ranking] API returned error:', json.error)
+                return
+            }
+
+            // 데이터 처리
+            if (json.data && Array.isArray(json.data)) {
                 if (isReset) {
                     setData(json.data)
                 } else {
@@ -110,7 +124,7 @@ export default function RankingTable({ type }: RankingTableProps) {
                 if (!isReset) setPage(pageNum)
             }
         } catch (error) {
-            console.error('Failed to fetch ranking', error)
+            console.error('[Ranking] Failed to fetch:', error)
         } finally {
             setLoading(false)
             setIsLoadingMore(false)
@@ -131,8 +145,8 @@ export default function RankingTable({ type }: RankingTableProps) {
         return <span className={styles.rankNumber}>{rank}</span>
     }
 
-    // 현재 정렬 기준
-    const currentSort = searchParams.get('sort') || 'pve'
+    // 현재 정렬 기준 (RankingFilterBar와 동일하게 pvp 기본값)
+    const currentSort = searchParams.get('sort') || 'pvp'
 
     if (loading && page === 1) {
         return <RankingSkeleton />

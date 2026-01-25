@@ -21,14 +21,6 @@ export async function GET(request: NextRequest) {
     const className = searchParams.get('class')
     const search = searchParams.get('q')
 
-    // Race 파라미터를 한글로 변환 (ELYOS → 천족, ASMODIANS → 마족)
-    let race = raceParam
-    if (raceParam === 'ELYOS') {
-        race = '천족'
-    } else if (raceParam === 'ASMODIANS') {
-        race = '마족'
-    }
-
     // Pagination
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
@@ -67,10 +59,25 @@ export async function GET(request: NextRequest) {
 
         // Apply Filters
         if (server) query = query.eq('server_id', parseInt(server))
-        // Race 필터 - DB에 한글과 영어가 섞여 있어서 OR 조건 사용
-        if (race) {
-            const raceEn = raceParam // 'ELYOS' or 'ASMODIANS'
-            query = query.or(`race_name.eq.${race},race_name.eq.${raceEn}`)
+        // Race 필터 - DB에 다양한 형식으로 저장됨 (Elyos, ELYOS, 천족 등)
+        if (raceParam) {
+            let raceConditions: string[] = []
+            if (raceParam === 'ELYOS') {
+                raceConditions = [
+                    'race_name.eq.Elyos',
+                    'race_name.eq.ELYOS',
+                    'race_name.eq.천족'
+                ]
+            } else if (raceParam === 'ASMODIANS') {
+                raceConditions = [
+                    'race_name.eq.Asmodian',
+                    'race_name.eq.ASMODIANS',
+                    'race_name.eq.마족'
+                ]
+            }
+            if (raceConditions.length > 0) {
+                query = query.or(raceConditions.join(','))
+            }
         }
         if (className) query = query.eq('class_name', className)
         if (search) query = query.ilike('name', `%${search}%`)

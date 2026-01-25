@@ -19,7 +19,7 @@ export default function RankingFilterBar({ type = 'combat' }: RankingFilterBarPr
     const [race, setRace] = useState(searchParams.get('race') || '')
     const [className, setClassName] = useState(searchParams.get('class') || '')
     const [search, setSearch] = useState(searchParams.get('q') || '')
-    const [sort, setSort] = useState(searchParams.get('sort') || 'pve')
+    const [sort, setSort] = useState(searchParams.get('sort') || 'pvp')
 
     // Debounce search
     useEffect(() => {
@@ -31,7 +31,7 @@ export default function RankingFilterBar({ type = 'combat' }: RankingFilterBarPr
 
     // URL 변경 시 sort 상태 동기화
     useEffect(() => {
-        setSort(searchParams.get('sort') || 'pve')
+        setSort(searchParams.get('sort') || 'pvp')
     }, [searchParams])
 
     const handleFilterChange = (key: string, value: string) => {
@@ -54,18 +54,11 @@ export default function RankingFilterBar({ type = 'combat' }: RankingFilterBarPr
 
     return (
         <div className={styles.filterBar}>
-            {/* PVE/PVP 토글 (전투력 탭에서만) */}
+            {/* PVP 정렬 (전투력 탭에서만) */}
             {type === 'combat' && (
                 <div className={styles.sortToggle}>
                     <button
-                        className={`${styles.sortBtn} ${sort === 'pve' ? styles.sortBtnActive : ''}`}
-                        onClick={() => handleSortChange('pve')}
-                    >
-                        PVE
-                    </button>
-                    <button
-                        className={`${styles.sortBtn} ${sort === 'pvp' ? styles.sortBtnActive : ''}`}
-                        onClick={() => handleSortChange('pvp')}
+                        className={`${styles.sortBtn} ${styles.sortBtnActive}`}
                     >
                         PVP
                     </button>
