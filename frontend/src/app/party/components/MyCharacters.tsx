@@ -487,6 +487,21 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
             {/* 모바일용: 인스타 스토리 스타일 (가로 스크롤) */}
             {isMobile && (
               <div className={styles.characterList}>
+                {/* 추가 버튼 (맨 앞에) */}
+                <div
+                  className={`${styles.storyItem} ${styles.storyAddItem}`}
+                  onClick={() => setShowAddModal(true)}
+                >
+                  <div className={styles.storyProfileWrapper}>
+                    <div className={styles.storyAddButton}>
+                      <span className={styles.storyAddIcon}>+</span>
+                    </div>
+                  </div>
+                  <div className={styles.storyInfo}>
+                    <div className={styles.storyName}>추가</div>
+                  </div>
+                </div>
+
                 {/* 등록된 캐릭터들 */}
                 {characters.map(char => (
                   <div key={char.id} className={styles.storyItem}>
@@ -519,25 +534,13 @@ export default function MyCharacters({ isMobile = false }: { isMobile?: boolean 
 
                     <div className={styles.storyInfo}>
                       <div className={styles.storyName}>{char.character_name}</div>
-                      <div className={styles.storyClass}>{char.character_class || ''}</div>
+                      <div className={styles.storyStats}>
+                        <span className={styles.storyStatPve}>{formatCombatPower(char.character_pve_score)}</span>
+                        <span className={styles.storyStatPvp}>{formatCombatPower(char.character_pvp_score)}</span>
+                      </div>
                     </div>
                   </div>
                 ))}
-
-                {/* 추가 버튼 (맨 뒤에) */}
-                <div
-                  className={`${styles.storyItem} ${styles.storyAddItem}`}
-                  onClick={() => setShowAddModal(true)}
-                >
-                  <div className={styles.storyProfileWrapper}>
-                    <div className={styles.storyAddButton}>
-                      <span className={styles.storyAddIcon}>+</span>
-                    </div>
-                  </div>
-                  <div className={styles.storyInfo}>
-                    <div className={styles.storyName}>추가</div>
-                  </div>
-                </div>
               </div>
             )}
           </>
