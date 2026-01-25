@@ -286,7 +286,7 @@ export default function CollectorPage() {
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <span style={{ fontSize: '0.8rem', color: isBatchRunning ? '#34D399' : 'var(--text-disabled)' }}>
-                            {isBatchRunning ? '● 처리 중 (10명/2초, ~300명/분)' : '○ 대기'}
+                            {isBatchRunning ? '● 처리 중 (20명/2초, ~600명/분)' : '○ 대기'}
                         </span>
                         <DSButton
                             variant={isBatchRunning ? 'danger' : 'primary'}
