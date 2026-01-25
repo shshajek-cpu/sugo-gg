@@ -793,8 +793,9 @@ export default function MobileLedgerPage() {
     }, [selectedCharacterId, selectedDate, isReady, getAuthHeader]);
 
     // 주간 컨텐츠 저장 (디바운스)
+    // canEdit 체크 제거: PC와 동일하게 저장은 항상 허용 (UI에서만 readOnly로 막음)
     const saveWeeklyContent = useCallback(async () => {
-        if (!selectedCharacterId || weeklyContentLoadingRef.current || !canEdit) return;
+        if (!selectedCharacterId || weeklyContentLoadingRef.current) return;
 
         const weekKey = getWeekKey(new Date(selectedDate));
         const gameDate = getGameDate(new Date(selectedDate));
@@ -820,7 +821,7 @@ export default function MobileLedgerPage() {
         } catch (error) {
             console.error('[Mobile Ledger] Failed to save weekly content:', error);
         }
-    }, [selectedCharacterId, selectedDate, canEdit, weeklyContent, getAuthHeader]);
+    }, [selectedCharacterId, selectedDate, weeklyContent, getAuthHeader]);
 
     const debouncedSaveWeeklyContent = useCallback(() => {
         if (weeklyContentSaveTimeoutRef.current) {
@@ -832,11 +833,11 @@ export default function MobileLedgerPage() {
     }, [saveWeeklyContent]);
 
     // 주간 컨텐츠 상태 변경 감지 후 자동 저장 (PC와 동일한 방식)
-    // 로딩 중이 아니고, 캐릭터가 선택되어 있을 때만 저장
+    // canEdit 체크 제거: PC와 동일하게 저장은 항상 허용 (UI에서만 readOnly로 막음)
     useEffect(() => {
-        if (!selectedCharacterId || weeklyContentLoadingRef.current || !canEdit) return;
+        if (!selectedCharacterId || weeklyContentLoadingRef.current) return;
         debouncedSaveWeeklyContent();
-    }, [selectedCharacterId, weeklyContent, canEdit, debouncedSaveWeeklyContent]);
+    }, [selectedCharacterId, weeklyContent, debouncedSaveWeeklyContent]);
 
     // 주간 컨텐츠 증가/감소 함수 (저장은 useEffect에서 자동으로 처리)
     const incrementMission = useCallback(() => {

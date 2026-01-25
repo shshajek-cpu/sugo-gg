@@ -664,6 +664,10 @@ export default function CharacterDetailPage() {
 
       // Filter by server name or ID locally.
       let match = searchResults.find(r => {
+        // "all" 서버인 경우 서버 필터링 없이 첫 번째 결과 사용
+        if (serverName === 'all' || serverName === '전체') {
+          return true
+        }
         // If we have a verified server ID for the requested server, match strictly by ID
         if (targetSearchServerId && r.server_id) {
           return r.server_id === targetSearchServerId
