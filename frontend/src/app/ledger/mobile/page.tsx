@@ -2267,10 +2267,6 @@ export default function MobileLedgerPage() {
                                                 <span className={styles.incomeLabel}>오늘</span>
                                                 {formatMoney((dashboardData[character.id]?.todayIncome || 0) + (dashboardData[character.id]?.itemIncome || 0))}
                                             </div>
-                                            <div className={styles.charIncomeWeekly}>
-                                                <span className={styles.incomeLabel}>주간</span>
-                                                {formatMoney(dashboardData[character.id]?.weeklyIncome || 0)}
-                                            </div>
                                         </div>
                                         {/* 펼침/접힘 아이콘 */}
                                         <div className={styles.expandIcon}>

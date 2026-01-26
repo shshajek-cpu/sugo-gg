@@ -481,7 +481,7 @@ function DashboardSummary({
           </h2>
         </div>
 
-        <div className={styles.kinaGrid} style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+        <div className={styles.kinaGrid} style={{ gridTemplateColumns: 'repeat(2, 1fr)' }}>
           <div className={styles.kinaCard}>
             <div className={styles.kinaLabel}>
               <Calendar size={14} />
@@ -489,16 +489,6 @@ function DashboardSummary({
             </div>
             <div className={styles.kinaValue}>
               {formatKina(totalTodayIncome)} 키나
-            </div>
-          </div>
-
-          <div className={styles.kinaCard}>
-            <div className={styles.kinaLabel}>
-              <TrendingUp size={14} />
-              이번주 총 수입
-            </div>
-            <div className={styles.kinaValue}>
-              {formatKina(totalWeeklyIncome)} 키나
             </div>
           </div>
 
