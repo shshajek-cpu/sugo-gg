@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { WeeklyStats, DailyStats } from '@/types/ledger'
+import useSWR from 'swr'
+import { useMemo, useCallback } from 'react'
+import { WeeklyStats } from '@/types/ledger'
 import { getAuthHeader } from './useDeviceId'
 
 interface UseWeeklyStatsProps {
@@ -10,57 +11,58 @@ interface UseWeeklyStatsProps {
 }
 
 export function useWeeklyStats({ characterId, date }: UseWeeklyStatsProps) {
-  const [stats, setStats] = useState<WeeklyStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchStats = useCallback(async () => {
-    if (!characterId) return
-
-    setIsLoading(true)
-    try {
-      const params = new URLSearchParams({
-        characterId,
-        type: 'weekly'
-      })
-      if (date) {
-        params.append('date', date)
-      }
-
-      const authHeaders = getAuthHeader()
-      const res = await fetch(`/api/ledger/stats?${params}`, {
-        headers: authHeaders
-      })
-      if (res.ok) {
-        const data = await res.json()
-        setStats(data)
-      }
-    } catch (e: any) {
-      setError(e.message)
-    } finally {
-      setIsLoading(false)
+  // SWR fetcher
+  const fetcher = useCallback(async (url: string) => {
+    const authHeaders = getAuthHeader()
+    const res = await fetch(url, {
+      headers: authHeaders
+    })
+    if (!res.ok) {
+      throw new Error('Failed to fetch weekly stats')
     }
+    return res.json()
+  }, [])
+
+  // SWR key
+  const swrKey = useMemo(() => {
+    if (!characterId) return null
+    const params = new URLSearchParams({
+      characterId,
+      type: 'weekly'
+    })
+    if (date) {
+      params.append('date', date)
+    }
+    return `/api/ledger/stats?${params}`
   }, [characterId, date])
 
-  useEffect(() => {
-    fetchStats()
-  }, [fetchStats])
+  // SWR hook
+  const { data: stats, error, isLoading, mutate } = useSWR<WeeklyStats>(
+    swrKey,
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      dedupingInterval: 5000  // 5초 캐시
+    }
+  )
 
   // 차트용 데이터 포맷
-  const chartData = stats?.dailyData.map(d => ({
-    date: d.date,
-    day: getDayName(d.date),
-    income: d.totalIncome,
-    contentIncome: d.contentIncome,
-    itemIncome: d.itemIncome
-  })) || []
+  const chartData = useMemo(() => {
+    return stats?.dailyData.map(d => ({
+      date: d.date,
+      day: getDayName(d.date),
+      income: d.totalIncome,
+      contentIncome: d.contentIncome,
+      itemIncome: d.itemIncome
+    })) || []
+  }, [stats])
 
   return {
-    stats,
+    stats: stats || null,
     chartData,
     isLoading,
-    error,
-    refetch: fetchStats
+    error: error?.message || null,
+    refetch: mutate
   }
 }
 
