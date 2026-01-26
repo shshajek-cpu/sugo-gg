@@ -67,7 +67,11 @@ export async function GET(request: NextRequest) {
           { id: 'ereshrantas_root', name: '에렌슈란타의 뿌리', enabled: false },
           { id: 'siels_wing', name: '시엘의 날개군도', enabled: false },
           { id: 'sulfur_tree', name: '유황나무섬', enabled: false }
-        ]
+        ],
+        // 주간 리셋 컨텐츠 카운트
+        dailyDungeonCount: weeklyData.daily_dungeon_count || 0,
+        awakeningCount: weeklyData.awakening_count || 0,
+        subjugationCount: weeklyData.subjugation_count || 0
       } : null,
       mission: missionData ? {
         count: missionData.mission_count || 0
@@ -94,7 +98,11 @@ export async function POST(request: NextRequest) {
       abyssOrderCount,
       shugoTickets,
       abyssRegions,
-      missionCount
+      missionCount,
+      // 주간 리셋 컨텐츠 카운트
+      dailyDungeonCount,
+      awakeningCount,
+      subjugationCount
     } = body
 
     if (!characterId) {
@@ -128,6 +136,10 @@ export async function POST(request: NextRequest) {
           shugo_bonus: shugoTickets?.bonus ?? 0,
           shugo_last_charge_time: shugoTickets?.lastChargeTime || null,
           abyss_regions: abyssRegions || null,
+          // 주간 리셋 컨텐츠 카운트
+          daily_dungeon_count: dailyDungeonCount ?? 0,
+          awakening_count: awakeningCount ?? 0,
+          subjugation_count: subjugationCount ?? 0,
           updated_at: new Date().toISOString()
         }, {
           onConflict: 'character_id,week_key'

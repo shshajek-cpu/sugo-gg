@@ -400,17 +400,24 @@ export default function MobileLedgerPage() {
         odEnergy: { timeEnergy: 840, ticketEnergy: 0 }
     });
 
-    // 주간 컨텐츠 상태 (사명/주간지령서/어비스지령서 - PC와 동기화용)
+    // 주간 컨텐츠 상태 (사명/주간지령서/어비스지령서 + 주간 리셋 컨텐츠 - PC와 동기화용)
     const [weeklyContent, setWeeklyContent] = useState<{
         missionCount: number;
         weeklyOrderCount: number;
         abyssOrderCount: number;
         shugoTickets: { base: number; bonus: number };
+        // 주간 리셋 컨텐츠 카운트 (일일던전, 각성전, 토벌전)
+        dailyDungeonCount: number;
+        awakeningCount: number;
+        subjugationCount: number;
     }>({
         missionCount: 0,
         weeklyOrderCount: 0,
         abyssOrderCount: 0,
-        shugoTickets: { base: 14, bonus: 0 }
+        shugoTickets: { base: 14, bonus: 0 },
+        dailyDungeonCount: 0,
+        awakeningCount: 0,
+        subjugationCount: 0
     });
     const weeklyContentLoadingRef = useRef(false);
     const weeklyContentSaveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -432,7 +439,7 @@ export default function MobileLedgerPage() {
     }, [characters]);
 
     // 전체 캐릭터 합산 수입 (API 호출)
-    const [totalIncome, setTotalIncome] = useState({ dailyIncome: 0, weeklyIncome: 0 });
+    const [totalIncome, setTotalIncome] = useState({ dailyIncome: 0, monthlyIncome: 0 });
     const [isIncomeLoading, setIsIncomeLoading] = useState(false);
     const [incomeRefreshKey, setIncomeRefreshKey] = useState(0);
 
@@ -552,7 +559,7 @@ export default function MobileLedgerPage() {
     // 전체 캐릭터 합산 수입 로드 (선택 날짜 기준)
     useEffect(() => {
         if (!isReady || characters.length === 0) {
-            setTotalIncome({ dailyIncome: 0, weeklyIncome: 0 });
+            setTotalIncome({ dailyIncome: 0, monthlyIncome: 0 });
             return;
         }
 
@@ -560,8 +567,8 @@ export default function MobileLedgerPage() {
         const isDummyMode = characters.some(c => c.id.startsWith('dummy-'));
         if (isDummyMode) {
             const dailyTotal = characters.reduce((sum, c) => sum + (DUMMY_DASHBOARD_DATA[c.id]?.todayIncome || 0), 0);
-            const weeklyTotal = characters.reduce((sum, c) => sum + (DUMMY_DASHBOARD_DATA[c.id]?.weeklyIncome || 0), 0);
-            setTotalIncome({ dailyIncome: dailyTotal, weeklyIncome: weeklyTotal });
+            const monthlyTotal = characters.reduce((sum, c) => sum + (DUMMY_DASHBOARD_DATA[c.id]?.weeklyIncome || 0) * 4, 0);
+            setTotalIncome({ dailyIncome: dailyTotal, monthlyIncome: monthlyTotal });
             setIsIncomeLoading(false);
             return;
         }
@@ -571,36 +578,36 @@ export default function MobileLedgerPage() {
             try {
                 const authHeaders = getAuthHeader();
 
-                // 모든 캐릭터의 일일/주간 수입을 병렬로 가져오기
+                // 모든 캐릭터의 일일/월간 수입을 병렬로 가져오기
                 const incomePromises = characters.map(async (char) => {
-                    const [dailyRes, weeklyRes] = await Promise.all([
+                    const [dailyRes, monthlyRes] = await Promise.all([
                         fetch(`/api/ledger/stats?characterId=${char.id}&type=daily&date=${selectedDate}`, { headers: authHeaders }),
-                        fetch(`/api/ledger/stats?characterId=${char.id}&type=weekly&date=${selectedDate}`, { headers: authHeaders })
+                        fetch(`/api/ledger/stats?characterId=${char.id}&type=monthly&date=${selectedDate}`, { headers: authHeaders })
                     ]);
 
                     let daily = 0;
-                    let weekly = 0;
+                    let monthly = 0;
 
                     if (dailyRes.ok) {
                         const data = await dailyRes.json();
                         daily = data.totalIncome || 0;
                     }
-                    if (weeklyRes.ok) {
-                        const data = await weeklyRes.json();
-                        weekly = data.totalIncome || 0;
+                    if (monthlyRes.ok) {
+                        const data = await monthlyRes.json();
+                        monthly = data.totalIncome || 0;
                     }
 
-                    return { daily, weekly };
+                    return { daily, monthly };
                 });
 
                 const results = await Promise.all(incomePromises);
                 const dailyTotal = results.reduce((sum, r) => sum + r.daily, 0);
-                const weeklyTotal = results.reduce((sum, r) => sum + r.weekly, 0);
+                const monthlyTotal = results.reduce((sum, r) => sum + r.monthly, 0);
 
-                setTotalIncome({ dailyIncome: dailyTotal, weeklyIncome: weeklyTotal });
+                setTotalIncome({ dailyIncome: dailyTotal, monthlyIncome: monthlyTotal });
             } catch (error) {
                 console.error('[Mobile Ledger] Failed to load total income:', error);
-                setTotalIncome({ dailyIncome: 0, weeklyIncome: 0 });
+                setTotalIncome({ dailyIncome: 0, monthlyIncome: 0 });
             } finally {
                 setIsIncomeLoading(false);
             }
@@ -777,7 +784,11 @@ export default function MobileLedgerPage() {
                         missionCount: data.mission?.count ?? 0,
                         weeklyOrderCount: data.weekly?.weeklyOrderCount ?? 0,
                         abyssOrderCount: data.weekly?.abyssOrderCount ?? 0,
-                        shugoTickets: data.weekly?.shugoTickets ?? { base: 14, bonus: 0 }
+                        shugoTickets: data.weekly?.shugoTickets ?? { base: 14, bonus: 0 },
+                        // 주간 리셋 컨텐츠 카운트
+                        dailyDungeonCount: data.weekly?.dailyDungeonCount ?? 0,
+                        awakeningCount: data.weekly?.awakeningCount ?? 0,
+                        subjugationCount: data.weekly?.subjugationCount ?? 0
                     });
                 }
             } catch (error) {
@@ -815,7 +826,11 @@ export default function MobileLedgerPage() {
                     abyssOrderCount: weeklyContent.abyssOrderCount,
                     shugoTickets: weeklyContent.shugoTickets,
                     abyssRegions: [],
-                    missionCount: weeklyContent.missionCount
+                    missionCount: weeklyContent.missionCount,
+                    // 주간 리셋 컨텐츠 카운트
+                    dailyDungeonCount: weeklyContent.dailyDungeonCount,
+                    awakeningCount: weeklyContent.awakeningCount,
+                    subjugationCount: weeklyContent.subjugationCount
                 })
             });
         } catch (error) {
@@ -885,6 +900,55 @@ export default function MobileLedgerPage() {
         setWeeklyContent(prev => ({
             ...prev,
             abyssOrderCount: Math.max(0, prev.abyssOrderCount - 1)
+        }));
+    }, [canEdit]);
+
+    // 주간 리셋 컨텐츠(일일던전, 각성전, 토벌전) 증가/감소 함수
+    const incrementDailyDungeon = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            dailyDungeonCount: Math.min(MAX_TICKETS.daily_dungeon, prev.dailyDungeonCount + 1)
+        }));
+    }, [canEdit]);
+
+    const decrementDailyDungeon = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            dailyDungeonCount: Math.max(0, prev.dailyDungeonCount - 1)
+        }));
+    }, [canEdit]);
+
+    const incrementAwakening = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            awakeningCount: Math.min(MAX_TICKETS.awakening, prev.awakeningCount + 1)
+        }));
+    }, [canEdit]);
+
+    const decrementAwakening = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            awakeningCount: Math.max(0, prev.awakeningCount - 1)
+        }));
+    }, [canEdit]);
+
+    const incrementSubjugation = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            subjugationCount: Math.min(MAX_TICKETS.subjugation, prev.subjugationCount + 1)
+        }));
+    }, [canEdit]);
+
+    const decrementSubjugation = useCallback(() => {
+        if (!canEdit) return;
+        setWeeklyContent(prev => ({
+            ...prev,
+            subjugationCount: Math.max(0, prev.subjugationCount - 1)
         }));
     }, [canEdit]);
 
@@ -1715,7 +1779,11 @@ export default function MobileLedgerPage() {
                         abyssOrderCount: weeklyContent.abyssOrderCount,
                         shugoTickets: weeklyContent.shugoTickets,
                         abyssRegions: [],
-                        missionCount: weeklyContent.missionCount
+                        missionCount: weeklyContent.missionCount,
+                        // 주간 리셋 컨텐츠 카운트
+                        dailyDungeonCount: weeklyContent.dailyDungeonCount,
+                        awakeningCount: weeklyContent.awakeningCount,
+                        subjugationCount: weeklyContent.subjugationCount
                     })
                 });
             } catch (error) {
@@ -2049,8 +2117,8 @@ export default function MobileLedgerPage() {
         }
     };
 
-    // 전체 캐릭터 합산 일일/주간 수입 (API에서 로드됨)
-    const { dailyIncome, weeklyIncome } = totalIncome;
+    // 전체 캐릭터 합산 일일/월간 수입 (API에서 로드됨)
+    const { dailyIncome, monthlyIncome } = totalIncome;
 
     // 로딩 상태
     if (isAuthLoading || isCharactersLoading) {
@@ -2108,8 +2176,8 @@ export default function MobileLedgerPage() {
                                 <div className={styles.incomeValue}>{formatMoney(dailyIncome)}</div>
                             </div>
                             <div className={styles.incomeStat}>
-                                <div className={styles.incomeLabel}>주간</div>
-                                <div className={styles.incomeValuePrimary}>{formatMoney(weeklyIncome)}</div>
+                                <div className={styles.incomeLabel}>월간</div>
+                                <div className={styles.incomeValuePrimary}>{formatMoney(monthlyIncome)}</div>
                             </div>
                             <div className={`${styles.incomeStat} ${styles.noBorder}`}>
                                 <div className={styles.incomeLabel}>미판매</div>
@@ -2894,7 +2962,7 @@ export default function MobileLedgerPage() {
                                 <span className={styles.contentTitle}>일일 컨텐츠</span>
                             </div>
 
-                            {/* 일일던전 - 잔여횟수/최대횟수 (PC와 동일) */}
+                            {/* 일일던전 - 주간 리셋 컨텐츠 (week_key 기반) */}
                             <div className={styles.simpleCard}>
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
@@ -2903,18 +2971,18 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.daily_dungeon - (records.find(r => r.content_type === 'daily_dungeon')?.completion_count || 0))}/
+                                        {Math.max(0, MAX_TICKETS.daily_dungeon - weeklyContent.dailyDungeonCount)}/
                                         {MAX_TICKETS.daily_dungeon}
                                         {(characterState.bonusTickets.daily_dungeon || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.daily_dungeon})</span>
                                         )}
                                     </span>
-                                    <button className={styles.btnStepSmall} onClick={() => handleIncrementContent('daily_dungeon', 'daily_dungeon')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => handleDecrementContent('daily_dungeon', 'daily_dungeon')}>-</button>
+                                    <button className={styles.btnStepSmall} onClick={incrementDailyDungeon}>+</button>
+                                    <button className={styles.btnStepSmall} onClick={decrementDailyDungeon}>-</button>
                                 </div>
                             </div>
 
-                            {/* 각성전 - 잔여횟수/최대횟수 (PC와 동일) */}
+                            {/* 각성전 - 주간 리셋 컨텐츠 (week_key 기반) */}
                             <div className={styles.simpleCard}>
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
@@ -2923,14 +2991,14 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.awakening - (records.find(r => r.content_type === 'awakening_battle')?.completion_count || 0))}/
+                                        {Math.max(0, MAX_TICKETS.awakening - weeklyContent.awakeningCount)}/
                                         {MAX_TICKETS.awakening}
                                         {(characterState.bonusTickets.awakening || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.awakening})</span>
                                         )}
                                     </span>
-                                    <button className={styles.btnStepSmall} onClick={() => handleIncrementContent('awakening_battle', 'awakening')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => handleDecrementContent('awakening_battle', 'awakening')}>-</button>
+                                    <button className={styles.btnStepSmall} onClick={incrementAwakening}>+</button>
+                                    <button className={styles.btnStepSmall} onClick={decrementAwakening}>-</button>
                                 </div>
                             </div>
 
@@ -2974,7 +3042,7 @@ export default function MobileLedgerPage() {
                                 </div>
                             </div>
 
-                            {/* 토벌전 - 잔여횟수/최대횟수 (PC와 동일) */}
+                            {/* 토벌전 - 주간 리셋 컨텐츠 (week_key 기반) */}
                             <div className={styles.simpleCard}>
                                 <div className={styles.simpleCardLeft}>
                                     <div className={styles.simpleCardBar}></div>
@@ -2983,14 +3051,14 @@ export default function MobileLedgerPage() {
                                 </div>
                                 <div className={styles.simpleCardRight}>
                                     <span className={styles.simpleCardCount}>
-                                        {Math.max(0, characterState.baseTickets.subjugation - (records.find(r => r.content_type === 'subjugation')?.completion_count || 0))}/
+                                        {Math.max(0, MAX_TICKETS.subjugation - weeklyContent.subjugationCount)}/
                                         {MAX_TICKETS.subjugation}
                                         {(characterState.bonusTickets.subjugation || 0) > 0 && (
                                             <span className={styles.dungeonCardBonus}>(+{characterState.bonusTickets.subjugation})</span>
                                         )}
                                     </span>
-                                    <button className={styles.btnStepSmall} onClick={() => handleIncrementContent('subjugation', 'subjugation')}>+</button>
-                                    <button className={styles.btnStepSmall} onClick={() => handleDecrementContent('subjugation', 'subjugation')}>-</button>
+                                    <button className={styles.btnStepSmall} onClick={incrementSubjugation}>+</button>
+                                    <button className={styles.btnStepSmall} onClick={decrementSubjugation}>-</button>
                                 </div>
                             </div>
                         </div>
