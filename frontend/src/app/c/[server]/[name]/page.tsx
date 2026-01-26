@@ -603,8 +603,6 @@ export default function CharacterDetailPage() {
     try {
       setLoading(true)
       setError(null)
-      setDebugLogs([]) // 새 요청 시 로그 초기화
-      addDebugLog(`시작: serverName=${serverName}, charName=${charName}, race=${raceParam}`)
 
       if (isMock) {
         // console.log('Using MOCK data')
@@ -633,13 +631,10 @@ export default function CharacterDetailPage() {
 
       // Map server name to ID for accurate search
       const targetSearchServerId = SERVER_NAME_TO_ID[serverName]
-      addDebugLog(`서버 ID 매핑: ${serverName} -> ${targetSearchServerId}`)
 
       // Step 1: Search with Server ID if available, otherwise Global
-      addDebugLog(`검색 API 호출 중...`)
       const searchResponse = await supabaseApi.searchCharacter(charName, targetSearchServerId, raceParam)
       const searchResults = searchResponse.list
-      addDebugLog(`검색 결과: ${searchResults.length}개 찾음`)
 
       // Filter by server name or ID locally.
       let match = searchResults.find(r => {
@@ -659,7 +654,6 @@ export default function CharacterDetailPage() {
 
       // 검색 실패 시 DB 직접 조회 폴백
       if (!match && targetSearchServerId) {
-        addDebugLog(`검색 실패, DB 직접 조회 시도...`)
         try {
           const dbFallbackRes = await fetch(
             `https://mnbngmdjiszyowfvnzhk.supabase.co/rest/v1/characters?name=eq.${encodeURIComponent(charName)}&server_id=eq.${targetSearchServerId}&select=character_id,name,server_id,class_name,race_name,profile_image&limit=1`,
@@ -674,7 +668,6 @@ export default function CharacterDetailPage() {
             const dbData = await dbFallbackRes.json()
             if (dbData && dbData.length > 0) {
               const dbChar = dbData[0]
-              addDebugLog(`DB 직접 조회 성공: ${dbChar.character_id}`)
               match = {
                 characterId: dbChar.character_id,
                 name: dbChar.name,
@@ -688,37 +681,31 @@ export default function CharacterDetailPage() {
             }
           }
         } catch (dbErr) {
-          addDebugLog(`DB 직접 조회 실패: ${dbErr}`)
         }
       }
 
       if (!match) {
         const resultServers = searchResults.map(r => r.serverName || r.server).filter(Boolean)
-        addDebugLog(`ERROR: 매칭 실패 - 검색결과 서버: ${resultServers.join(', ')}`)
 
         // 다른 서버에서 발견된 경우 자동 리다이렉트
         const foundServer = searchResults[0]?.serverName || searchResults[0]?.server
         if (searchResults.length > 0 && foundServer && foundServer !== serverName) {
-          addDebugLog(`다른 서버에서 발견: ${foundServer}, 리다이렉트 중...`)
           window.location.href = `/c/${encodeURIComponent(foundServer)}/${encodeURIComponent(charName)}`
           return
         }
 
         throw new Error(`'${serverName}' 서버에서 '${charName}' 캐릭터를 찾을 수 없습니다. (ID: ${targetSearchServerId || 'unknown'})`)
       }
-      addDebugLog(`매칭 성공: characterId=${match.characterId}`)
 
       // Step 2: Get Detail from Local API and OCR Stats in parallel
       const serverId = match.serverId || match.server_id || SERVER_NAME_TO_ID[serverName] || 1
       const encodedCharacterId = encodeURIComponent(match.characterId)
       const forceParam = refresh ? '&force=true' : ''
       const apiUrl = `${getApiBaseUrl()}/api/character?id=${encodedCharacterId}&server=${serverId}${forceParam}`
-      addDebugLog(`상세 API 호출: ${apiUrl}`)
 
       // OCR 스탯 조회 URL 준비 (병렬 실행을 위해)
       const normalizedCharIdForOcr = normalizeCharacterId(match.characterId)
       const ocrUrl = `/api/character/ocr-stats?characterId=${encodeURIComponent(normalizedCharIdForOcr)}`
-      addDebugLog(`OCR 조회 URL (병렬): ${ocrUrl}`)
 
       // 상세 API와 OCR API를 병렬로 호출
       const [detailRes, ocrRes] = await Promise.all([
@@ -729,14 +716,11 @@ export default function CharacterDetailPage() {
         })
       ])
 
-      addDebugLog(`상세 API 응답: status=${detailRes.status}`)
       if (ocrRes) {
-        addDebugLog(`OCR 응답 상태: ${ocrRes.status} ${ocrRes.statusText}`)
       }
 
       if (!detailRes.ok) {
         const errorText = await detailRes.text().catch(() => '')
-        addDebugLog(`ERROR: API 실패 - ${errorText}`)
         throw new Error(`캐릭터 상세 API 호출 실패 (status: ${detailRes.status})${errorText ? ` - ${errorText}` : ''}`)
       }
 
@@ -744,16 +728,13 @@ export default function CharacterDetailPage() {
 
       // API 응답 구조 검증
       if (!detail || !detail.profile) {
-        addDebugLog(`ERROR: 응답에 profile이 없음 - ${JSON.stringify(detail).substring(0, 200)}`)
         throw new Error('캐릭터 정보가 올바르지 않습니다. 잠시 후 다시 시도해주세요.')
       }
 
       if (!detail.profile.characterId) {
-        addDebugLog(`ERROR: characterId 없음 - profile: ${JSON.stringify(detail.profile).substring(0, 200)}`)
         throw new Error('캐릭터 ID를 찾을 수 없습니다.')
       }
 
-      addDebugLog(`상세 데이터 수신 완료: ${detail.profile.characterName || 'unknown'}`)
 
       // Transform logic
       let mappedStats = detail.stats || {}
@@ -768,24 +749,18 @@ export default function CharacterDetailPage() {
       try {
         if (ocrRes && ocrRes.ok) {
           const ocrData = await ocrRes.json()
-          addDebugLog(`OCR 응답 데이터: ${JSON.stringify(ocrData)}`)
 
           if (ocrData.stats && Array.isArray(ocrData.stats) && ocrData.stats.length > 0) {
-            addDebugLog(`OCR 스탯 ${ocrData.stats.length}개 발견: ${ocrData.stats.map((s: any) => s.name).join(', ')}`)
             fetchedOcrStats = ocrData.stats
             // statList에도 병합 (호환성 유지)
             mappedStats = mergeStatsWithOcr(mappedStats, ocrData.stats)
           } else {
-            addDebugLog(`OCR 스탯 없음 (stats=${JSON.stringify(ocrData.stats)})`)
           }
         } else if (ocrRes) {
-          addDebugLog(`OCR 조회 실패: status=${ocrRes.status}`)
         } else {
-          addDebugLog(`OCR 조회 스킵 (fetch 실패)`)
         }
       } catch (ocrErr) {
         console.error('OCR stats parse error:', ocrErr)
-        addDebugLog(`OCR 파싱 에러: ${ocrErr}`)
         // OCR 스탯 조회 실패해도 계속 진행
       }
 
@@ -872,7 +847,6 @@ export default function CharacterDetailPage() {
             const dbNoaScore = dbData[0].pve_score
             const dbPvpScore = dbData[0].pvp_score
             const dbPveScore = dbData[0].pve_score
-            addDebugLog(`DB에서 item_level=${dbItemLevel}, pve_score=${dbNoaScore}, pvp=${dbPvpScore}, pve=${dbPveScore} 로드`)
 
             // Update data with DB values
             setData(prev => prev ? {
