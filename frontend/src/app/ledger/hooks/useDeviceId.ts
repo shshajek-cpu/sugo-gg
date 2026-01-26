@@ -35,6 +35,7 @@ export function useDeviceId() {
   const [isLoading, setIsLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isLinked, setIsLinked] = useState(false)
+  const [linkError, setLinkError] = useState<string | null>(null)
 
   useEffect(() => {
     if (isAuthLoading) return
@@ -84,13 +85,49 @@ export function useDeviceId() {
               console.log('[useDeviceId] Google 계정 연동 성공:', linkData)
               localStorage.setItem(LINKED_GOOGLE_ID_KEY, user.id)
               setIsLinked(true)
+              setLinkError(null)
 
               if (linkData.merged) {
                 console.log('[useDeviceId] 기존 데이터가 Google 계정으로 병합됨')
               }
+            } else if (linkRes.status === 409) {
+              // 이미 다른 Google 계정에 연결됨 - 새 device_id 생성
+              const errorData = await linkRes.json()
+              console.warn('[useDeviceId] 기기가 다른 계정에 연결됨, 새 device_id 생성:', errorData)
+
+              // 기존 device_id 삭제하고 새로 생성
+              const newDeviceId = crypto.randomUUID()
+              localStorage.setItem(DEVICE_ID_KEY, newDeviceId)
+              localStorage.removeItem(LINKED_GOOGLE_ID_KEY)
+              setDeviceId(newDeviceId)
+
+              // 새 device_id로 다시 연동 시도
+              const retryRes = await fetch('/api/ledger/link-device', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-Device-ID': newDeviceId
+                },
+                body: JSON.stringify({
+                  google_user_id: user.id,
+                  google_email: user.email
+                })
+              })
+
+              if (retryRes.ok) {
+                const retryData = await retryRes.json()
+                console.log('[useDeviceId] 새 device_id로 연동 성공:', retryData)
+                localStorage.setItem(LINKED_GOOGLE_ID_KEY, user.id)
+                setIsLinked(true)
+                setLinkError(null)
+              } else {
+                console.error('[useDeviceId] 새 device_id로도 연동 실패')
+                setLinkError('계정 연동에 실패했습니다')
+              }
             } else {
               const errorData = await linkRes.json()
               console.warn('[useDeviceId] Google 계정 연동 실패:', errorData)
+              setLinkError(errorData.error || '연동 실패')
             }
           } catch (e) {
             console.warn('[useDeviceId] Google 계정 연동 오류:', e)
@@ -132,6 +169,7 @@ export function useDeviceId() {
     isLoading,
     isAuthenticated,
     isLinked,
+    linkError,
     getAuthHeader: getAuthHeaderCallback,
     accessToken: session?.access_token
   }
