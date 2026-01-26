@@ -2175,13 +2175,9 @@ export default function MobileLedgerPage() {
                                 <div className={styles.incomeLabel}>일일</div>
                                 <div className={styles.incomeValue}>{formatMoney(dailyIncome)}</div>
                             </div>
-                            <div className={styles.incomeStat}>
+                            <div className={`${styles.incomeStat} ${styles.noBorder}`}>
                                 <div className={styles.incomeLabel}>월간</div>
                                 <div className={styles.incomeValuePrimary}>{formatMoney(monthlyIncome)}</div>
-                            </div>
-                            <div className={`${styles.incomeStat} ${styles.noBorder}`}>
-                                <div className={styles.incomeLabel}>판매대기</div>
-                                <div className={styles.incomeValue}>{unsoldItems.length}건</div>
                             </div>
                         </div>
 
