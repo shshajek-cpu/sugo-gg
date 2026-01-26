@@ -60,7 +60,7 @@ export default function RankingFilterBar({ type = 'combat' }: RankingFilterBarPr
                     <button
                         className={`${styles.sortBtn} ${styles.sortBtnActive}`}
                     >
-                        PVP
+                        PVE/PVP
                     </button>
                 </div>
             )}

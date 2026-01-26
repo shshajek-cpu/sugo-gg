@@ -153,7 +153,7 @@ export default function RankingMobile({ type }: RankingMobileProps) {
                     <button
                         className={`${styles.sortBtn} ${styles.sortBtnActive}`}
                     >
-                        PVP
+                        PVE/PVP
                     </button>
                 </div>
             )}
