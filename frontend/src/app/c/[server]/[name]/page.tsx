@@ -1063,35 +1063,12 @@ export default function CharacterDetailPage() {
             {error}
           </div>
 
-          {/* Debug Logs (collapsible) */}
-          {debugLogs.length > 0 && (
-            <details style={{ marginBottom: '1rem', textAlign: 'left' }}>
-              <summary style={{ color: '#9CA3AF', cursor: 'pointer', marginBottom: '0.5rem' }}>
-                디버그 로그 보기
-              </summary>
-              <div style={{
-                background: '#111318',
-                padding: '0.75rem',
-                borderRadius: '6px',
-                fontSize: '0.75rem',
-                color: '#9CA3AF',
-                maxHeight: '150px',
-                overflowY: 'auto'
-              }}>
-                {debugLogs.map((log, i) => (
-                  <div key={i}>{log}</div>
-                ))}
-              </div>
-            </details>
-          )}
-
           {/* Copy Error Button */}
           <button
             onClick={() => {
               const errorInfo = {
                 error,
                 url: window.location.href,
-                logs: debugLogs,
                 timestamp: new Date().toISOString()
               }
               navigator.clipboard.writeText(JSON.stringify(errorInfo, null, 2))
