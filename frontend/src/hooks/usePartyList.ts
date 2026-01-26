@@ -51,8 +51,10 @@ export function usePartyList(initialParams?: PartyListParams) {
     swrKey,
     fetcher,
     {
-      revalidateOnFocus: false,
-      dedupingInterval: 2000
+      revalidateOnFocus: true,        // 탭 전환 시 자동 갱신
+      revalidateOnReconnect: true,    // 네트워크 재연결 시 갱신
+      refreshInterval: 30000,         // 30초마다 자동 갱신
+      dedupingInterval: 5000          // 5초 내 중복 요청 방지
     }
   )
 
