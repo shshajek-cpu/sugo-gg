@@ -77,7 +77,7 @@ export default function PartyAnalysisResult({ data, isScanning, onReset, onManua
 
     const gridStyle: React.CSSProperties = {
         display: 'grid',
-        gridTemplateColumns: 'repeat(1, 1fr)',
+        gridTemplateColumns: 'repeat(4, 1fr)',
         gap: '0.8rem',
     };
 

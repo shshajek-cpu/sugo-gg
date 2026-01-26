@@ -73,7 +73,7 @@ export default memo(function PartyCard({
 
   const [isExpanded, setIsExpanded] = useState(true)
 
-  // 모바일인 경우 기본적으로 접힘 상태로 시작 (마운트 시점에 체크)
+  // 마운트 후 화면 크기 체크 (모바일은 접힘, PC는 펼침)
   useEffect(() => {
     if (window.innerWidth < 1024) {
       setIsExpanded(false)
@@ -305,8 +305,8 @@ export default memo(function PartyCard({
         </div>
       )}
 
-      {/* 파티원 슬롯 그리드 (4열 고정) - 펼쳐진 상태거나 PC인 경우 표시 */}
-      {(isExpanded || (typeof window !== 'undefined' && window.innerWidth >= 1024)) && (
+      {/* 파티원 슬롯 그리드 (4열 고정) - 펼쳐진 상태면 표시 (PC는 기본 펼침) */}
+      {isExpanded && (
         <>
           <div className={styles.membersSection}>
             <div className={styles.membersGrid}>

@@ -166,7 +166,7 @@ export const usePartyScanner = () => {
 
             browserOcrIframeRef.current?.contentWindow?.postMessage({
                 type: 'process',
-                data: imageBase64
+                data: { image: imageBase64 }
             }, '*');
 
             // 타임아웃 30초
