@@ -6,17 +6,13 @@ import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
 import { useCharacterSearch } from '@/hooks/useCharacterSearch'
 import { CharacterSearchResult } from '@/lib/supabaseApi'
+import { SERVERS, SERVER_MAP as FULL_SERVER_MAP } from '@/app/constants/servers'
 import SearchAutocomplete from '../SearchAutocomplete'
 import AdSenseBanner from '@/components/AdSenseBanner'
 import styles from './HomeMobile.module.css'
 
-// 서버 ID -> 이름 매핑
-const SERVER_MAP: Record<string, string> = {
-    '1001': '이스라펠',
-    '1002': '지켈',
-    '1003': '카이시넬',
-    '1004': '마르쿠탄'
-}
+// 서버 ID -> 이름 매핑 (기존 호환용)
+const SERVER_MAP: Record<string, string> = FULL_SERVER_MAP
 
 // 랭킹 캐릭터 타입
 interface RankingCharacter {
@@ -82,6 +78,10 @@ export default function HomeMobile() {
     const {
         query: subCharQuery,
         setQuery: setSubCharQuery,
+        race: subCharRace,
+        setRace: setSubCharRace,
+        server: subCharServer,
+        setServer: setSubCharServer,
         results: subCharResults,
         isSearching: isSubCharSearching,
         showResults: showSubCharResults,
@@ -350,14 +350,22 @@ export default function HomeMobile() {
 
                     {/* 서브 캐릭터 검색 모달 */}
                     {showSubCharSearch && (
-                        <div className={styles.subCharModal}>
-                            <div className={styles.subCharModalContent}>
+                        <div className={styles.subCharModal} onClick={() => {
+                            setShowSubCharSearch(false)
+                            setSubCharQuery('')
+                            setSubCharRace(undefined)
+                            setSubCharServer('')
+                            clearSubCharResults()
+                        }}>
+                            <div className={styles.subCharModalContent} onClick={(e) => e.stopPropagation()}>
                                 <div className={styles.subCharModalHeader}>
                                     <h3>서브 캐릭터 추가</h3>
                                     <button
                                         onClick={() => {
                                             setShowSubCharSearch(false)
                                             setSubCharQuery('')
+                                            setSubCharRace(undefined)
+                                            setSubCharServer('')
                                             clearSubCharResults()
                                         }}
                                     >
@@ -367,6 +375,51 @@ export default function HomeMobile() {
                                         </svg>
                                     </button>
                                 </div>
+
+                                {/* 종족 선택 */}
+                                <div className={styles.subCharFilterRow}>
+                                    <button
+                                        className={`${styles.raceBtn} ${subCharRace === 'elyos' ? styles.raceBtnElyosActive : ''}`}
+                                        onClick={() => {
+                                            setSubCharRace(subCharRace === 'elyos' ? undefined : 'elyos')
+                                            setSubCharServer('')
+                                        }}
+                                    >
+                                        천족
+                                    </button>
+                                    <button
+                                        className={`${styles.raceBtn} ${subCharRace === 'asmodian' ? styles.raceBtnAsmoActive : ''}`}
+                                        onClick={() => {
+                                            setSubCharRace(subCharRace === 'asmodian' ? undefined : 'asmodian')
+                                            setSubCharServer('')
+                                        }}
+                                    >
+                                        마족
+                                    </button>
+                                </div>
+
+                                {/* 서버 선택 */}
+                                <div className={styles.subCharServerSelect}>
+                                    <select
+                                        value={subCharServer}
+                                        onChange={(e) => setSubCharServer(e.target.value)}
+                                    >
+                                        <option value="">전체 서버</option>
+                                        {SERVERS
+                                            .filter(s => {
+                                                if (!subCharRace) return true
+                                                if (subCharRace === 'elyos') return s.id.startsWith('1')
+                                                if (subCharRace === 'asmodian') return s.id.startsWith('2')
+                                                return true
+                                            })
+                                            .map(s => (
+                                                <option key={s.id} value={s.name}>{s.name}</option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+
+                                {/* 검색 입력 */}
                                 <div className={styles.subCharSearchBox}>
                                     <input
                                         type="text"
@@ -377,31 +430,47 @@ export default function HomeMobile() {
                                     />
                                     {isSubCharSearching && <span className={styles.searchSpinner}>검색중...</span>}
                                 </div>
+
+                                {/* 검색 결과 */}
                                 {showSubCharResults && subCharResults.length > 0 && (
                                     <div className={styles.subCharResults}>
-                                        {subCharResults.map((char, idx) => (
-                                            <div
-                                                key={idx}
-                                                className={styles.subCharResultItem}
-                                                onClick={() => !isAddingSubChar && handleAddSubCharacter(char)}
-                                            >
-                                                <div className={styles.subCharResultAvatar}>
-                                                    {char.imageUrl ? (
-                                                        <img src={char.imageUrl} alt={char.name} />
-                                                    ) : (
-                                                        <span>{char.name?.charAt(0) || '?'}</span>
-                                                    )}
+                                        {subCharResults.map((char, idx) => {
+                                            const isElyos = char.race?.toLowerCase() === 'elyos' || char.race === '천족'
+                                            return (
+                                                <div
+                                                    key={idx}
+                                                    className={styles.subCharResultItem}
+                                                    onClick={() => !isAddingSubChar && handleAddSubCharacter(char)}
+                                                >
+                                                    <div className={`${styles.subCharResultAvatar} ${isElyos ? styles.avatarElyos : styles.avatarAsmo}`}>
+                                                        {char.imageUrl ? (
+                                                            <img src={char.imageUrl} alt={char.name} />
+                                                        ) : (
+                                                            <span>{char.name?.charAt(0) || '?'}</span>
+                                                        )}
+                                                    </div>
+                                                    <div className={styles.subCharResultInfo}>
+                                                        <span className={styles.subCharResultName}>
+                                                            {char.name.replace(/<\/?[^>]+(>|$)/g, '')}
+                                                        </span>
+                                                        <span className={styles.subCharResultMeta}>
+                                                            <span className={isElyos ? styles.raceElyos : styles.raceAsmo}>
+                                                                {isElyos ? '천족' : '마족'}
+                                                            </span>
+                                                            {' · '}{char.server} · {char.job}
+                                                            {char.pve_score && ` · PVE ${char.pve_score.toLocaleString()}`}
+                                                        </span>
+                                                    </div>
                                                 </div>
-                                                <div className={styles.subCharResultInfo}>
-                                                    <span className={styles.subCharResultName}>
-                                                        {char.name.replace(/<\/?[^>]+(>|$)/g, '')}
-                                                    </span>
-                                                    <span className={styles.subCharResultMeta}>
-                                                        {char.server} · Lv.{char.level} · {char.job}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
+                                    </div>
+                                )}
+
+                                {/* 검색 결과 없음 */}
+                                {showSubCharResults && subCharQuery.length >= 1 && subCharResults.length === 0 && !isSubCharSearching && (
+                                    <div className={styles.subCharNoResults}>
+                                        검색 결과가 없습니다.
                                     </div>
                                 )}
                             </div>

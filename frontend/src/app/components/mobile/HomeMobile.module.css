@@ -429,6 +429,66 @@
   padding: 4px;
 }
 
+/* 종족/서버 필터 */
+.subCharFilterRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.raceBtn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #0a0a0a;
+  color: #9CA3AF;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.raceBtn:active {
+  transform: scale(0.98);
+}
+
+.raceBtnElyosActive {
+  background: rgba(59, 130, 246, 0.15);
+  border-color: #3b82f6;
+  color: #60a5fa;
+}
+
+.raceBtnAsmoActive {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: #ef4444;
+  color: #f87171;
+}
+
+.subCharServerSelect {
+  margin-bottom: 12px;
+}
+
+.subCharServerSelect select {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid #333;
+  background: #0a0a0a;
+  color: #E5E7EB;
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+}
+
+.subCharServerSelect select:focus {
+  outline: none;
+  border-color: #f59e0b;
+}
+
 .subCharSearchBox {
   display: flex;
   align-items: center;
@@ -522,6 +582,34 @@
 .subCharResultMeta {
   font-size: 0.75rem;
   color: #6B7280;
+}
+
+/* 종족 색상 */
+.raceElyos {
+  color: #60a5fa;
+  font-weight: 500;
+}
+
+.raceAsmo {
+  color: #f87171;
+  font-weight: 500;
+}
+
+/* 아바타 종족 테두리 */
+.avatarElyos {
+  border-color: #3b82f6 !important;
+}
+
+.avatarAsmo {
+  border-color: #ef4444 !important;
+}
+
+/* 검색 결과 없음 */
+.subCharNoResults {
+  text-align: center;
+  color: #6B7280;
+  padding: 32px 16px;
+  font-size: 0.9rem;
 }
 
 /* 섹션 공통 */
