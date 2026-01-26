@@ -114,27 +114,28 @@
 }
 
 .mainCharCard {
-  background: linear-gradient(135deg, rgba(250, 204, 21, 0.08), rgba(250, 204, 21, 0.02));
-  border: 1px solid rgba(250, 204, 21, 0.2);
+  background: #111;
+  border: 1px solid #222;
   border-radius: 16px;
-  padding: 20px;
+  padding: 16px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 14px;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.2s;
 }
 
 .mainCharCard:active {
   transform: scale(0.98);
+  background: #0a0a0a;
 }
 
 .mainCharAvatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 12px;
-  background: #1a1a1a;
-  border: 2px solid rgba(250, 204, 21, 0.3);
+  width: 60px;
+  height: 60px;
+  border-radius: 14px;
+  background: #000;
+  border: 2px solid #333;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -158,79 +159,89 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   min-width: 0;
-  max-width: calc(100% - 160px);
 }
 
 .mainCharServer {
-  font-size: 0.75rem;
-  color: #9CA3AF;
+  font-size: 0.7rem;
+  color: #6B7280;
+  font-weight: 500;
 }
 
 .mainCharName {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #E5E7EB;
   margin: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .mainCharBadges {
   display: flex;
+  align-items: center;
   gap: 6px;
-  margin-top: 4px;
+  flex-wrap: wrap;
 }
 
 .badge {
   font-size: 0.7rem;
-  padding: 3px 8px;
-  background: #111;
-  border-radius: 6px;
+  padding: 2px 6px;
+  background: #222;
+  border-radius: 4px;
   color: #9CA3AF;
+  font-weight: 500;
 }
 
 .badgeHighlight {
   font-size: 0.7rem;
-  padding: 3px 8px;
-  background: rgba(250, 204, 21, 0.15);
-  border-radius: 6px;
+  padding: 2px 6px;
+  background: rgba(245, 158, 11, 0.15);
+  border-radius: 4px;
   color: #f59e0b;
+  font-weight: 600;
 }
 
 .badgeItemLevel {
   font-size: 0.7rem;
-  padding: 3px 8px;
-  background: rgba(59, 130, 246, 0.15);
-  border-radius: 6px;
-  color: #3b82f6;
-  font-weight: 600;
+  padding: 2px 6px;
+  background: #222;
+  border-radius: 4px;
+  color: #6B7280;
+  font-weight: 500;
 }
 
 .mainCharStats {
   display: flex;
-  gap: 16px;
+  flex-direction: column;
+  gap: 4px;
+  flex-shrink: 0;
 }
 
 .statItem {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: baseline;
+  gap: 6px;
+  justify-content: flex-end;
 }
 
 .statLabel {
   font-size: 0.65rem;
   color: #6B7280;
-  text-transform: uppercase;
+  font-weight: 500;
+  min-width: 24px;
 }
 
 .statValue {
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: #f59e0b;
+  color: #E5E7EB;
   font-family: 'Rajdhani', sans-serif;
+  min-width: 50px;
+  text-align: right;
 }
 
 .mainCharEmpty {
