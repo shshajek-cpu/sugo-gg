@@ -405,18 +405,21 @@ export default function LedgerPage() {
     stats: weeklyStats,
     isLoading: isStatsLoading
   } = useWeeklyStats({
+    getAuthHeader,
     characterId: selectedCharacterId
   })
 
   // 대시보드용 전체 통계 (SWR)
   const characterIdsList = useMemo(() => characters.map(c => c.id), [characters])
   const { stats: dashboardStats } = useDashboardStats({
+    getAuthHeader,
     characterIds: characterIdsList,
     isReady: isReady && activeTab === 'dashboard'
   })
 
   // 선택한 날짜의 수입 (하단 네비게이션 바용, SWR)
   const { dailyIncome: selectedDateDailyIncome, monthlyIncome: selectedDateMonthlyIncome } = useSelectedDateIncome({
+    getAuthHeader,
     characterId: selectedCharacterId,
     date: selectedDate,
     isReady,

@@ -2,7 +2,6 @@
 
 import useSWR from 'swr'
 import { useCallback, useMemo } from 'react'
-import { getAuthHeader } from './useDeviceId'
 
 interface DateIncome {
   dailyIncome: number
@@ -10,13 +9,14 @@ interface DateIncome {
 }
 
 interface UseSelectedDateIncomeProps {
+  getAuthHeader: () => Record<string, string>
   characterId: string | null
   date: string
   isReady: boolean
   refreshKey?: number  // 외부에서 갱신 트리거용
 }
 
-export function useSelectedDateIncome({ characterId, date, isReady, refreshKey = 0 }: UseSelectedDateIncomeProps) {
+export function useSelectedDateIncome({ getAuthHeader, characterId, date, isReady, refreshKey = 0 }: UseSelectedDateIncomeProps) {
   // SWR fetcher - 일일/월간 통계 병렬 조회
   const fetcher = useCallback(async (url: string) => {
     const authHeaders = getAuthHeader()
@@ -49,7 +49,7 @@ export function useSelectedDateIncome({ characterId, date, isReady, refreshKey =
     }
 
     return { dailyIncome, monthlyIncome }
-  }, [])
+  }, [getAuthHeader])
 
   // SWR key - refreshKey 포함하여 외부 트리거 가능
   const swrKey = useMemo(() => {

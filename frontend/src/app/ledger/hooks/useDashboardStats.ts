@@ -2,7 +2,6 @@
 
 import useSWR from 'swr'
 import { useCallback, useMemo } from 'react'
-import { getAuthHeader } from './useDeviceId'
 
 interface DashboardStats {
   totalTodayIncome: number
@@ -17,11 +16,12 @@ interface DashboardStats {
 }
 
 interface UseDashboardStatsProps {
+  getAuthHeader: () => Record<string, string>
   characterIds: string[]
   isReady: boolean
 }
 
-export function useDashboardStats({ characterIds, isReady }: UseDashboardStatsProps) {
+export function useDashboardStats({ getAuthHeader, characterIds, isReady }: UseDashboardStatsProps) {
   // SWR fetcher
   const fetcher = useCallback(async (url: string) => {
     const authHeaders = getAuthHeader()
@@ -32,7 +32,7 @@ export function useDashboardStats({ characterIds, isReady }: UseDashboardStatsPr
       throw new Error('Failed to fetch dashboard stats')
     }
     return res.json()
-  }, [])
+  }, [getAuthHeader])
 
   // SWR key
   const swrKey = useMemo(() => {

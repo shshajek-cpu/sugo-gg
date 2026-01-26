@@ -3,14 +3,14 @@
 import useSWR from 'swr'
 import { useMemo, useCallback } from 'react'
 import { WeeklyStats } from '@/types/ledger'
-import { getAuthHeader } from './useDeviceId'
 
 interface UseWeeklyStatsProps {
+  getAuthHeader: () => Record<string, string>
   characterId: string | null
   date?: string
 }
 
-export function useWeeklyStats({ characterId, date }: UseWeeklyStatsProps) {
+export function useWeeklyStats({ getAuthHeader, characterId, date }: UseWeeklyStatsProps) {
   // SWR fetcher
   const fetcher = useCallback(async (url: string) => {
     const authHeaders = getAuthHeader()
@@ -21,7 +21,7 @@ export function useWeeklyStats({ characterId, date }: UseWeeklyStatsProps) {
       throw new Error('Failed to fetch weekly stats')
     }
     return res.json()
-  }, [])
+  }, [getAuthHeader])
 
   // SWR key
   const swrKey = useMemo(() => {
