@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { Wallet, HelpCircle, X } from 'lucide-react'
 import {
@@ -9,7 +9,9 @@ import {
   useContentRecords,
   useLedgerItems,
   useWeeklyStats,
-  useFavoriteItems
+  useFavoriteItems,
+  useDashboardStats,
+  useSelectedDateIncome
 } from './hooks'
 import LedgerTabs from './components/LedgerTabs'
 import LedgerSubTabs, { SubTabType } from './components/LedgerSubTabs'
@@ -87,11 +89,6 @@ export default function LedgerPage() {
   const [showGuideModal, setShowGuideModal] = useState(false)
   const [showChargePopup, setShowChargePopup] = useState(false)
 
-  // 선택한 날짜의 수입 (하단 네비게이션 바용)
-  const [selectedDateIncome, setSelectedDateIncome] = useState({
-    dailyIncome: 0,
-    monthlyIncome: 0
-  })
 
   // 수입 새로고침 트리거 (던전 클리어/아이템 판매 시 증가)
   const [incomeRefreshKey, setIncomeRefreshKey] = useState(0)
@@ -411,129 +408,20 @@ export default function LedgerPage() {
     characterId: selectedCharacterId
   })
 
-  // 대시보드용 전체 통계 계산
-  const [dashboardStats, setDashboardStats] = useState({
-    totalTodayIncome: 0,
-    unsoldItemCount: 0,
-    unsoldItemsByGrade: {
-      common: 0,
-      rare: 0,
-      heroic: 0,
-      legendary: 0,
-      ultimate: 0
-    }
+  // 대시보드용 전체 통계 (SWR)
+  const characterIdsList = useMemo(() => characters.map(c => c.id), [characters])
+  const { stats: dashboardStats } = useDashboardStats({
+    characterIds: characterIdsList,
+    isReady: isReady && activeTab === 'dashboard'
   })
 
-  // 대시보드 통계 로드 (배치 API 사용)
-  const characterIds = characters.map(c => c.id).join(',')
-  const dashboardCacheRef = useRef<{ data: any; timestamp: number; ids: string } | null>(null)
-  const DASHBOARD_CACHE_TTL = 60 * 1000 // 1분
-
-  const loadDashboardStats = useCallback(async () => {
-    if (!isReady || characters.length === 0) return
-
-    // 캐시 확인
-    if (dashboardCacheRef.current) {
-      const { data, timestamp, ids } = dashboardCacheRef.current
-      const isValid = Date.now() - timestamp < DASHBOARD_CACHE_TTL
-      const isSameChars = ids === characterIds
-
-      if (isValid && isSameChars) {
-        // 캐시된 데이터 사용
-        setDashboardStats(data)
-        return
-      }
-    }
-
-    try {
-      const authHeaders = getAuthHeader()
-
-      // 배치 API로 한 번에 조회
-      const res = await fetch(`/api/ledger/dashboard?characterIds=${characterIds}`, {
-        headers: authHeaders
-      })
-
-      if (!res.ok) {
-        console.error('Dashboard API error:', res.status)
-        return
-      }
-
-      const data = await res.json()
-
-      const stats = {
-        totalTodayIncome: data.totals?.todayIncome || 0,
-        unsoldItemCount: data.totals?.unsoldItemCount || 0,
-        unsoldItemsByGrade: data.totals?.unsoldItemsByGrade || {
-          common: 0, rare: 0, heroic: 0, legendary: 0, ultimate: 0
-        }
-      }
-
-      // 캐시 저장
-      dashboardCacheRef.current = {
-        data: stats,
-        timestamp: Date.now(),
-        ids: characterIds
-      }
-
-      setDashboardStats(stats)
-    } catch (e) {
-      console.error('Load dashboard stats error:', e)
-    }
-  }, [isReady, getAuthHeader, characterIds])
-
-  useEffect(() => {
-    if (activeTab === 'dashboard') {
-      loadDashboardStats()
-    }
-  }, [activeTab, loadDashboardStats])
-
-  // 선택한 날짜의 수입 로드 (하단 네비게이션 바용)
-  useEffect(() => {
-    const loadSelectedDateIncome = async () => {
-      if (!isReady || !selectedCharacterId) {
-        setSelectedDateIncome({ dailyIncome: 0, monthlyIncome: 0 })
-        return
-      }
-
-      try {
-        const authHeaders = getAuthHeader()
-
-        // 선택한 날짜의 일일/월간 통계 병렬로 가져오기
-        const [dailyRes, monthlyRes] = await Promise.all([
-          fetch(
-            `/api/ledger/stats?characterId=${selectedCharacterId}&type=daily&date=${selectedDate}`,
-            { headers: authHeaders }
-          ),
-          fetch(
-            `/api/ledger/stats?characterId=${selectedCharacterId}&type=monthly&date=${selectedDate}`,
-            { headers: authHeaders }
-          )
-        ])
-
-        let dailyIncome = 0
-        let monthlyIncome = 0
-
-        if (dailyRes.ok) {
-          const data = await dailyRes.json()
-          // API 응답 필드: contentIncome, itemIncome, totalIncome
-          dailyIncome = data.totalIncome || 0
-        }
-
-        if (monthlyRes.ok) {
-          const data = await monthlyRes.json()
-          // API 응답 필드: totalIncome (월간 합계)
-          monthlyIncome = data.totalIncome || 0
-        }
-
-        setSelectedDateIncome({ dailyIncome, monthlyIncome })
-      } catch (error) {
-        console.error('Failed to load selected date income:', error)
-        setSelectedDateIncome({ dailyIncome: 0, monthlyIncome: 0 })
-      }
-    }
-
-    loadSelectedDateIncome()
-  }, [selectedDate, selectedCharacterId, isReady, getAuthHeader, incomeRefreshKey])
+  // 선택한 날짜의 수입 (하단 네비게이션 바용, SWR)
+  const { dailyIncome: selectedDateDailyIncome, monthlyIncome: selectedDateMonthlyIncome } = useSelectedDateIncome({
+    characterId: selectedCharacterId,
+    date: selectedDate,
+    isReady,
+    refreshKey: incomeRefreshKey
+  })
 
   // 캐릭터 추가 핸들러
   const handleAddCharacter = async (charData: any) => {
@@ -1057,8 +945,8 @@ export default function LedgerPage() {
       {/* 하단 네비게이션 바 (캐릭터 선택 시에만 표시) */}
       {activeTab !== 'dashboard' && selectedCharacterId && (
         <BottomNavBar
-          todayIncome={selectedDateIncome.dailyIncome}
-          monthlyIncome={selectedDateIncome.monthlyIncome}
+          todayIncome={selectedDateDailyIncome}
+          monthlyIncome={selectedDateMonthlyIncome}
           selectedDate={selectedDate}
           onDateClick={() => setShowDateModal(true)}
           onChargeClick={() => setShowChargePopup(true)}
