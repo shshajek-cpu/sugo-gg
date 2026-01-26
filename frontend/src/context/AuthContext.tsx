@@ -18,6 +18,20 @@ interface MainCharacter {
   imageUrl?: string
 }
 
+interface SubCharacter {
+  id: string
+  characterId?: string
+  server: number | string
+  name: string
+  className: string
+  level?: number
+  itemLevel?: number
+  pveScore?: number
+  pvpScore?: number
+  imageUrl?: string
+  displayOrder?: number
+}
+
 interface AuthContextType {
   user: User | null
   session: Session | null
@@ -27,12 +41,17 @@ interface AuthContextType {
   isNicknameLoading: boolean
   mainCharacter: MainCharacter | null
   isMainCharacterLoading: boolean
+  subCharacters: SubCharacter[]
+  isSubCharactersLoading: boolean
   signInWithGoogle: () => Promise<void>
   signOut: () => Promise<void>
   setNickname: (nickname: string) => Promise<void>
   refreshNickname: () => Promise<void>
   setMainCharacter: (character: MainCharacter | null) => Promise<void>
   refreshMainCharacter: () => Promise<void>
+  addSubCharacter: (character: Omit<SubCharacter, 'id'>) => Promise<void>
+  removeSubCharacter: (id: string) => Promise<void>
+  refreshSubCharacters: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -70,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isNicknameLoading, setIsNicknameLoading] = useState(false)
   const [mainCharacter, setMainCharacterState] = useState<MainCharacter | null>(null)
   const [isMainCharacterLoading, setIsMainCharacterLoading] = useState(false)
+  const [subCharacters, setSubCharactersState] = useState<SubCharacter[]>([])
+  const [isSubCharactersLoading, setIsSubCharactersLoading] = useState(false)
 
   const fetchNickname = useCallback(async (accessToken: string) => {
     setIsNicknameLoading(true)
@@ -117,6 +138,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const fetchSubCharacters = useCallback(async (accessToken: string) => {
+    setIsSubCharactersLoading(true)
+    try {
+      console.log('[Auth] Fetching sub characters...')
+      const res = await fetch('/api/user/sub-characters', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`
+        }
+      })
+      if (res.ok) {
+        const data = await res.json()
+        console.log('[Auth] Sub characters fetched:', data.subCharacters?.length || 0)
+        setSubCharactersState(data.subCharacters || [])
+      } else {
+        console.error('[Auth] Sub characters fetch failed:', res.status)
+      }
+    } catch (err) {
+      console.error('Failed to fetch sub characters:', err)
+    } finally {
+      setIsSubCharactersLoading(false)
+    }
+  }, [])
+
   const refreshNickname = useCallback(async () => {
     if (session?.access_token) {
       await fetchNickname(session.access_token)
@@ -128,6 +172,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await fetchMainCharacter(session.access_token)
     }
   }, [session?.access_token, fetchMainCharacter])
+
+  const refreshSubCharacters = useCallback(async () => {
+    if (session?.access_token) {
+      await fetchSubCharacters(session.access_token)
+    }
+  }, [session?.access_token, fetchSubCharacters])
 
   useEffect(() => {
     // 개발 모드: Google 로그인 우회
@@ -157,10 +207,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(session?.user ?? null)
       setIsLoading(false)
 
-      // Fetch nickname and main character for authenticated users
+      // Fetch nickname, main character, and sub characters for authenticated users
       if (session?.access_token) {
         fetchNickname(session.access_token)
         fetchMainCharacter(session.access_token)
+        fetchSubCharacters(session.access_token)
       }
     })
 
@@ -172,23 +223,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null)
         setIsLoading(false)
 
-        // Fetch nickname and main character when user signs in or token is refreshed
+        // Fetch nickname, main character, and sub characters when user signs in or token is refreshed
         if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') && session?.access_token) {
           console.log('[Auth] Fetching user data for event:', event)
           fetchNickname(session.access_token)
           fetchMainCharacter(session.access_token)
+          fetchSubCharacters(session.access_token)
         }
 
-        // Clear nickname and main character when user signs out
+        // Clear nickname, main character, and sub characters when user signs out
         if (event === 'SIGNED_OUT') {
           setNicknameState(null)
           setMainCharacterState(null)
+          setSubCharactersState([])
         }
       }
     )
 
     return () => subscription.unsubscribe()
-  }, [fetchNickname, fetchMainCharacter])
+  }, [fetchNickname, fetchMainCharacter, fetchSubCharacters])
 
   const signInWithGoogle = async () => {
     // 모바일 감지 (1024px 미만 또는 터치 디바이스)
@@ -305,6 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(null)
       setNicknameState(null)
       setMainCharacterState(null)
+      setSubCharactersState([])
       localStorage.removeItem(NICKNAME_KEY)
       localStorage.removeItem(MAIN_CHARACTER_KEY)
       console.log('[Auth] 로컬 상태 정리 완료')
@@ -390,6 +444,55 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMainCharacterState(data.mainCharacter)
   }
 
+  const addSubCharacter = async (character: Omit<SubCharacter, 'id'>) => {
+    if (!session?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    console.log('[AuthContext] Adding sub character:', character)
+
+    const res = await fetch('/api/user/sub-characters', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify(character)
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.error || 'Failed to add sub character')
+    }
+
+    const data = await res.json()
+    console.log('[AuthContext] Sub character added:', data.subCharacter)
+    setSubCharactersState(prev => [...prev, data.subCharacter])
+  }
+
+  const removeSubCharacter = async (id: string) => {
+    if (!session?.access_token) {
+      throw new Error('Not authenticated')
+    }
+
+    console.log('[AuthContext] Removing sub character:', id)
+
+    const res = await fetch(`/api/user/sub-characters?id=${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${session.access_token}`
+      }
+    })
+
+    if (!res.ok) {
+      const error = await res.json()
+      throw new Error(error.error || 'Failed to remove sub character')
+    }
+
+    console.log('[AuthContext] Sub character removed:', id)
+    setSubCharactersState(prev => prev.filter(c => c.id !== id))
+  }
+
   const isAuthenticated = !!user && !!session
 
   return (
@@ -402,12 +505,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isNicknameLoading,
       mainCharacter,
       isMainCharacterLoading,
+      subCharacters,
+      isSubCharactersLoading,
       signInWithGoogle,
       signOut,
       setNickname,
       refreshNickname,
       setMainCharacter,
-      refreshMainCharacter
+      refreshMainCharacter,
+      addSubCharacter,
+      removeSubCharacter,
+      refreshSubCharacters
     }}>
       {children}
     </AuthContext.Provider>

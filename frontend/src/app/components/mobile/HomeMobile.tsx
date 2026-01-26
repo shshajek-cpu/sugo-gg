@@ -50,8 +50,15 @@ export default function HomeMobile() {
     const router = useRouter()
     const searchWrapperRef = useRef<HTMLDivElement>(null)
 
-    // Auth Context - 대표 캐릭터 관리
-    const { mainCharacter, setMainCharacter: setMainCharacterApi, isAuthenticated } = useAuth()
+    // Auth Context - 대표/서브 캐릭터 관리
+    const {
+        mainCharacter,
+        setMainCharacter: setMainCharacterApi,
+        isAuthenticated,
+        subCharacters,
+        addSubCharacter,
+        removeSubCharacter
+    } = useAuth()
 
     // 대표 캐릭터 검색 훅
     const {
@@ -68,6 +75,19 @@ export default function HomeMobile() {
     const [recentCharacters, setRecentCharacters] = useState<any[]>([])
     const [showMainCharSearch, setShowMainCharSearch] = useState(false)
     const [isSettingMainChar, setIsSettingMainChar] = useState(false)
+    const [showSubCharSearch, setShowSubCharSearch] = useState(false)
+    const [isAddingSubChar, setIsAddingSubChar] = useState(false)
+
+    // 서브 캐릭터 검색 훅
+    const {
+        query: subCharQuery,
+        setQuery: setSubCharQuery,
+        results: subCharResults,
+        isSearching: isSubCharSearching,
+        showResults: showSubCharResults,
+        setShowResults: setShowSubCharResults,
+        clearResults: clearSubCharResults
+    } = useCharacterSearch({ debounceMs: 300, minLength: 1 })
 
     // API 데이터 State
     const [rankingData, setRankingData] = useState<RankingCharacter[]>([])
@@ -130,6 +150,42 @@ export default function HomeMobile() {
             alert('대표 캐릭터 설정에 실패했습니다.')
         } finally {
             setIsSettingMainChar(false)
+        }
+    }
+
+    // 서브 캐릭터 추가 핸들러
+    const handleAddSubCharacter = async (char: CharacterSearchResult) => {
+        setIsAddingSubChar(true)
+        try {
+            await addSubCharacter({
+                characterId: char.characterId,
+                server: char.server_id || char.server,
+                name: char.name.replace(/<\/?[^>]+(>|$)/g, ''),
+                className: char.job || '',
+                level: char.level || 0,
+                itemLevel: char.item_level,
+                pveScore: char.pve_score,
+                pvpScore: char.pvp_score,
+                imageUrl: char.imageUrl
+            })
+            setShowSubCharSearch(false)
+            setSubCharQuery('')
+            clearSubCharResults()
+        } catch (err: any) {
+            console.error('[HomeMobile] Failed to add sub character:', err)
+            alert(err.message || '서브 캐릭터 추가에 실패했습니다.')
+        } finally {
+            setIsAddingSubChar(false)
+        }
+    }
+
+    // 서브 캐릭터 삭제 핸들러
+    const handleRemoveSubCharacter = async (id: string) => {
+        try {
+            await removeSubCharacter(id)
+        } catch (err: any) {
+            console.error('[HomeMobile] Failed to remove sub character:', err)
+            alert(err.message || '서브 캐릭터 삭제에 실패했습니다.')
         }
     }
 
@@ -242,6 +298,117 @@ export default function HomeMobile() {
                     </div>
                 )}
             </section>
+
+            {/* 서브 캐릭터 스토리 (로그인 시에만) */}
+            {isAuthenticated && (
+                <section className={styles.subCharSection}>
+                    <div className={styles.subCharStory}>
+                        {/* 추가 버튼 */}
+                        <div
+                            className={styles.subCharAdd}
+                            onClick={() => setShowSubCharSearch(true)}
+                        >
+                            <div className={styles.subCharAddIcon}>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                            </div>
+                            <span className={styles.subCharAddLabel}>추가</span>
+                        </div>
+
+                        {/* 서브 캐릭터 목록 */}
+                        {subCharacters.map((char) => (
+                            <div
+                                key={char.id}
+                                className={styles.subCharItem}
+                                onClick={() => router.push(`/c/${SERVER_MAP[String(char.server)] || char.server}/${char.name}`)}
+                            >
+                                <button
+                                    className={styles.subCharRemove}
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleRemoveSubCharacter(char.id)
+                                    }}
+                                >
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                    </svg>
+                                </button>
+                                <div className={styles.subCharAvatar}>
+                                    {char.imageUrl ? (
+                                        <img src={char.imageUrl} alt={char.name} />
+                                    ) : (
+                                        <span>{char.name?.charAt(0) || '?'}</span>
+                                    )}
+                                </div>
+                                <span className={styles.subCharName}>{char.name}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* 서브 캐릭터 검색 모달 */}
+                    {showSubCharSearch && (
+                        <div className={styles.subCharModal}>
+                            <div className={styles.subCharModalContent}>
+                                <div className={styles.subCharModalHeader}>
+                                    <h3>서브 캐릭터 추가</h3>
+                                    <button
+                                        onClick={() => {
+                                            setShowSubCharSearch(false)
+                                            setSubCharQuery('')
+                                            clearSubCharResults()
+                                        }}
+                                    >
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <line x1="18" y1="6" x2="6" y2="18" />
+                                            <line x1="6" y1="6" x2="18" y2="18" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div className={styles.subCharSearchBox}>
+                                    <input
+                                        type="text"
+                                        placeholder="캐릭터 이름 검색"
+                                        value={subCharQuery}
+                                        onChange={(e) => setSubCharQuery(e.target.value)}
+                                        autoFocus
+                                    />
+                                    {isSubCharSearching && <span className={styles.searchSpinner}>검색중...</span>}
+                                </div>
+                                {showSubCharResults && subCharResults.length > 0 && (
+                                    <div className={styles.subCharResults}>
+                                        {subCharResults.map((char, idx) => (
+                                            <div
+                                                key={idx}
+                                                className={styles.subCharResultItem}
+                                                onClick={() => !isAddingSubChar && handleAddSubCharacter(char)}
+                                            >
+                                                <div className={styles.subCharResultAvatar}>
+                                                    {char.imageUrl ? (
+                                                        <img src={char.imageUrl} alt={char.name} />
+                                                    ) : (
+                                                        <span>{char.name?.charAt(0) || '?'}</span>
+                                                    )}
+                                                </div>
+                                                <div className={styles.subCharResultInfo}>
+                                                    <span className={styles.subCharResultName}>
+                                                        {char.name.replace(/<\/?[^>]+(>|$)/g, '')}
+                                                    </span>
+                                                    <span className={styles.subCharResultMeta}>
+                                                        {char.server} · Lv.{char.level} · {char.job}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </section>
+            )}
 
             {/* 최근 검색 캐릭터 */}
             {recentCharacters.length > 0 && (
