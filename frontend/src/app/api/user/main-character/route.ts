@@ -5,6 +5,20 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
+// 서버 이름 → ID 매핑
+const SERVER_NAME_TO_ID: { [key: string]: number } = {
+  "시엘": 1001, "네자칸": 1002, "바이젤": 1003, "카이시넬": 1004, "유스티엘": 1005,
+  "아리엘": 1006, "프레기온": 1007, "메스람타에다": 1008, "히타니에": 1009, "나니아": 1010,
+  "타하바타": 1011, "루터스": 1012, "페르노스": 1013, "다미누": 1014, "카사카": 1015,
+  "바카르마": 1016, "챈가룽": 1017, "코치룽": 1018, "이슈타르": 1019, "티아마트": 1020,
+  "포에타": 1021,
+  "이스라펠": 2001, "지켈": 2002, "트리니엘": 2003, "루미엘": 2004, "마르쿠탄": 2005,
+  "아스펠": 2006, "에레슈키갈": 2007, "브리트라": 2008, "네몬": 2009, "하달": 2010,
+  "루드라": 2011, "울고른": 2012, "무닌": 2013, "오다르": 2014, "젠카카": 2015,
+  "크로메데": 2016, "콰이링": 2017, "바바룽": 2018, "파프니르": 2019, "인드나흐": 2020,
+  "이스할겐": 2021
+}
+
 // GET - 대표 캐릭터 조회
 export async function GET(request: NextRequest) {
   try {
@@ -238,6 +252,87 @@ export async function POST(request: NextRequest) {
       }
     } else {
       console.log('[Main Character API] Skipping ledger addition:', { hasServer: !!server, hasName: !!name, hasLedgerUser: !!ledgerUser })
+    }
+
+    // 파티모집 캐릭터에도 자동 등록
+    if (server && name && className) {
+      const serverId = SERVER_NAME_TO_ID[server]
+      if (serverId) {
+        console.log('[Main Character API] Auto-adding to party_user_characters:', { server, serverId, name })
+
+        // 이미 파티모집에 등록된 캐릭터인지 확인
+        const { data: existingPartyChar } = await supabase
+          .from('party_user_characters')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('character_name', name)
+          .eq('character_server_id', serverId)
+          .single()
+
+        if (!existingPartyChar) {
+          // 다른 유저가 등록했는지 확인
+          const { data: otherUserChar } = await supabase
+            .from('party_user_characters')
+            .select('id')
+            .eq('character_name', name)
+            .eq('character_server_id', serverId)
+            .neq('user_id', user.id)
+            .single()
+
+          if (!otherUserChar) {
+            // 현재 등록된 캐릭터 수 확인
+            const { data: existingChars } = await supabase
+              .from('party_user_characters')
+              .select('id')
+              .eq('user_id', user.id)
+
+            if (!existingChars || existingChars.length < 10) {
+              const nextOrder = (existingChars?.length || 0) + 1
+
+              const { error: partyInsertError } = await supabase
+                .from('party_user_characters')
+                .insert({
+                  user_id: user.id,
+                  character_id: characterId || null,
+                  character_name: name,
+                  character_class: className,
+                  character_server_id: serverId,
+                  character_level: level || null,
+                  character_item_level: item_level || null,
+                  character_pve_score: pve_score || null,
+                  character_pvp_score: pvp_score || null,
+                  profile_image: imageUrl || null,
+                  display_order: nextOrder
+                })
+
+              if (partyInsertError) {
+                console.error('[Main Character API] Failed to add to party_user_characters:', partyInsertError)
+              } else {
+                console.log('[Main Character API] Auto-added to party_user_characters')
+              }
+            } else {
+              console.log('[Main Character API] Skipping party addition: max 10 characters reached')
+            }
+          } else {
+            console.log('[Main Character API] Skipping party addition: character registered by another user')
+          }
+        } else {
+          // 이미 등록된 경우 정보 업데이트
+          console.log('[Main Character API] Updating existing party character')
+          await supabase
+            .from('party_user_characters')
+            .update({
+              character_level: level || null,
+              character_item_level: item_level || null,
+              character_pve_score: pve_score || null,
+              character_pvp_score: pvp_score || null,
+              profile_image: imageUrl || null
+            })
+            .eq('id', existingPartyChar.id)
+        }
+      } else {
+        console.log('[Main Character API] Unknown server name:', server)
+      }
     }
 
     return NextResponse.json({
